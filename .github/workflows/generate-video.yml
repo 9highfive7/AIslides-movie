@@ -1,0 +1,134 @@
+# 台本 → 音声 → レンダリングまでを GitHub Actions 上で実行する。
+# 起動方法は2種類:
+#   1. GitHub の UI (Actions → generate-video → Run workflow) から手動実行
+#   2. repository_dispatch (API / gh CLI / Genspark など外部から起動)
+#
+# source_type を prompt / url にすると、LLM で台本を自動生成してから動画化する
+# (リポジトリの Settings → Secrets and variables → Actions に OPENAI_API_KEY を登録)。
+# source_type = none の場合は、リポジトリにコミット済みの public/script.json を使う。
+name: generate-video
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_type:
+        description: 台本の入力 (none = リポジトリの script.json を使用)
+        type: choice
+        default: none
+        options:
+          - none
+          - prompt
+          - url
+      source:
+        description: プロンプトまたはURL (prompt / url 選択時のみ)
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [generate-video]
+
+# リポジトリへのコミット戻し (台本生成時) のため、GITHUB_TOKEN に書き込み権限を与える
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-video
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      # VOICEVOX Engine を起動 (job 内から localhost:50021 で参照できる)
+      voicevox:
+        image: voicevox/voicevox_engine:cpu-latest
+        ports:
+          - 50021:50021
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare Remotion browser
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libgbm1 libnss3 libasound2t64 || sudo apt-get install -y libgbm1 libnss3 libasound2 || true
+          npx remotion browser ensure
+
+      - name: Wait for VOICEVOX Engine
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:50021/version; then
+              echo ""
+              echo "VOICEVOX Engine is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "VOICEVOX Engine が起動しませんでした"
+          exit 1
+
+      - name: Resolve inputs (workflow_dispatch / repository_dispatch)
+        id: src
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "type=${{ github.event.client_payload.source_type }}" >> "$GITHUB_OUTPUT"
+            echo "value=${{ github.event.client_payload.source }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=${{ inputs.source_type }}" >> "$GITHUB_OUTPUT"
+            echo "value=${{ inputs.source }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate script (prompt / url)
+        if: ${{ steps.src.outputs.type != 'none' && steps.src.outputs.type != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          SCRIPT_MODEL: ${{ vars.SCRIPT_MODEL }}
+          SRC_TYPE: ${{ steps.src.outputs.type }}
+          SRC_VALUE: ${{ steps.src.outputs.value }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY が未設定です。リポジトリの Secrets に登録するか、source_type=none で既存の script.json を使ってください。"
+            exit 1
+          fi
+          if [ "$SRC_TYPE" = "url" ]; then
+            npm run script -- --url "$SRC_VALUE"
+          else
+            npm run script -- "$SRC_VALUE"
+          fi
+
+      - name: Generate audio + timeline
+        run: npm run audio
+
+      - name: Render video
+        run: npm run render
+
+      - name: Commit script + timeline back to repo
+        if: ${{ steps.src.outputs.type != 'none' && steps.src.outputs.type != '' }}
+        env:
+          SRC_TYPE: ${{ steps.src.outputs.type }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/script.json public/timeline.json
+          if git diff --cached --quiet; then
+            echo "コミットする変更はありません"
+          else
+            git commit -m "台本を更新 (source: $SRC_TYPE)"
+            git push
+          fi
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video
+          path: out/video.mp4
+          retention-days: 30

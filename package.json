@@ -1,0 +1,28 @@
+{
+  "name": "narration-slides",
+  "version": "1.0.0",
+  "private": true,
+  "description": "台本ファイルから音声・字幕・アニメーションタイミングを自動生成する解説スライド動画パイプライン (VOICEVOX × Remotion)",
+  "scripts": {
+    "audio": "tsx scripts/generate-audio.ts",
+    "audio:mock": "tsx scripts/generate-audio.ts --mock",
+    "script": "tsx scripts/generate-script.ts",
+    "dev": "remotion studio",
+    "render": "remotion render Slideshow out/video.mp4",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.533",
+    "lucide-react": "^1.52.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.533",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

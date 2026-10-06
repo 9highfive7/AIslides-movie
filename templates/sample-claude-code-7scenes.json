@@ -1,0 +1,130 @@
+{
+  "scenes": [
+    {
+      "id": "intro",
+      "layout": "title",
+      "content": {
+        "kicker": "CLAUDE CODE NOTES",
+        "title": "Claude Codeの\nコンテキストと管理コマンド",
+        "subtitle": "「作業机の上の全部」を理解して、速く・安く・指示通りに動かす"
+      },
+      "lines": [
+        { "text": "この動画は、Claude Codeのコンテキストと、その管理コマンドを解説します。", "reveal": [] },
+        { "text": "コンテキストとは、Claudeが応答のたびに読み返す、作業机の上の全部のことです。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "inside",
+      "layout": "bullets",
+      "label": "WHAT",
+      "heading": "コンテキストに入るもの",
+      "content": {
+        "items": [
+          { "id": "p-1", "icon": "settings", "title": "起動時に載る固定分", "body": "システムプロンプト・CLAUDE.md・自動メモリ・MCPやスキルの一覧" },
+          { "id": "p-2", "icon": "file-text", "title": "会話とファイル", "body": "発言や返答、読んだファイルとコマンド出力が積み上がる" },
+          { "id": "p-3", "icon": "lightbulb", "title": "発言はごく一部", "body": "大半はプロジェクトの知識とファイルの中身が占める" }
+        ]
+      },
+      "lines": [
+        { "text": "まず、コンテキストに入るものです。", "reveal": ["p-1"] },
+        { "text": "起動時の固定分に加えて、会話や読んだファイルが、作業のたびに積み上がります。", "reveal": ["p-2"] },
+        { "text": "ポイントは、自分の発言は全体のごく一部で、大半はプロジェクトの知識とファイルの中身だという点です。", "reveal": ["p-3"] }
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "layout": "flow",
+      "label": "LIFECYCLE",
+      "heading": "コンテキストの流れ",
+      "content": {
+        "steps": [
+          { "id": "step-1", "icon": "play", "title": "起動", "body": "固定分を読み込む" },
+          { "id": "step-2", "icon": "upload", "title": "蓄積", "body": "会話とファイルで増える" },
+          { "id": "step-3", "icon": "refresh-cw", "title": "自動圧縮", "body": "古い会話を要約へ" },
+          { "id": "step-4", "icon": "check-circle", "title": "再開", "body": "要約から続ける" }
+        ]
+      },
+      "lines": [
+        { "text": "コンテキストは、起動時の固定分から始まります。", "reveal": ["step-1"] },
+        { "text": "作業が進むと、会話やファイルでどんどん蓄積します。", "reveal": ["arrow-1", "step-2"] },
+        { "text": "上限に近づくと、古い会話を要約に置き換える、自動圧縮が働きます。", "reveal": ["arrow-2", "step-3"] },
+        { "text": "圧縮のあとは、要約と、読み直された設定から作業を続けられます。", "reveal": ["arrow-3", "step-4"] }
+      ]
+    },
+    {
+      "id": "numbers",
+      "layout": "stats",
+      "label": "SCALE",
+      "heading": "覚えておきたい数字",
+      "content": {
+        "items": [
+          { "id": "s-1", "value": "200K", "label": "自動圧縮の目安", "body": "トークン。1M対応モデルなら約967K" },
+          { "id": "s-2", "value": "420", "label": "戻るのは要約だけ", "body": "6,100トークン分の調査が約420に" },
+          { "id": "s-3", "value": "200行", "label": "CLAUDE.mdの目安", "body": "毎回読み込まれるから短く" }
+        ]
+      },
+      "lines": [
+        { "text": "まず、自動圧縮の目安は200Kトークン。1M対応のモデルでは約967Kになります。", "reveal": ["s-1"] },
+        { "text": "サブエージェントの調査は、6,100トークン分の読み込みが、約420トークンの要約で戻ります。", "reveal": ["s-2"] },
+        { "text": "そして、CLAUDE.mdは毎回読み込まれるため、200行以内の要点が目安です。", "reveal": ["s-3"] }
+      ]
+    },
+    {
+      "id": "commands",
+      "layout": "compare",
+      "label": "COMMANDS",
+      "heading": "/compact と /clear",
+      "content": {
+        "leftTitle": "/compact",
+        "rightTitle": "/clear",
+        "left": [
+          { "id": "left-1", "icon": "refresh-cw", "title": "同じ作業を続けるとき", "body": "会話を要約して空きを作る" },
+          { "id": "left-2", "icon": "alert-triangle", "title": "圧縮もコスト", "body": "要約の読み込みとキャッシュ再構築がかかる", "tone": "warning" }
+        ],
+        "right": [
+          { "id": "right-1", "icon": "play", "title": "作業を変えるとき", "body": "会話を白紙化して新しい作業へ" },
+          { "id": "right-2", "icon": "check-circle", "title": "費用はかからない", "body": "CLAUDE.mdとメモリは次も読み直される" }
+        ]
+      },
+      "lines": [
+        { "text": "管理コマンドのうち、代表格の二つを比べます。", "reveal": ["left-1"] },
+        { "text": "コンパクトは同じ作業を続けたいときに使いますが、圧縮自体もトークンを消費します。", "reveal": ["left-2"] },
+        { "text": "無関係な作業に移るときは、クリアが適切です。費用はかからず、プロジェクトの記憶は残ります。", "reveal": ["right-1", "right-2"] }
+      ]
+    },
+    {
+      "id": "tips",
+      "layout": "bullets",
+      "label": "TIPS",
+      "heading": "節約の基本",
+      "content": {
+        "items": [
+          { "id": "t-1", "icon": "refresh-cw", "title": "区切りで /clear", "body": "古い文脈は、以降の全メッセージに毎回乗る" },
+          { "id": "t-2", "icon": "list", "title": "重い調査はサブエージェント", "body": "本会話に戻るのは要約だけ" },
+          { "id": "t-3", "icon": "file-text", "title": "CLAUDE.md は短く", "body": "詳しい手順はスキルへ移すと、必要な時だけ載る" }
+        ]
+      },
+      "lines": [
+        { "text": "節約の基本は、三つです。", "reveal": ["t-1"] },
+        { "text": "無関係な作業の間でクリアし、ログや調査はサブエージェントに任せます。", "reveal": ["t-2"] },
+        { "text": "そして、CLAUDE.mdを要点だけに絞ると、コンテキストの消費を抑えられます。", "reveal": ["t-3"] }
+      ]
+    },
+    {
+      "id": "next",
+      "layout": "bullets",
+      "label": "START",
+      "heading": "今日できること",
+      "content": {
+        "items": [
+          { "id": "n-1", "icon": "settings", "title": "まず /context", "body": "使用量の内訳を可視化する" },
+          { "id": "n-2", "icon": "check-circle", "title": "区切りで /clear", "body": "習慣にすると指示が守られやすい" }
+        ]
+      },
+      "lines": [
+        { "text": "まずは、コンテキストコマンドで今の内訳を見るところから始められます。", "reveal": ["n-1"] },
+        { "text": "コンテキストが小さいほど、速く、安く、指示が守られやすくなります。", "reveal": ["n-2"] }
+      ]
+    }
+  ]
+}
