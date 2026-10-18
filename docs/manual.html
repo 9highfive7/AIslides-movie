@@ -61,6 +61,14 @@ svg .gen { fill: var(--bg); stroke: var(--fg-muted); stroke-width: 1.5; stroke-d
 svg .arrow { stroke: var(--fg-muted); stroke-width: 2; fill: none; }
 svg .head { fill: var(--fg-muted); }
 footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); color: var(--fg-muted); font-size: .875rem; border-top: 1px solid var(--border); }
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.shots figure { margin: 0; }
+.shots img, figure img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; }
+.feature { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.feature > div { border: 1px solid var(--border); border-radius: 6px; padding: var(--sp-2); background: var(--bg-soft); }
+.feature b { display: block; margin-bottom: 4px; }
+.feature p { font-size: .9375rem; }
+.tag { display: inline-block; font-size: .75rem; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: 2px; }
 </style>
 </head>
 <body>
@@ -68,7 +76,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
 <header class="hero">
   <div>
     <h1>動画生成ガイド</h1>
-    <p>台本（script.json）から、音声・字幕・図解アニメーション付きの解説スライド動画（MP4）を作る手順書です。</p>
+    <p>台本（script.json）から、音声・字幕・アニメーション・効果音付きの YouTube 向け解説動画（MP4）と、サムネイル・概要欄の目次・字幕ファイルを作る手順書です。</p>
   </div>
 </header>
 
@@ -78,42 +86,51 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <strong>目次</strong>
   <ol>
     <li><a href="#overview">全体像</a></li>
+    <li><a href="#youtube">YouTube向けの演出</a></li>
     <li><a href="#prep">準備する</a></li>
     <li><a href="#local">ローカルで作る</a></li>
+    <li><a href="#publish">YouTubeに投稿する</a></li>
     <li><a href="#script">台本を書く</a></li>
+    <li><a href="#meta">動画全体の設定（meta）</a></li>
     <li><a href="#auto">台本を自動生成する</a></li>
     <li><a href="#actions">GitHub Actionsで作る</a></li>
-    <li><a href="#settings">設定を変える</a></li>
+    <li><a href="#settings">細かい設定を変える</a></li>
     <li><a href="#trouble">困ったとき</a></li>
   </ol>
 </nav>
 
 <h2 id="overview">全体像</h2>
-<p>やることは「台本を用意する → 音声を作る → 動画に書き出す」の3ステップです。台本を差し替えるだけで、音声の長さに合わせて字幕と図の表示タイミングが自動で決まります。</p>
+<p>やることは「台本を用意する → 音声を作る → 動画に書き出す → 投稿用ファイルを作る」の4ステップです。台本を差し替えるだけで、音声の長さに合わせて字幕・図の出現・効果音・シーン切り替えのタイミングが自動で決まります。</p>
 
 <figure>
-  <svg viewBox="0 0 880 150" role="img" aria-labelledby="flow-t">
-    <title id="flow-t">台本から音声、タイムライン、MP4までの流れ</title>
+  <svg viewBox="0 0 900 170" role="img" aria-labelledby="flow-t">
+    <title id="flow-t">台本から音声、タイムライン、MP4、投稿用ファイルまでの流れ</title>
     <defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
-    <rect class="box" x="10" y="30" width="170" height="70" rx="8"/>
-    <text x="95" y="60" text-anchor="middle" font-weight="700">1. 台本</text>
-    <text x="95" y="82" text-anchor="middle">public/script.json</text>
-    <line class="arrow" x1="180" y1="65" x2="238" y2="65" marker-end="url(#ah)"/>
-    <text x="209" y="52" text-anchor="middle">npm run audio</text>
-    <rect class="box" x="240" y="30" width="200" height="70" rx="8"/>
-    <text x="340" y="60" text-anchor="middle" font-weight="700">2. 音声とタイミング</text>
-    <text x="340" y="82" text-anchor="middle">audio/*.wav + timeline.json</text>
-    <line class="arrow" x1="440" y1="65" x2="498" y2="65" marker-end="url(#ah)"/>
-    <text x="469" y="52" text-anchor="middle">npm run render</text>
-    <rect class="box" x="500" y="30" width="170" height="70" rx="8"/>
-    <text x="585" y="60" text-anchor="middle" font-weight="700">3. 動画</text>
-    <text x="585" y="82" text-anchor="middle">out/video.mp4</text>
-    <rect class="gen" x="700" y="30" width="170" height="70" rx="8"/>
-    <text x="785" y="60" text-anchor="middle" font-weight="700">任意: 台本の自動生成</text>
-    <text x="785" y="82" text-anchor="middle">npm run script</text>
-    <text x="95" y="130" text-anchor="middle">VOICEVOX Engineが必要 ↑</text>
+    <rect class="gen" x="10" y="30" width="150" height="70" rx="8"/>
+    <text x="85" y="60" text-anchor="middle" font-weight="700">任意: 自動生成</text>
+    <text x="85" y="82" text-anchor="middle">npm run script</text>
+    <line class="arrow" x1="160" y1="65" x2="188" y2="65" marker-end="url(#ah)"/>
+    <rect class="box" x="190" y="30" width="150" height="70" rx="8"/>
+    <text x="265" y="60" text-anchor="middle" font-weight="700">1. 台本</text>
+    <text x="265" y="82" text-anchor="middle">script.json</text>
+    <line class="arrow" x1="340" y1="65" x2="388" y2="65" marker-end="url(#ah)"/>
+    <text x="364" y="52" text-anchor="middle">audio</text>
+    <rect class="box" x="390" y="30" width="170" height="70" rx="8"/>
+    <text x="475" y="60" text-anchor="middle" font-weight="700">2. 音声とタイミング</text>
+    <text x="475" y="82" text-anchor="middle">audio/ + timeline.json</text>
+    <line class="arrow" x1="560" y1="65" x2="608" y2="65" marker-end="url(#ah)"/>
+    <text x="584" y="52" text-anchor="middle">render</text>
+    <rect class="box" x="610" y="30" width="130" height="70" rx="8"/>
+    <text x="675" y="60" text-anchor="middle" font-weight="700">3. 動画</text>
+    <text x="675" y="82" text-anchor="middle">out/video.mp4</text>
+    <line class="arrow" x1="740" y1="65" x2="758" y2="65" marker-end="url(#ah)"/>
+    <rect class="box" x="760" y="30" width="130" height="70" rx="8"/>
+    <text x="825" y="56" text-anchor="middle" font-weight="700">4. 投稿用</text>
+    <text x="825" y="76" text-anchor="middle">thumbnail.png</text>
+    <text x="825" y="93" text-anchor="middle">youtube/</text>
+    <text x="475" y="132" text-anchor="middle">VOICEVOX Engineが必要 ↑</text>
   </svg>
-  <figcaption>実線が必須の流れ、破線が任意の工程です（動画は1920×1080・30fps）。</figcaption>
+  <figcaption>実線が必須の流れ、破線が任意の工程です（動画は1920×1080・30fps、サムネイルは1280×720）。</figcaption>
 </figure>
 
 <h3>作り方は3通り</h3>
@@ -128,11 +145,32 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
 </table>
 </div>
 
+<h2 id="youtube">YouTube向けの演出</h2>
+<p>次の演出は、台本に特別なことを書かなくても自動で入ります。どれも <a href="#meta">meta</a> の設定で弱めたり止めたりできます。</p>
+
+<div class="feature">
+  <div><b>動く画面</b><p>要素がバネの動きで弾むように出現します（8種類）。見出しは1文字ずつ出て、背景はゆっくり漂い、カメラも少しずつズームし続けます。</p></div>
+  <div><b>シーン切り替え</b><p>スライド・ワイプ・ズーム・円形などで、前後のシーンが重なりながら切り替わります。音声とはずれません。</p></div>
+  <div><b>図解の動き</b><p>矢印が線を引くように伸びて点が流れる、数字がカウントアップする、棒グラフが伸びる、チェックが付く、比較の中央に VS、ランキング1位に王冠。</p></div>
+  <div><b>強調</b><p>セリフに <code>focus</code> を書くと説明中の要素が拡大され、他は薄くなります。<code>**語句**</code> で字幕の色が変わります。</p></div>
+  <div><b>字幕</b><p>YouTube でおなじみの縁取り文字、または帯付きの字幕。テーマに合わせて自動で選ばれます。</p></div>
+  <div><b>効果音とBGM</b><p>出現の「ポン」、切り替えの「シュッ」、強調の「チーン」を自動で配置。BGM はナレーション中だけ音量が下がります。</p></div>
+  <div><b>喋るキャラクター</b><p>右下にキャラクターを出せます。口の動きは音声の大きさから自動で作られます。自前の画像2枚にも差し替え可能です。</p></div>
+  <div><b>登録の導線</b><p>動画の途中に「チャンネル登録」のポップアップ（カーソルがクリックする演出）。最後は終了画面の枠付きエンディング。</p></div>
+</div>
+
+<h3>テーマ（配色）は3種類</h3>
+<div class="shots">
+  <figure><img src="images/theme-clean.jpg" alt="clean テーマの比較画面。淡い青の背景に白いカード、帯付きの字幕" loading="lazy"><figcaption><code>clean</code>：落ち着いた青と紺。帯付き字幕</figcaption></figure>
+  <figure><img src="images/theme-pop.jpg" alt="pop テーマの比較画面。クリーム色の背景に太枠のカード、縁取り字幕と右下のキャラクター" loading="lazy"><figcaption><code>pop</code>：太枠・黄色マーカー・縁取り字幕</figcaption></figure>
+  <figure><img src="images/theme-dark.jpg" alt="dark テーマの比較画面。濃紺の背景に青く光るアクセント" loading="lazy"><figcaption><code>dark</code>：濃紺地のテック系</figcaption></figure>
+</div>
+
 <h2 id="prep">準備する</h2>
 <ol class="steps">
   <li>
     <h3>依存パッケージを入れる</h3>
-    <p>Node.js 18以上を用意し、リポジトリのルートで実行します。フォント（Noto Sans JP）は同梱済みで、レンダリング時に外部通信は不要です。</p>
+    <p>Node.js 18以上を用意し、リポジトリのルートで実行します。フォント（Noto Sans JP）と効果音は同梱済みで、レンダリング時に外部通信は不要です。</p>
     <pre><code>npm install</code></pre>
   </li>
   <li>
@@ -152,7 +190,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
     <p>バージョンが表示されれば準備完了です。</p>
     <div class="callout">
       <b>エンジンなしで試す</b>
-      <code>npm run audio:mock</code> なら無音WAVと概算の長さでタイムラインを作れます。レイアウトやタイミングの確認に便利です。
+      <code>npm run audio:mock</code> なら無音WAVと概算の長さでタイムラインを作れます。レイアウトや演出の確認に便利です（キャラクターの口は一定のリズムで動きます）。
     </div>
   </li>
 </ol>
@@ -162,12 +200,12 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <li>
     <h3>音声とタイムラインを作る</h3>
     <pre><code>npm run audio</code></pre>
-    <p><code>public/script.json</code> の各セリフを音声にして <code>public/audio/</code> に保存し、各セリフの開始フレームを <code>public/timeline.json</code> に書き出します。</p>
+    <p><code>public/script.json</code> の各セリフを音声にして <code>public/audio/</code> に保存し、各セリフの開始フレームと、口パク用の音量を <code>public/timeline.json</code> に書き出します。台本の要素IDの間違いもここで警告されます。</p>
   </li>
   <li>
     <h3>プレビューで確認する</h3>
     <pre><code>npm run dev</code></pre>
-    <p>Remotion Studio（<a href="http://localhost:3000">http://localhost:3000</a>）が開きます。音声・字幕・図の出現タイミングを再生して確認します。</p>
+    <p>Remotion Studio（<a href="http://localhost:3000">http://localhost:3000</a>）が開きます。音声・字幕・演出を再生して確認します。左の一覧の <code>Thumbnail</code> でサムネイルも確認できます。</p>
   </li>
   <li>
     <h3>MP4に書き出す</h3>
@@ -190,69 +228,177 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
     <tr><td><code>npm run audio:mock</code></td><td>無音WAVで代用（エンジン不要）</td></tr>
     <tr><td><code>npm run dev</code></td><td>Remotion Studioでプレビュー</td></tr>
     <tr><td><code>npm run render</code></td><td>MP4に書き出し（<code>out/video.mp4</code>）</td></tr>
+    <tr><td><code>npm run thumbnail</code><span class="tag">新</span></td><td>サムネイルを書き出し（<code>out/thumbnail.png</code>）</td></tr>
+    <tr><td><code>npm run youtube</code><span class="tag">新</span></td><td>概要欄の目次・字幕ファイルを作成（<code>out/youtube/</code>）</td></tr>
+    <tr><td><code>npm run build:youtube</code><span class="tag">新</span></td><td>render → thumbnail → youtube をまとめて実行</td></tr>
+    <tr><td><code>npm run sfx</code><span class="tag">新</span></td><td>効果音を作り直す（音を変えたいときだけ）</td></tr>
     <tr><td><code>npm run typecheck</code></td><td>型チェック</td></tr>
   </tbody>
 </table>
 </div>
 
+<h2 id="publish">YouTubeに投稿する</h2>
+<p>動画を書き出したら、投稿に使うファイルをまとめて作ります。</p>
+<pre><code>npm run thumbnail   # → out/thumbnail.png
+npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.json</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>ファイル</th><th>使い方</th></tr></thead>
+  <tbody>
+    <tr><td><code>out/video.mp4</code></td><td>YouTube Studio にアップロードする本体</td></tr>
+    <tr><td><code>out/thumbnail.png</code></td><td>「サムネイル」にアップロード（1280×720）。文言は <code>meta.thumbnail</code> で指定</td></tr>
+    <tr><td><code>out/youtube/description.txt</code></td><td>タイトルと目次。目次を概要欄に貼ると、YouTube のチャプター（再生バーの区切り）になる</td></tr>
+    <tr><td><code>out/youtube/captions.srt</code></td><td>「字幕」→「ファイルをアップロード」で使う。自動字幕より正確</td></tr>
+    <tr><td><code>out/youtube/metadata.json</code></td><td>タイトル・尺・チャプターの機械向けデータ</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+  <img src="images/thumbnail.jpg" alt="自動生成されたサムネイルの例。濃い背景に縁取りの大きな文字で「トークン節約 4つの方法を実測」" style="max-width:480px" loading="lazy">
+  <figcaption>サムネイルの例。<code>**強調**</code> した語句は色が変わります。</figcaption>
+</figure>
+
+<div class="callout">
+  <b>チャプターの区切り方</b>
+  章扉（<code>section</code>）の位置で区切られます。YouTube の条件（0:00 から始まる・3つ以上・各10秒以上）を満たすよう自動で調整し、満たせないときは警告を出します。
+</div>
+
 <h2 id="script">台本を書く</h2>
-<p>台本は <code>public/script.json</code> です。1シーンが1枚のスライドで、シーンの中に複数のセリフを並べます。</p>
+<p>台本は <code>public/script.json</code> です。先頭に動画全体の設定（<code>meta</code>）を書き、その下に1シーン＝1画面の <code>scenes</code> を並べます。シーンの中には複数のセリフを並べます。</p>
 <pre><code>{
+  "meta": {                     // 動画全体の設定（すべて省略可）
+    "title": "動画タイトル",
+    "theme": "pop"
+  },
   "scenes": [
     {
       "id": "flow",              // シーンID（音声ファイル名に使う）
       "layout": "flow",          // レイアウト種別（下表）
       "label": "FLOW",           // 左上の英字ラベル（省略可）
-      "heading": "処理の流れ",    // 見出し（titleでは省略）
+      "heading": "処理の流れ",    // 見出し（title / section / outro では省略）
+      "transition": "wipe",      // このシーンに入るときの切り替え（省略可）
       "content": { ... },        // レイアウトごとの中身
       "lines": [
         {
-          "text": "ナレーション文（読み上げと字幕に使われる）",
-          "reveal": ["step-1"]   // このセリフの開始時に出す要素のID
+          "text": "ナレーション文。**強調**した語句は字幕で色が変わる",
+          "reveal": ["step-1"],  // このセリフの開始時に出す要素のID
+          "focus": ["step-1"]    // このセリフの間だけ強調する要素のID（省略可）
         }
       ]
     }
   ]
 }</code></pre>
+<p>以前の形式（<code>meta</code> なし・<code>reveal</code> だけの台本）もそのまま使えます。その場合は <code>clean</code> テーマで、アニメーションは既定値になります。</p>
 
-<h3>reveal の考え方</h3>
+<h3>セリフ（lines）に書ける項目</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>キー</th><th>説明</th></tr></thead>
+  <tbody>
+    <tr><td><code>text</code></td><td>字幕に表示し、読み上げる文。<code>**語句**</code> で囲むと字幕の強調色になる（読み上げには影響しない）</td></tr>
+    <tr><td><code>reveal</code></td><td>このセリフの開始時に出現させる要素ID。複数書くと少しずつ時間差で出る</td></tr>
+    <tr><td><code>focus</code><span class="tag">新</span></td><td>このセリフの間だけ拡大＋枠で強調する要素ID。他の要素は薄くなる</td></tr>
+    <tr><td><code>speech</code><span class="tag">新</span></td><td>読み上げだけ別の文にしたいとき（英単語の読みを直すなど）。字幕は <code>text</code> のまま</td></tr>
+    <tr><td><code>sfx</code><span class="tag">新</span></td><td>セリフ開始時の効果音。<code>pop</code> / <code>whoosh</code> / <code>ding</code> / <code>click</code> / <code>none</code>。省略時は reveal があれば <code>pop</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>reveal と focus の考え方</h3>
 <ul>
-  <li><code>reveal</code> に書いた要素は、そのセリフが始まる瞬間にフェードインします。</li>
-  <li><code>reveal</code> に書かれない要素は、<strong>シーン開始から常に表示</strong>されます。</li>
+  <li><code>reveal</code> に書いた要素は、そのセリフが始まる瞬間に出現します。</li>
+  <li><code>reveal</code> に書かれない要素は、<strong>シーンの冒頭に順番に出現</strong>します。</li>
+  <li><code>focus</code> は「今この要素の話をしている」ことを示します。表やカードが多い画面で、視線を誘導するのに使います。</li>
+  <li>存在しない要素IDを書くと、<code>npm run audio</code> とプレビュー時に、使えるIDの一覧付きで警告が出ます。</li>
   <li>シーンには <code>chapter</code>（左下の章タグ）と <code>badge</code>（右上のバッジ）も付けられます。</li>
 </ul>
 
 <h3>レイアウト一覧</h3>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>layout</th><th>用途と content の中身</th><th>reveal に使えるID</th></tr></thead>
+  <thead><tr><th>layout</th><th>用途と content の中身</th><th>reveal / focus に使えるID</th><th>動き</th></tr></thead>
   <tbody>
-    <tr><td><code>title</code></td><td>タイトル画面。<code>kicker?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし（常時表示）</td></tr>
-    <tr><td><code>section</code></td><td>章扉。<code>number?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし（常時表示）</td></tr>
-    <tr><td><code>compare</code></td><td>左右比較。<code>leftTitle</code> / <code>rightTitle</code> / <code>left[]</code> / <code>right[]</code>（各項目 <code>{ id, icon?, title, body?, tone? }</code>）</td><td>各項目の <code>id</code></td></tr>
-    <tr><td><code>flow</code></td><td>手順の流れ。<code>steps[]</code>（2つ以上）</td><td>各stepの <code>id</code>、矢印 <code>arrow-1</code>〜</td></tr>
-    <tr><td><code>inputOutput</code></td><td>入力→変換→出力。<code>input</code> / <code>transform</code> / <code>output</code></td><td>各 <code>id</code>、矢印 <code>arrow-1</code>, <code>arrow-2</code></td></tr>
-    <tr><td><code>bullets</code></td><td>縦の箇条書き。<code>items[]</code></td><td>各項目の <code>id</code></td></tr>
-    <tr><td><code>stats</code></td><td>数字を強調するカード（2〜4枚）。<code>items[]</code> は <code>{ id, value, label, body? }</code></td><td>各項目の <code>id</code></td></tr>
-    <tr><td><code>table</code></td><td>比較表。<code>headers[]</code> + <code>rows[]</code> + <code>source?</code></td><td>各行の <code>id</code></td></tr>
-    <tr><td><code>bars</code></td><td>横棒グラフ。<code>items[]</code> + <code>caption?</code></td><td>各項目の <code>id</code>、<code>caption</code></td></tr>
-    <tr><td><code>checklist</code></td><td>番号付きチェックカード。<code>items[]</code> は <code>{ id, text, note? }</code></td><td>各項目の <code>id</code></td></tr>
-    <tr><td><code>axes</code></td><td>空の座標軸の図解。<code>xAxis</code> / <code>yAxis</code> / <code>hint?</code></td><td><code>axes</code>、<code>hint</code></td></tr>
+    <tr><td><code>title</code></td><td>タイトル画面。<code>kicker?</code> / <code>title</code>（<code>\n</code> で改行・<code>**強調**</code> 可）/ <code>subtitle?</code></td><td>なし</td><td>タイトルが1文字ずつ弾む</td></tr>
+    <tr><td><code>section</code></td><td>章扉。<code>number?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし</td><td>章番号が「ドン」と落ちる</td></tr>
+    <tr><td><code>compare</code></td><td>左右比較。<code>leftTitle</code> / <code>rightTitle</code> / <code>left[]</code> / <code>right[]</code>（各項目 <code>{ id, icon?, title, body?, tone? }</code>）</td><td>各項目の <code>id</code></td><td>左右から滑り込み、中央に VS</td></tr>
+    <tr><td><code>flow</code></td><td>手順の流れ。<code>steps[]</code>（2つ以上）</td><td>各stepの <code>id</code>、矢印 <code>arrow-1</code>〜</td><td>矢印が線を引くように伸び、点が流れる</td></tr>
+    <tr><td><code>inputOutput</code></td><td>入力→変換→出力。<code>input</code> / <code>transform</code> / <code>output</code></td><td>各 <code>id</code>、矢印 <code>arrow-1</code>, <code>arrow-2</code></td><td>変換ボックスが脈打つ</td></tr>
+    <tr><td><code>bullets</code></td><td>縦の箇条書き。<code>items[]</code></td><td>各項目の <code>id</code></td><td>左から滑り込む</td></tr>
+    <tr><td><code>stats</code></td><td>数字を強調するカード（2〜4枚）。<code>items[]</code> は <code>{ id, value, label, body? }</code></td><td>各項目の <code>id</code></td><td>数字がカウントアップ</td></tr>
+    <tr><td><code>table</code></td><td>比較表。<code>headers[]</code> + <code>rows[]</code> + <code>source?</code></td><td>各行の <code>id</code></td><td>行が滑り込む</td></tr>
+    <tr><td><code>bars</code></td><td>横棒グラフ。<code>items[]</code> + <code>caption?</code></td><td>各項目の <code>id</code>、<code>caption</code></td><td>バーが伸び、数値がカウントアップ</td></tr>
+    <tr><td><code>checklist</code></td><td>番号付きチェックカード。<code>items[]</code> は <code>{ id, text, note? }</code></td><td>各項目の <code>id</code></td><td>チェックが「ポン」と付く</td></tr>
+    <tr><td><code>axes</code></td><td>空の座標軸の図解。<code>xAxis</code> / <code>yAxis</code> / <code>hint?</code></td><td><code>axes</code>、<code>hint</code></td><td>軸が線を引くように描かれる</td></tr>
+    <tr><td><code>statement</code><span class="tag">新</span></td><td>一文を大きく見せるキメ画面。<code>text</code>（<code>**強調**</code> にマーカー）/ <code>sub?</code> / <code>icon?</code></td><td><code>text</code>、<code>sub</code></td><td>1文字ずつ弾み、マーカーが引かれる</td></tr>
+    <tr><td><code>ranking</code><span class="tag">新</span></td><td>ランキング（2〜5個、1位から順に書く）。<code>items[]</code> は <code>{ id, rank?, icon?, title, body? }</code></td><td>各項目の <code>id</code></td><td>下位から出現。1位に王冠と光</td></tr>
+    <tr><td><code>image</code><span class="tag">新</span></td><td>画像を大きく見せる。<code>src</code>（<code>public/</code> からの相対パスかURL）/ <code>caption?</code> / <code>fit?</code></td><td><code>image</code>、<code>caption</code></td><td>画像がゆっくりズーム＆パン</td></tr>
+    <tr><td><code>outro</code><span class="tag">新</span></td><td>エンディング。<code>title?</code> / <code>message?</code> / <code>subscribe?</code> / <code>endScreen?</code></td><td>なし</td><td>登録ボタンのクリック演出、終了画面の枠</td></tr>
   </tbody>
 </table>
 </div>
 
+<div class="shots">
+  <figure><img src="images/statement.jpg" alt="statement レイアウトの例。中央に大きく「コンテキストを半分以下に保てる」、強調部分に黄色のマーカー" loading="lazy"><figcaption><code>statement</code>：結論や驚きの事実を大きく見せる</figcaption></figure>
+  <figure><img src="images/ranking.jpg" alt="ranking レイアウトの例。1位から3位のカードが並び、1位は金色の枠と王冠" loading="lazy"><figcaption><code>ranking</code>：1位は王冠付きで強調</figcaption></figure>
+</div>
+
 <h3>アイコンと素材集</h3>
 <ul>
-  <li><code>icon</code> には約45種のキー（<code>check</code>、<code>search</code>、<code>shield-check</code> など）が使えます。一覧は <code>src/components/IconBox.tsx</code> の <code>REGISTRY</code> にあり、追加もそこに書くだけです。</li>
-  <li>書き方の見本は <code>public/script.json</code>（約9分・全レイアウト網羅）と <code>templates/sample-claude-code-7scenes.json</code>（7シーン版）。シーン単位でコピーして使えます。</li>
+  <li><code>icon</code> には約85種のキー（<code>check</code>、<code>search</code>、<code>trophy</code>、<code>sparkles</code>、<code>brain</code>、<code>bell</code> など）が使えます。一覧は <code>src/components/IconBox.tsx</code> の <code>REGISTRY</code> にあり、追加もそこに書くだけです。</li>
+  <li>書き方の見本は <code>public/script.json</code>（約9分のデモ。pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と <code>templates/sample-claude-code-7scenes.json</code>（7シーン版・以前の形式）。シーン単位でコピーして使えます。</li>
 </ul>
 
 <h3>長さの目安</h3>
-<p>10分の動画はナレーション約3,000字、25〜30シーン・80〜90セリフが目安です。長い動画は <code>section</code>（章扉）と <code>chapter</code> タグで章立てすると見やすくなります。10分を超えると <code>npm run audio</code> が警告を出します（止まりはしません）。</p>
+<p>10分の動画はナレーション約3,000字、25〜30シーン・80〜90セリフが目安です。長い動画は <code>section</code>（章扉）と <code>chapter</code> タグで章立てすると見やすくなり、YouTube のチャプターにもなります。10分を超えると <code>npm run audio</code> が警告を出します（止まりはしません）。<code>outro</code> は YouTube の終了画面（最大20秒）に使えるよう、5秒以上にするのがおすすめです。</p>
+
+<h2 id="meta">動画全体の設定（meta）</h2>
+<p>台本の先頭の <code>meta</code> に書きます。すべて省略でき、省略時は既定値が使われます。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>キー</th><th>既定値</th><th>説明</th></tr></thead>
+  <tbody>
+    <tr><td><code>title</code></td><td>title シーンのタイトル</td><td>動画タイトル。概要欄ファイルとサムネイルに使う</td></tr>
+    <tr><td><code>theme</code></td><td><code>clean</code></td><td>配色。<code>clean</code> / <code>pop</code> / <code>dark</code></td></tr>
+    <tr><td><code>transition</code></td><td><code>slide</code></td><td>シーン切り替え。<code>slide</code> / <code>slideUp</code> / <code>wipe</code> / <code>zoom</code> / <code>circle</code> / <code>fade</code> / <code>none</code>（シーンごとに上書き可）</td></tr>
+    <tr><td><code>animation</code></td><td><code>auto</code></td><td>要素の出現。<code>auto</code>（レイアウトのおすすめ）/ <code>fadeUp</code> / <code>pop</code> / <code>slideLeft</code> / <code>slideRight</code> / <code>zoom</code> / <code>blur</code> / <code>flip</code> / <code>none</code>（シーンごとに上書き可）</td></tr>
+    <tr><td><code>camera</code></td><td><code>subtle</code></td><td>シーン中のゆっくりズーム。<code>none</code> で止める</td></tr>
+    <tr><td><code>animatedBackground</code></td><td><code>true</code></td><td>背景の模様と図形を漂わせる</td></tr>
+    <tr><td><code>progressBar</code></td><td><code>true</code></td><td>画面下端の進行バー（章の区切り付き）</td></tr>
+    <tr><td><code>subtitle</code></td><td><code>{ "enabled": true, "style": "auto" }</code></td><td><code>style</code> は <code>box</code>（帯）/ <code>outline</code>（縁取り）/ <code>auto</code>（テーマ既定）。YouTube の字幕機能だけ使うなら <code>enabled: false</code></td></tr>
+    <tr><td><code>sfx</code></td><td><code>{ "enabled": true, "volume": 0.5 }</code></td><td>効果音。<code>reveal</code>（出現時の pop）と <code>transition</code>（切り替えの whoosh）を個別に <code>false</code> にもできる</td></tr>
+    <tr><td><code>bgm</code></td><td>なし</td><td><code>{ "src": "bgm/track.mp3", "volume": 0.18, "duckVolume": 0.07 }</code>。<code>public/</code> に置いた音源をループし、ナレーション中は <code>duckVolume</code> まで下げる</td></tr>
+    <tr><td><code>avatar</code></td><td>なし</td><td><code>{ "type": "builtin" }</code> で組み込みキャラ。自前の画像なら <code>{ "type": "image", "open": "avatar/open.png", "closed": "avatar/closed.png" }</code>。<code>name</code> で名札、<code>size</code> で大きさ</td></tr>
+    <tr><td><code>subscribePopup</code></td><td>なし</td><td><code>{ "sceneId": "sec2" }</code>。そのシーンの冒頭に約4秒、登録ボタンの演出を右上に出す</td></tr>
+    <tr><td><code>thumbnail</code></td><td>なし</td><td><code>{ "text": "大きな文字\n**強調**", "sub": "…", "badge": "…", "image": "…" }</code>。省略時は title シーンから作る</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>設定例</h3>
+<pre><code>"meta": {
+  "title": "Claude Codeのトークン節約 — 四つの方法を実測した結果",
+  "theme": "pop",
+  "transition": "slide",
+  "avatar": { "type": "builtin" },
+  "bgm": { "src": "bgm/track.mp3" },
+  "subscribePopup": { "sceneId": "sec2" },
+  "thumbnail": { "text": "トークン節約\n**4つの方法**を実測", "badge": "実測" }
+}</code></pre>
+
+<div class="callout warn">
+  <b>BGM・画像の権利</b>
+  BGM や画像は、利用規約で動画への使用が許可された素材を使ってください。同梱の効果音はプログラムで合成したもので、外部素材は使っていません。
+</div>
+
+<div class="callout">
+  <b>動きを控えめにしたいとき</b>
+  <code>"animation": "fadeUp"</code>、<code>"transition": "fade"</code>、<code>"camera": "none"</code>、<code>"animatedBackground": false</code> にすると、落ち着いた解説動画向けの演出になります。
+</div>
 
 <h2 id="auto">台本を自動生成する</h2>
-<p>OpenAI互換のChat Completions APIで、プロンプトまたは記事URLから台本を作れます。生成結果は <code>public/script.json</code> を<strong>上書き</strong>します。</p>
+<p>OpenAI互換のChat Completions APIで、プロンプトまたは記事URLから台本を作れます。YouTube 向けの構成（タイトル → 章立て → キメの画面やランキングで山場 → エンディング）になるよう指示してあり、強調（<code>**語句**</code>）や <code>focus</code>、動画タイトル・サムネイルの文言も提案させます。</p>
 <pre><code>export OPENAI_API_KEY="sk-..."
 
 # プロンプトから
@@ -261,8 +407,11 @@ npm run script -- "Remotionの魅力を解説する動画の台本を作って"
 # 記事URLから
 npm run script -- --url https://example.com/article
 
-# 続けて音声 → 書き出し
-npm run audio &amp;&amp; npm run render</code></pre>
+# テーマも同時に指定
+npm run script -- --theme pop "…"
+
+# 続けて音声 → 書き出し → 投稿用ファイル
+npm run audio &amp;&amp; npm run build:youtube</code></pre>
 
 <div class="table-wrap">
 <table>
@@ -275,13 +424,14 @@ npm run audio &amp;&amp; npm run render</code></pre>
 </table>
 </div>
 <ul>
-  <li>スキーマ検証に失敗すると、エラー内容を渡して1回だけ自動リトライします。</li>
+  <li>生成結果は <code>public/script.json</code> を<strong>上書き</strong>します。ただし既存の <code>meta</code> の見た目の設定（テーマ・BGM・キャラクターなど）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけを差し替えます。</li>
+  <li>形式の間違いや、存在しない要素IDの指定があると、エラー内容を渡して1回だけ自動リトライします。</li>
   <li>URL指定は本文テキストを抽出します。JavaScriptで描画されるページやログイン必須のページは取得できません。その場合は本文をコピーしてプロンプトとして渡してください。</li>
   <li>生成後は内容を確認・手直ししてから <code>npm run audio</code> を実行してください。</li>
 </ul>
 
 <h2 id="actions">GitHub Actionsで作る</h2>
-<p>手元に環境を作らずに、GitHub上で音声生成からレンダリングまで実行できます。ワークフローは <code>.github/workflows/generate-video.yml</code> です。</p>
+<p>手元に環境を作らずに、GitHub上で音声生成からレンダリング、投稿用ファイルの作成まで実行できます。ワークフローは <code>.github/workflows/generate-video.yml</code> です。</p>
 
 <h3>起動方法</h3>
 <ol class="steps">
@@ -298,20 +448,21 @@ npm run audio &amp;&amp; npm run render</code></pre>
       </tbody>
     </table>
     </div>
+    <p>台本を生成するときは <code>theme</code>（<code>keep</code> / <code>clean</code> / <code>pop</code> / <code>dark</code>）も選べます。<code>keep</code> は今の台本の設定のままです。</p>
     <p><code>prompt</code> / <code>url</code> を使うには、リポジトリの Settings → Secrets and variables → Actions に <code>OPENAI_API_KEY</code> を登録します。任意で Variables に <code>OPENAI_BASE_URL</code> / <code>SCRIPT_MODEL</code> も設定できます。</p>
   </li>
   <li>
     <h3>APIから実行する</h3>
-    <p><code>repository_dispatch</code> で外部から起動できます（repo権限のPATが必要）。</p>
+    <p><code>repository_dispatch</code> で外部から起動できます（repo権限のPATが必要）。<code>client_payload</code> に <code>theme</code> も指定できます。</p>
     <pre><code>curl -X POST \
   -H "Authorization: Bearer &lt;YOUR_PAT&gt;" \
   -H "Accept: application/vnd.github+json" \
   https://api.github.com/repos/&lt;user&gt;/&lt;repo&gt;/dispatches \
-  -d '{"event_type":"generate-video","client_payload":{"source_type":"url","source":"https://example.com/article"}}'</code></pre>
+  -d '{"event_type":"generate-video","client_payload":{"source_type":"url","source":"https://example.com/article","theme":"pop"}}'</code></pre>
   </li>
   <li>
     <h3>完成した動画を受け取る</h3>
-    <p>実行が終わったら、そのRunのページ下部の <strong>Artifacts</strong> から <code>video</code>（<code>video.mp4</code>）をダウンロードします。保存期間は30日です。台本を自動生成した場合は、<code>script.json</code> と <code>timeline.json</code> もリポジトリにコミットされます。</p>
+    <p>実行が終わったら、そのRunのページ下部の <strong>Artifacts</strong> から <code>video</code> をダウンロードします。中身は <code>video.mp4</code>・<code>thumbnail.png</code>・<code>youtube/</code>（概要欄の目次と字幕）で、保存期間は30日です。台本を自動生成した場合は、<code>script.json</code> と <code>timeline.json</code> もリポジトリにコミットされます。</p>
   </li>
 </ol>
 
@@ -321,7 +472,8 @@ npm run audio &amp;&amp; npm run render</code></pre>
   <li><code>npm ci</code> と Remotion用ブラウザの準備</li>
   <li>（prompt / url のとき）台本を生成</li>
   <li><code>npm run audio</code> → <code>npm run render</code></li>
-  <li><code>out/video.mp4</code> をアーティファクトに保存</li>
+  <li><code>npm run thumbnail</code> → <code>npm run youtube</code></li>
+  <li>動画・サムネイル・投稿用ファイルをアーティファクトに保存</li>
 </ol>
 
 <div class="callout">
@@ -329,7 +481,7 @@ npm run audio &amp;&amp; npm run render</code></pre>
   公開リポジトリなら無料です。プライベートは無料枠が月2,000分で、10分の動画1本につき実行時間は約20〜40分を見込みます。
 </div>
 
-<h2 id="settings">設定を変える</h2>
+<h2 id="settings">細かい設定を変える</h2>
 
 <h3>声と話速（voicevox.config.json）</h3>
 <div class="table-wrap">
@@ -346,16 +498,20 @@ npm run audio &amp;&amp; npm run render</code></pre>
 <h3>間の長さとアニメーション</h3>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>定数</th><th>値</th><th>場所</th></tr></thead>
+  <thead><tr><th>項目</th><th>値</th><th>場所</th></tr></thead>
   <tbody>
     <tr><td><code>GAP_BETWEEN_LINES_SEC</code></td><td>0.3秒（セリフ間）</td><td><code>shared/timing.ts</code></td></tr>
     <tr><td><code>SCENE_LEAD_SEC</code></td><td>0.6秒（シーン開始→最初のセリフ）</td><td><code>shared/timing.ts</code></td></tr>
     <tr><td><code>SCENE_TAIL_SEC</code></td><td>0.8秒（最後のセリフ→シーン終了）</td><td><code>shared/timing.ts</code></td></tr>
-    <tr><td><code>CROSSFADE_FRAMES</code> / <code>REVEAL_FRAMES</code></td><td>クロスフェード0.5秒 / 出現0.4秒</td><td><code>src/theme.ts</code></td></tr>
+    <tr><td><code>TRANSITION_FRAMES</code></td><td>18フレーム（シーン切り替えの長さ。半分は LEAD / TAIL 以下）</td><td><code>shared/timing.ts</code></td></tr>
+    <tr><td>バネの硬さ（<code>SPRINGS</code>）</td><td>出現の弾み具合</td><td><code>src/animation/presets.ts</code></td></tr>
+    <tr><td>トランジションの見た目</td><td>slide / wipe などの動き</td><td><code>src/animation/transitions.ts</code></td></tr>
+    <tr><td>テーマの配色・カードの枠や影</td><td>clean / pop / dark</td><td><code>src/theme/index.ts</code></td></tr>
+    <tr><td>効果音の音色</td><td>pop / whoosh / ding / click</td><td><code>scripts/lib/sfx.ts</code>（変更後に <code>npm run sfx</code>）</td></tr>
   </tbody>
 </table>
 </div>
-<p><code>shared/timing.ts</code> を変えたら <code>npm run audio</code> を再実行してください。配色・余白・影も <code>src/theme.ts</code> にまとまっています。</p>
+<p><code>shared/timing.ts</code> を変えたら <code>npm run audio</code> を再実行してください。新しいテーマを足すときは <code>src/theme/index.ts</code> の <code>THEMES</code> と、<code>src/schemas.ts</code> の <code>themeNameSchema</code> に追加します。</p>
 
 <h2 id="trouble">困ったとき</h2>
 <div class="table-wrap">
@@ -365,7 +521,11 @@ npm run audio &amp;&amp; npm run render</code></pre>
     <tr><td>「VOICEVOX Engine に接続できません」</td><td>エンジンが未起動です。<a href="#prep">準備</a>のコマンドで起動するか、<code>npm run audio:mock</code> を使います。</td></tr>
     <tr><td><code>docker: invalid IP address</code></td><td><code>-p</code> の値を引用符で囲んでいます。引用符なしで実行してください。</td></tr>
     <tr><td>「timeline.json に … 対応するエントリがありません」</td><td>台本を直した後に <code>npm run audio</code> を実行していません。再実行します。</td></tr>
+    <tr><td>「要素ID "…" はシーン "…" にありません」</td><td><code>reveal</code> / <code>focus</code> の綴りの間違いです。メッセージに使えるIDの一覧が出ます。</td></tr>
+    <tr><td>キャラクターの口が動かない・一定のリズムで動く</td><td>古い <code>timeline.json</code> か、<code>audio:mock</code> で作ったタイムラインです。<code>npm run audio</code> を実行すると音声に合わせて動きます。</td></tr>
     <tr><td>音声と表示がずれる</td><td><code>npm run audio</code> をやり直します。タイムラインは音声の実寸から再計算されます。</td></tr>
+    <tr><td>動きが多すぎる・目が疲れる</td><td><a href="#meta">meta</a> で <code>animation</code>・<code>transition</code>・<code>camera</code>・<code>animatedBackground</code> を控えめにします。</td></tr>
+    <tr><td>チャプターが YouTube で認識されない</td><td>章が3つ未満か、10秒未満の章があります。<code>section</code> シーンを増やしてください（<code>npm run youtube</code> が警告を出します）。</td></tr>
     <tr><td>レンダリングが遅い・落ちる</td><td><code>npm run render -- --concurrency=4</code> のように同時実行数を下げます。</td></tr>
     <tr><td>Actionsで「OPENAI_API_KEY が未設定」</td><td>Secretsに登録するか、<code>source_type=none</code> で既存の台本を使います。</td></tr>
   </tbody>
@@ -375,13 +535,21 @@ npm run audio &amp;&amp; npm run render</code></pre>
 <h3>ファイル構成</h3>
 <pre><code>├── public/
 │   ├── script.json      台本（差し替え対象）
-│   ├── timeline.json    生成物: フレーム計算の結果
+│   ├── timeline.json    生成物: フレーム計算の結果 + 口パク用の音量
 │   ├── audio/           生成物: セリフごとのWAV
+│   ├── sfx/             効果音（同梱）
 │   └── fonts/           Noto Sans JP
-├── scripts/             音声生成・台本生成
-├── shared/timing.ts     音声側とRemotion側の共通定数
+├── scripts/             音声生成・台本生成・投稿用ファイル・効果音の合成
+├── shared/              音声側とRemotion側の共通処理（timing.ts / markup.ts）
 ├── templates/           台本サンプル
-└── src/                 Remotion本体（layouts / components / theme）</code></pre>
+├── docs/                この手順書
+└── src/
+    ├── theme/           テーマ（clean / pop / dark）
+    ├── animation/       バネ・出現の動き・トランジション
+    ├── context/         シーンごとの reveal / focus のタイミング
+    ├── components/      字幕・音声・キャラクター・登録ボタンなどの部品
+    ├── layouts/         15種類のレイアウト
+    └── Thumbnail.tsx    サムネイル</code></pre>
 
 </main>
 

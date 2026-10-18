@@ -15,6 +15,8 @@
 - **進行バー**: 画面下端に再生位置と章の区切り
 - **投稿用ファイル**: サムネイル（1280×720）、概要欄用チャプター（目次）、字幕ファイル（SRT）
 
+> 画面例つきの手順書は [`docs/manual.html`](docs/manual.html) にあります（ブラウザで開いてください）。
+
 ## 必要環境
 
 - Node.js 18 以上
@@ -293,6 +295,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   └── lib/ (voicevox / llm / fetch-page / wav / estimate / levels / sfx / youtube)
 ├── shared/              # 音声側とRemotion側の共通処理 (timing.ts / markup.ts)
 ├── templates/           # 台本サンプル（素材集）
+├── docs/manual.html     # 手順書 (画面例つき。ブラウザで開く)
 └── src/
     ├── Root.tsx / Slideshow.tsx / Thumbnail.tsx / data.ts / schemas.ts / elements.ts / audio-events.ts / fonts.ts
     ├── theme/           # テーマ (clean / pop / dark)
