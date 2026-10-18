@@ -337,17 +337,30 @@ export const metaSchema = z.object({
       duckVolume: z.number().min(0).max(1).default(0.07),
     })
     .optional(),
-  /** 右下で喋るキャラクター。口の動きは音声の音量から自動生成 */
+  /**
+   * 右下で喋るキャラクター。口の動きは音声の音量から自動生成。
+   * 省略時は同梱のカワウソ (public/avatar/) を表示する。false で非表示
+   */
   avatar: z
-    .object({
-      type: z.enum(['builtin', 'image']).default('builtin'),
-      /** type: image のとき。口を開けた画像 / 閉じた画像 (public/ からの相対パス) */
-      open: z.string().optional(),
-      closed: z.string().optional(),
-      name: z.string().optional(),
-      size: z.number().default(210),
-    })
-    .optional(),
+    .union([
+      z.literal(false),
+      z.object({
+        type: z.enum(['builtin', 'image']).default('image'),
+        /** type: image のとき。口を開けた / 半開き (省略可) / 閉じた画像 (public/ からの相対パス) */
+        open: z.string().default('avatar/open.png'),
+        half: z.string().optional(),
+        closed: z.string().default('avatar/closed.png'),
+        name: z.string().optional(),
+        size: z.number().default(250),
+      }),
+    ])
+    .default({
+      type: 'image',
+      open: 'avatar/open.png',
+      half: 'avatar/half.png',
+      closed: 'avatar/closed.png',
+      size: 250,
+    }),
   /** チャンネル登録を促すポップアップを出すシーンID (シーン開始時に約4秒表示) */
   subscribePopup: z
     .object({

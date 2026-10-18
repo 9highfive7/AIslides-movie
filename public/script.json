@@ -11,9 +11,6 @@
     "sfx": {
       "volume": 0.5
     },
-    "avatar": {
-      "type": "builtin"
-    },
     "subscribePopup": {
       "sceneId": "sec2"
     },

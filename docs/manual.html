@@ -155,7 +155,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <div><b>強調</b><p>セリフに <code>focus</code> を書くと説明中の要素が拡大され、他は薄くなります。<code>**語句**</code> で字幕の色が変わります。</p></div>
   <div><b>字幕</b><p>YouTube でおなじみの縁取り文字、または帯付きの字幕。テーマに合わせて自動で選ばれます。</p></div>
   <div><b>効果音とBGM</b><p>出現の「ポン」、切り替えの「シュッ」、強調の「チーン」を自動で配置。BGM はナレーション中だけ音量が下がります。</p></div>
-  <div><b>喋るキャラクター</b><p>右下にキャラクターを出せます。口の動きは音声の大きさから自動で作られます。自前の画像2枚にも差し替え可能です。</p></div>
+  <div><b>喋るキャラクター</b><p>右下にカワウソのキャラクターが出ます。口の動きは音声の大きさから自動で作られ、サムネイルにも登場します。自前の画像にも差し替えられます。</p></div>
   <div><b>登録の導線</b><p>動画の途中に「チャンネル登録」のポップアップ（カーソルがクリックする演出）。最後は終了画面の枠付きエンディング。</p></div>
 </div>
 
@@ -369,7 +369,7 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
     <tr><td><code>subtitle</code></td><td><code>{ "enabled": true, "style": "auto" }</code></td><td><code>style</code> は <code>box</code>（帯）/ <code>outline</code>（縁取り）/ <code>auto</code>（テーマ既定）。YouTube の字幕機能だけ使うなら <code>enabled: false</code></td></tr>
     <tr><td><code>sfx</code></td><td><code>{ "enabled": true, "volume": 0.5 }</code></td><td>効果音。<code>reveal</code>（出現時の pop）と <code>transition</code>（切り替えの whoosh）を個別に <code>false</code> にもできる</td></tr>
     <tr><td><code>bgm</code></td><td>なし</td><td><code>{ "src": "bgm/track.mp3", "volume": 0.18, "duckVolume": 0.07 }</code>。<code>public/</code> に置いた音源をループし、ナレーション中は <code>duckVolume</code> まで下げる</td></tr>
-    <tr><td><code>avatar</code></td><td>なし</td><td><code>{ "type": "builtin" }</code> で組み込みキャラ。自前の画像なら <code>{ "type": "image", "open": "avatar/open.png", "closed": "avatar/closed.png" }</code>。<code>name</code> で名札、<code>size</code> で大きさ</td></tr>
+    <tr><td><code>avatar</code></td><td>カワウソ（同梱）</td><td>右下で喋るキャラクター。<strong>省略時は同梱のカワウソが出る</strong>。<code>false</code> で非表示。自前の画像なら <code>{ "type": "image", "open": "avatar/open.png", "half": "avatar/half.png", "closed": "avatar/closed.png" }</code>（<code>half</code> は省略可）。<code>{ "type": "builtin" }</code> で画像なしの丸顔キャラ。<code>name</code> で名札、<code>size</code> で大きさ</td></tr>
     <tr><td><code>subscribePopup</code></td><td>なし</td><td><code>{ "sceneId": "sec2" }</code>。そのシーンの冒頭に約4秒、登録ボタンの演出を右上に出す</td></tr>
     <tr><td><code>thumbnail</code></td><td>なし</td><td><code>{ "text": "大きな文字\n**強調**", "sub": "…", "badge": "…", "image": "…" }</code>。省略時は title シーンから作る</td></tr>
   </tbody>
@@ -381,7 +381,6 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
   "title": "Claude Codeのトークン節約 — 四つの方法を実測した結果",
   "theme": "pop",
   "transition": "slide",
-  "avatar": { "type": "builtin" },
   "bgm": { "src": "bgm/track.mp3" },
   "subscribePopup": { "sceneId": "sec2" },
   "thumbnail": { "text": "トークン節約\n**4つの方法**を実測", "badge": "実測" }
@@ -522,6 +521,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     <tr><td><code>docker: invalid IP address</code></td><td><code>-p</code> の値を引用符で囲んでいます。引用符なしで実行してください。</td></tr>
     <tr><td>「timeline.json に … 対応するエントリがありません」</td><td>台本を直した後に <code>npm run audio</code> を実行していません。再実行します。</td></tr>
     <tr><td>「要素ID "…" はシーン "…" にありません」</td><td><code>reveal</code> / <code>focus</code> の綴りの間違いです。メッセージに使えるIDの一覧が出ます。</td></tr>
+    <tr><td>キャラクターを別の画像にしたい</td><td>背景が透明な PNG を <code>public/avatar/</code> に置き、<code>meta.avatar</code> でファイル名を指定します。口を開けた画像と閉じた画像の2枚（＋任意で半開き）が必要です。</td></tr>
     <tr><td>キャラクターの口が動かない・一定のリズムで動く</td><td>古い <code>timeline.json</code> か、<code>audio:mock</code> で作ったタイムラインです。<code>npm run audio</code> を実行すると音声に合わせて動きます。</td></tr>
     <tr><td>音声と表示がずれる</td><td><code>npm run audio</code> をやり直します。タイムラインは音声の実寸から再計算されます。</td></tr>
     <tr><td>動きが多すぎる・目が疲れる</td><td><a href="#meta">meta</a> で <code>animation</code>・<code>transition</code>・<code>camera</code>・<code>animatedBackground</code> を控えめにします。</td></tr>
@@ -538,6 +538,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 │   ├── timeline.json    生成物: フレーム計算の結果 + 口パク用の音量
 │   ├── audio/           生成物: セリフごとのWAV
 │   ├── sfx/             効果音（同梱）
+│   ├── avatar/          キャラクター画像（口: open / half / closed）
 │   └── fonts/           Noto Sans JP
 ├── scripts/             音声生成・台本生成・投稿用ファイル・効果音の合成
 ├── shared/              音声側とRemotion側の共通処理（timing.ts / markup.ts）

@@ -96,7 +96,7 @@ export const Slideshow: React.FC = () => {
         <SubscribePopup />
         <Avatar />
         {/* 字幕はシーンのトランジションとは独立したレイヤー */}
-        <SubtitleLayer rightInset={avatar ? avatar.size + 40 : 0} />
+        <SubtitleLayer rightInset={avatar ? avatar.size * 0.85 + 40 : 0} />
         <ProgressBar />
       </AbsoluteFill>
     </ThemeContext.Provider>

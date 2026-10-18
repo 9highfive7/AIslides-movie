@@ -10,7 +10,7 @@
 - **強調**: セリフに `focus` を書くと、説明中の要素が拡大＋枠で強調され、他は薄くなる。`**強調**` で字幕の語句に色が付き、大文字のキメ画面ではマーカーが引かれる
 - **字幕**: YouTube でおなじみの縁取り文字、または帯付き字幕
 - **音**: 効果音（出現の「ポン」・切り替えの「シュッ」・強調の「チーン」）を自動配置。BGM はナレーション中だけ自動で音量を下げる
-- **キャラクター**: 右下で喋るキャラクター（口パクは音声の音量から自動生成。組み込みキャラか自前の画像2枚）
+- **キャラクター**: 右下で喋るカワウソのキャラクター（口パクは音声の音量から自動生成。自前の画像にも差し替え可）。サムネイルにも登場
 - **登録の導線**: 途中で出る「チャンネル登録」ポップアップ（カーソルがクリックする演出）と、終了画面の枠付きエンディング
 - **進行バー**: 画面下端に再生位置と章の区切り
 - **投稿用ファイル**: サムネイル（1280×720）、概要欄用チャプター（目次）、字幕ファイル（SRT）
@@ -161,7 +161,7 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | `subtitle` | `{ enabled: true, style: "auto" }` | `style`: `box`（帯）/ `outline`（縁取り文字）/ `auto`（テーマ既定）。YouTube の字幕機能だけ使うなら `enabled: false` |
 | `sfx` | `{ enabled: true, volume: 0.5, reveal: true, transition: true }` | 効果音。`reveal` = 出現時の pop、`transition` = 切り替え時の whoosh |
 | `bgm` | なし | `{ src: "bgm/track.mp3", volume: 0.18, duckVolume: 0.07 }`。`public/` に置いた音源をループ再生し、ナレーション中は `duckVolume` まで下げる。前後は自動フェード |
-| `avatar` | なし | `{ type: "builtin" }` で組み込みキャラ。自前の画像なら `{ type: "image", open: "avatar/open.png", closed: "avatar/closed.png" }`（口を開けた/閉じた2枚）。`name` で名札、`size` で大きさ |
+| `avatar` | カワウソ (同梱) | 右下で喋るキャラクター。**省略時は同梱のカワウソ（`public/avatar/`）が出る**。`false` で非表示。自前の画像なら `{ "type": "image", "open": "avatar/open.png", "half": "avatar/half.png", "closed": "avatar/closed.png" }`（口を開けた/半開き/閉じた画像。`half` は省略可）。`{ "type": "builtin" }` で画像なしの丸顔キャラ。`name` で名札、`size` で大きさ（既定 250） |
 | `subscribePopup` | なし | `{ sceneId: "sec2", text?: "チャンネル登録" }`。指定シーンの冒頭に約4秒、登録ボタンのクリック演出を右上に出す |
 | `thumbnail` | なし | `{ text: "大きな文字\n**強調**", sub?, badge?, image? }`。`npm run thumbnail` の文言（省略時は title シーンから作る） |
 
@@ -240,6 +240,7 @@ npm run audio && npm run build:youtube                           # いつもの�
 - **「timeline.json に … 対応するエントリがありません」** — 台本を編集した後に `npm run audio` を実行していない状態です。再実行してください。
 - **レンダリングが遅い/落ちる** — `remotion.config.ts` で同時実行数をメモリから自動算出しています。手動で変える場合は `npm run render -- --concurrency=4` のように指定できます。
 - **音声がずれる** — `npm run audio` をやり直してください。タイムラインは常に音声の実寸から再計算されます。
+- **キャラクターを別の画像にしたい** — 背景が透明な PNG を `public/avatar/` に置き、`meta.avatar` でファイル名を指定します。口を開けた画像と閉じた画像の2枚（＋任意で半開き）が必要です。
 - **キャラクターの口が動かない／一定のリズムで動く** — 古い `timeline.json` です。`npm run audio` を再実行すると音声の音量から口パクが作られます（`audio:mock` では擬似的なリズム）。
 - **`[script.json] … 要素ID "…" はシーン "…" にありません`** — `reveal` / `focus` の綴りの間違いです。メッセージに使えるIDの一覧が出ます。
 - **動きが多すぎる** — `meta.animation: "fadeUp"`・`meta.transition: "fade"`・`meta.camera: "none"`・`meta.animatedBackground: false` で落ち着いた演出になります。
@@ -286,6 +287,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── timeline.json    # 生成物: フレーム計算の結果 + 口パク用の音量
 │   ├── audio/           # 生成物: セリフごとの WAV
 │   ├── sfx/             # 効果音 (pop / whoosh / ding / click。npm run sfx で再生成)
+│   ├── avatar/          # キャラクター画像 (口: open / half / closed)
 │   └── fonts/           # Noto Sans JP (可変フォント)
 ├── scripts/
 │   ├── generate-audio.ts    # 音声生成 + タイムライン作成
