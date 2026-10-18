@@ -54,6 +54,35 @@ curl http://localhost:50021/version
 
 > エンジンなしでタイミングだけ確認したい場合は `npm run audio:mock` を使えます（無音WAV＋概算尺でタイムラインを生成）。
 
+## 動画生成アプリ（図解ムービー スタジオ）
+
+テーマを入れて「動画を生成」を押すだけで、台本 → ナレーション → 字幕 → 3D・図解 → MP4 まで作るローカルアプリです。
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # 台本を書く AI (Claude)。Windows は set / $env: で設定
+npm run studio                        # → http://localhost:4300 をブラウザで開く
+```
+
+- **① 動画のテーマ / ② 細かい設定**: 自由に書きます（尺・口調・見せ方・出典の付け方など）。見た目・尺・声はボタンで選べます
+- **動画を生成**: 進捗バーで「台本とリサーチ → ナレーション → 字幕のタイミング → 3D・図解の描画 → 書き出し」のどこまで進んだかと残り時間が見られます。場面の下絵は、できたものから先に表示されます
+- **プレビュー**: 完成した動画をその場で再生。下の場面をクリックすると、その場面へ移動します
+- **③ 修正の指示**: 場面を選んで指示を書くと、その場面だけを AI が直して作り直します（選ばなければ動画全体）。直すたびに版（v1, v2, …）が増え、右上で前の版に戻って見られます
+- **④ 保存**: 動画（MP4）・サムネイル・YouTube 用の概要欄（目次）・字幕ファイル・台本（JSON）
+- 作った動画は `studio-data/` に保存され、ヘッダーの「作った動画」から開き直せます
+- 他の AI で書いた台本（JSON）は「台本（JSON）を読み込んで作る」から動画にできます（APIキーなしでも可）
+
+**準備**
+
+| 項目 | 内容 |
+|---|---|
+| 台本を書く AI | `ANTHROPIC_API_KEY`（Claude。既定モデル `claude-opus-5-5`、`CLAUDE_MODEL` で変更可）。`ant auth login` 済みならキーなしでも動きます。OpenAI 互換 API を使うときは `OPENAI_API_KEY`（`SCRIPT_PROVIDER=openai` で明示も可） |
+| ナレーション | VOICEVOX Engine を起動しておく（下記）。起動していなければ無音の仮音声で作ります（画面に表示） |
+| 3D の描画 | Linux ではソフトウェア描画（`STUDIO_GL=swangle`）が既定。Mac / Windows は GPU を使います |
+
+- ポートは `STUDIO_PORT`（既定 4300）。このPCからだけ開けます（127.0.0.1 で待ち受け）
+- 生成は1本ずつ順番に処理します。3D の場面が多いと書き出しに数分〜十数分かかります
+- 生成中は `public/script.json` などを一時的に書き換え、組み立てが終わると元に戻します。生成中に `npm run audio` などを同時に実行しないでください
+
 ## 使い方（音声生成 → プレビュー → レンダリング）
 
 ```bash
@@ -318,6 +347,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── sfx/             # 効果音 (pop / whoosh / ding / click。npm run sfx で再生成)
 │   ├── avatar/          # キャラクター画像 (口: open / half / closed)
 │   └── fonts/           # Noto Sans JP / Noto Serif JP (可変フォント)
+├── studio/              # 動画生成アプリ (npm run studio)。server.ts / pipeline.ts / store.ts / public/ (画面)
 ├── scripts/
 │   ├── generate-audio.ts    # 音声生成 + タイムライン作成
 │   ├── generate-script.ts   # プロンプト/URL → 台本自動生成 (LLM)

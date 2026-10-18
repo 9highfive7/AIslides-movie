@@ -12,5 +12,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src", "scripts", "shared", "remotion.config.ts"]
+  "include": ["src", "scripts", "shared", "studio", "remotion.config.ts"]
 }

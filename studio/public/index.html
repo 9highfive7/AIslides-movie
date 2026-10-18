@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>図解ムービー スタジオ</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="logo"><span class="mark"></span>図解ムービー スタジオ<small>テーマを入れるだけで解説動画</small></div>
+  <nav>
+    <button type="button" id="nav-new" class="on">新しい動画</button>
+    <button type="button" id="nav-list">作った動画（<span id="list-count">0</span>）</button>
+  </nav>
+</header>
+
+<div id="notice" class="notice" hidden></div>
+
+<main>
+  <div class="col">
+    <form class="card" id="create-form">
+      <label for="topic"><span class="no">1</span>動画のテーマ<small>何について作るか</small></label>
+      <textarea id="topic" rows="3" placeholder="例）なぜ自販機は1台で冷たいと温かいを同時に出せるのか"></textarea>
+
+      <label for="settings" class="gap"><span class="no">2</span>細かい設定<small>自由に書けます（省略可）</small></label>
+      <textarea id="settings" rows="5" placeholder="例）中学生にも分かる言葉で。仕組みは3Dで見せてほしい。数字には出典を付けて。"></textarea>
+
+      <div class="chips" data-group="look">
+        <button type="button" data-value="paper" class="on">図解（紙・明朝）</button>
+        <button type="button" data-value="pop">ポップ</button>
+        <button type="button" data-value="clean">クリーン</button>
+        <button type="button" data-value="dark">ダーク</button>
+      </div>
+      <div class="chips" data-group="durationSec">
+        <button type="button" data-value="60">約60秒</button>
+        <button type="button" data-value="90" class="on">約90秒</button>
+        <button type="button" data-value="180">約3分</button>
+        <button type="button" data-value="300">約5分</button>
+      </div>
+      <div class="voice-row">
+        <span>声</span>
+        <select id="speaker">
+          <option value="3">ずんだもん（ノーマル）</option>
+          <option value="2">四国めたん（ノーマル）</option>
+          <option value="8">春日部つむぎ</option>
+          <option value="14">冥鳴ひまり</option>
+          <option value="13">青山龍星</option>
+          <option value="11">玄野武宏</option>
+        </select>
+        <span class="voice-state" id="voice-state"></span>
+      </div>
+      <div class="import-row">
+        <button type="button" class="link" id="import-btn">台本（JSON）を読み込んで作る</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+    </form>
+
+    <button type="button" class="btn primary" id="generate">▶ 動画を生成</button>
+
+    <div class="card progress" id="progress-card" hidden>
+      <h3><span id="stage">準備しています</span><span class="pct" id="pct">0%</span></h3>
+      <div class="time" id="time"></div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="steps" id="steps"></div>
+      <p class="error" id="error" hidden></p>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card preview">
+      <div class="preview-head">
+        <div class="title" id="video-title">動画を作ると、ここで見られます</div>
+        <div class="versions" id="versions"></div>
+      </div>
+      <div class="screen" id="screen">
+        <video id="video" controls preload="metadata" hidden></video>
+        <img id="still" alt="" hidden>
+        <div class="overlay" id="overlay">
+          <div class="big" id="overlay-big">まだ動画がありません</div>
+          <div class="s" id="overlay-sub">左でテーマを入れて「動画を生成」を押してください</div>
+        </div>
+        <span class="tag" id="tag" hidden></span>
+      </div>
+      <div class="scenes" id="scenes"></div>
+    </div>
+
+    <div class="row2">
+      <div class="card fix" id="fix-card">
+        <label for="instruction"><span class="no">3</span>修正の指示<small>場面を選ぶと、その場面だけを直します</small></label>
+        <div class="target">対象: <b id="target">動画全体</b><button type="button" class="link" id="target-clear" hidden>選択を外す</button></div>
+        <textarea id="instruction" rows="3" placeholder="例）3つ目の場面の数字をもっと大きく ／ ナレーションをもう少しやさしい言葉に"></textarea>
+        <div class="send"><span class="hint">修正前の版は右上の版の切り替えで見られます</span><button type="button" class="btn primary small" id="revise">修正して再生成</button></div>
+      </div>
+      <div class="card save" id="save-card">
+        <label><span class="no">4</span>保存</label>
+        <a class="btn primary save-main" id="dl-video">⬇ 動画を保存（MP4）</a>
+        <a class="btn ghost" id="dl-thumb">サムネイル（PNG）</a>
+        <a class="btn ghost" id="dl-desc">YouTube用 概要欄（目次）</a>
+        <a class="btn ghost" id="dl-srt">字幕ファイル（SRT）</a>
+        <a class="btn ghost" id="dl-script">台本（JSON）</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="drawer" id="drawer" hidden>
+  <div class="drawer-panel">
+    <div class="drawer-head"><b>作った動画</b><button type="button" class="link" id="drawer-close">閉じる</button></div>
+    <div id="project-list"></div>
+  </div>
+</div>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>
