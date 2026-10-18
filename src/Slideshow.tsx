@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { TRANSITION_HALF_FRAMES } from '../shared/timing';
 import { isDarkLayout, script, sceneOf, timeline, transitionOf } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
+import { THEMES, ThemeContext, useTheme } from './themes';
 import { ensureFonts } from './fonts';
 import { buildSceneContext, SceneProvider } from './context/SceneContext';
 import { transitionIn, transitionOut } from './animation/transitions';
 import { HeadingChrome } from './components/HeadingChrome';
+import { EditorialHeading, RunningHead } from './components/EditorialChrome';
 import { SceneChrome } from './components/SceneChrome';
 import { SceneBackground } from './components/SceneBackground';
 import { Camera } from './components/Camera';
@@ -32,6 +33,7 @@ const SceneView: React.FC<{
   outType: TransitionType | null;
 }> = ({ scene, ts, index, inType, outType }) => {
   const frame = useCurrentFrame();
+  const theme = useTheme();
   const ctx = useMemo(() => buildSceneContext(scene, ts, script.meta), [scene, ts]);
 
   const start = ts.startFrame;
@@ -50,32 +52,45 @@ const SceneView: React.FC<{
   }
 
   const dark = isDarkLayout(scene.layout);
+  const editorial = theme.chrome === 'editorial';
   const { meta } = script;
+  // 3D の場面は自前のカメラで動くので、画面全体のズームはかけない
+  const cameraOn = meta.camera === 'subtle' && !dark && scene.layout !== 'scene3d';
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
       <SceneProvider value={ctx}>
-        <SceneBackground variant={dark ? 'dark' : 'light'} animated={meta.animatedBackground} seed={index} />
-        <Camera enabled={meta.camera === 'subtle' && !dark} from={start} to={end}>
+        <SceneBackground variant={dark && !editorial ? 'dark' : 'light'} animated={meta.animatedBackground} seed={index} />
+        <Camera enabled={cameraOn} from={start} to={end}>
           <SceneLayoutView scene={scene} />
         </Camera>
-        {!dark && (scene.heading || scene.label) ? (
-          <HeadingChrome heading={scene.heading ?? ''} label={scene.label} at={ctx.introAt} />
-        ) : null}
-        {!dark ? <SceneChrome chapter={scene.chapter} badge={scene.badge} at={ctx.introAt} /> : null}
+        {editorial ? (
+          <>
+            {!dark && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} /> : null}
+            <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} />
+            <SceneChrome badge={scene.badge} at={ctx.introAt} />
+          </>
+        ) : (
+          <>
+            {!dark && (scene.heading || scene.label) ? (
+              <HeadingChrome heading={scene.heading ?? ''} label={scene.label} at={ctx.introAt} />
+            ) : null}
+            {!dark ? <SceneChrome chapter={scene.chapter} badge={scene.badge} at={ctx.introAt} /> : null}
+          </>
+        )}
       </SceneProvider>
     </AbsoluteFill>
   );
 };
 
 export const Slideshow: React.FC = () => {
-  ensureFonts();
   const theme = THEMES[script.meta.theme];
+  ensureFonts(theme.fonts);
   const avatar = script.meta.avatar;
 
   return (
     <ThemeContext.Provider value={theme}>
-      <AbsoluteFill style={{ backgroundColor: theme.colors.bg, fontFamily: FONT_FAMILY, color: theme.colors.ink }}>
+      <AbsoluteFill style={{ backgroundColor: theme.colors.bg, fontFamily: theme.fonts.body, color: theme.colors.ink }}>
         {timeline.scenes.map((ts, i) => {
           const scene = sceneOf(ts.id);
           const next = timeline.scenes[i + 1];

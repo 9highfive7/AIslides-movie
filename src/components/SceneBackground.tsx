@@ -24,6 +24,10 @@ export const SceneBackground: React.FC<{ variant: 'light' | 'dark'; animated: bo
     );
   }
 
+  if (theme.pattern === 'paper') {
+    return <PaperBackground />;
+  }
+
   const spacing = theme.pattern === 'grid' ? 64 : 34;
   const patternImage =
     theme.pattern === 'grid'
@@ -60,6 +64,26 @@ export const SceneBackground: React.FC<{ variant: 'light' | 'dark'; animated: bo
           />
         );
       })}
+    </AbsoluteFill>
+  );
+};
+
+/** 紙の繊維のような細かいムラ (SVG のノイズ)。周辺をわずかに暗くして紙らしさを出す */
+const PAPER_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">' +
+    '<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/>' +
+    '<feColorMatrix values="0 0 0 0 0.14  0 0 0 0 0.12  0 0 0 0 0.09  0 0 0 0.55 0"/></filter>' +
+    '<rect width="100%" height="100%" filter="url(#n)"/></svg>',
+)}")`;
+
+const PaperBackground: React.FC = () => {
+  const theme = useTheme();
+  return (
+    <AbsoluteFill style={{ backgroundColor: theme.colors.bg, overflow: 'hidden' }}>
+      <AbsoluteFill style={{ backgroundImage: PAPER_GRAIN, backgroundSize: '320px 320px', opacity: 0.35 }} />
+      <AbsoluteFill
+        style={{ background: 'radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(80, 60, 30, 0.10) 100%)' }}
+      />
     </AbsoluteFill>
   );
 };

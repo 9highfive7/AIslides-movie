@@ -1,23 +1,28 @@
 import { continueRender, delayRender, staticFile } from 'remotion';
+import { FONT_FAMILY, SERIF_FONT_FAMILY } from './themes';
 
 /**
- * Noto Sans JP を public/fonts から読み込む。
- * 可変フォント (weight 100-900) 1ファイルをリポジトリに同梱しており、
- * レンダリング時に外部通信は不要。見出し700・本文400 で使用する。
+ * public/fonts のフォントを読み込む。
+ * 可変フォント (weight 100-900) をリポジトリに同梱しており、レンダリング時に外部通信は不要。
+ *   Noto Sans JP:  本文・ラベル (全テーマ)
+ *   Noto Serif JP: 見出し・数字 (paper テーマなど、テーマが明朝を使うときだけ読み込む)
  */
-const FONT_FAMILY = 'Noto Sans JP';
+const FONT_FILES: Record<string, string> = {
+  [FONT_FAMILY]: 'fonts/NotoSansJP-VF.ttf',
+  [SERIF_FONT_FAMILY]: 'fonts/NotoSerifJP-VF.ttf',
+};
 
-let requested = false;
+const requested = new Set<string>();
 
-export const ensureFonts = (): void => {
-  if (requested) {
+const loadFont = (family: string): void => {
+  const file = FONT_FILES[family];
+  if (!file || requested.has(family)) {
     return;
   }
-  requested = true;
+  requested.add(family);
 
-  const handle = delayRender('load Noto Sans JP');
-  const url = staticFile('fonts/NotoSansJP-VF.ttf');
-  const face = new FontFace(FONT_FAMILY, `url("${url}")`, {
+  const handle = delayRender(`load ${family}`);
+  const face = new FontFace(family, `url("${staticFile(file)}")`, {
     weight: '100 900',
     style: 'normal',
   });
@@ -30,7 +35,14 @@ export const ensureFonts = (): void => {
     })
     .catch((error) => {
       // 読み込みに失敗してもレンダリングは続行 (システムフォントの代替で描画される)
-      console.error('フォントの読み込みに失敗しました。代替フォントで描画します。', error);
+      console.error(`フォント ${family} の読み込みに失敗しました。代替フォントで描画します。`, error);
       continueRender(handle);
     });
+};
+
+/** 本文フォントと、テーマが使う見出しフォントを読み込む */
+export const ensureFonts = (fonts: { body: string; display: string } = { body: FONT_FAMILY, display: FONT_FAMILY }): void => {
+  loadFont(FONT_FAMILY);
+  loadFont(fonts.body);
+  loadFont(fonts.display);
 };

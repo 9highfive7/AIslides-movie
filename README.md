@@ -84,7 +84,7 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 {
   "meta": {                     // 動画全体の設定 (すべて省略可)
     "title": "動画タイトル",
-    "theme": "pop",             // "clean" | "pop" | "dark"
+    "theme": "pop",             // "clean" | "pop" | "dark" | "paper"
     "transition": "slide"       // 既定のシーン切り替え
   },
   "scenes": [
@@ -132,9 +132,11 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | `flow` | `steps[]` — `{ id, icon?, title, body? }`（2つ以上） | 各stepの `id` と、矢印 `arrow-1`〜`arrow-N-1`（自動付与） | カードが弾み、矢印が線を引くように伸びて点が流れる |
 | `inputOutput` | `input` / `transform { id, label }` / `output` | `input.id`・`transform.id`・`output.id` と矢印 `arrow-1`, `arrow-2` | 変換ボックスが脈打つ |
 | `bullets` | `items[]` — `{ id, icon?, title, body? }` | 各項目の `id` | 左から滑り込む |
-| `stats` | `items[]` — `{ id, value, label, body? }`（2〜4枚） | 各項目の `id` | 数字がカウントアップ（`"3倍"` `"6,100"` `"98.5%"` など） |
+| `stats` | `items[]` — `{ id, value, label, body?, kicker?, note?, tone?, stamp? }`（2〜4枚）。`kicker` は数字の上の小見出し（例 `"1つ目"`）、`note` はカード下端の出典、`tone: "warning"` で朱色、`stamp` は右下の丸印（例 `"日本"`） | 各項目の `id` | 数字がカウントアップ（`"3倍"` `"6,100"` `"98.5%"` など） |
 | `table` | `headers[]`（`{ label, tone? }`）+ `rows[]` — `{ id, label, note?, cells: [{ text, tone? }] }` + `source?`。`tone` は `good` / `bad` / `normal` | 各行の `id` | ヘッダーが降り、行が滑り込む |
-| `bars` | `items[]` — `{ id, label, value, display?, tone? }` + `caption?` | 各項目の `id` / `caption` | バーが伸び、数値がカウントアップ |
+| `bars` | `items[]` — `{ id, label, value, display?, tone? }` + `caption?` + `max?`（棒の全幅にあたる値。割合なら `100`。省略時は最大値） | 各項目の `id` / `caption` | バーが伸び、数値がカウントアップ |
+| `share` | 1本の帯を区切った割合のグラフ。`title?` / `segments[]` — `{ id, display, label?, value, tone? }`（`tone`: `warning` 朱 / `accent` 紺 / `muted` 灰）/ `source?` | 各区分の `id` / `source` | 空の枠が出て、区分が reveal で左から伸びる |
+| `scene3d` | three.js の 3D の場面。`preset: "phoneChip"`（スマホの箱が開き、基板の上のチップへカメラが寄る）/ `label?`（`{ title, sub? }` 引き出し線の注釈）/ `stat?`（`{ kicker?, value, note? }` 右上の数字カード） | `open`（箱が開く）/ `label` / `zoom`（チップへ寄る）/ `stat`（zoom の後なら、さらに表面まで寄る） | 蓋が開く → 注釈 → カメラが寄る → 数字がカウントアップ |
 | `checklist` | `items[]` — `{ id, text, note? }` | 各項目の `id` | カードの後にチェックが「ポン」と付く |
 | `axes` | `xAxis { label }` / `yAxis { label }` / `hint?` | `axes` / `hint` | 軸が線を引くように描かれる |
 | `statement` | 一文を大きく見せるキメ画面。`text`（`**強調**` にマーカー・`\n` 改行）/ `sub?` / `icon?` | `text` / `sub` | 1文字ずつ弾み、マーカーが引かれる |
@@ -152,7 +154,8 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | キー | 既定値 | 説明 |
 |---|---|---|
 | `title` | （title シーンのタイトル） | 動画タイトル。概要欄ファイルとサムネイルの既定値に使う |
-| `theme` | `clean` | `clean`（落ち着いた青×紺）/ `pop`（クリーム地・太枠・黄色マーカー・縁取り字幕）/ `dark`（濃紺地・テック系） |
+| `theme` | `clean` | `clean`（落ち着いた青×紺）/ `pop`（クリーム地・太枠・黄色マーカー・縁取り字幕）/ `dark`（濃紺地・テック系）/ `paper`（生成り色の紙・紺×朱×墨・明朝の見出し。図解ドキュメンタリー風。下記） |
+| `header` | なし | `{ label: "図解 No.01", title: "半導体の回路を焼く機械" }`。`paper` テーマで左上に出す柱。シーンに `chapter` があれば `title` の代わりにそれを出す |
 | `transition` | `slide` | シーン切り替え: `slide` / `slideUp` / `wipe` / `zoom` / `circle` / `fade` / `none`（シーンごとに `transition` で上書き可） |
 | `animation` | `auto` | 要素の出現: `auto`（レイアウトごとのおすすめ）/ `fadeUp` / `pop` / `slideLeft` / `slideRight` / `zoom` / `blur` / `flip` / `none`（シーンごとに `animation` で上書き可） |
 | `camera` | `subtle` | シーン中のゆっくりズーム。`none` で止める |
@@ -227,11 +230,24 @@ npm run audio && npm run build:youtube                           # いつもの�
 - 目安: 10分 ≒ ナレーション約3,000字 ≒ **25〜30シーン / 80〜90セリフ**
 - 長尺では `section`（章扉）と `chapter` タグで章構成を作ると視聴者が迷わない
 - 総尺が10分を超えると `npm run audio` が警告を出します（目安超過。ブロックはしない）
-- 素材集: `public/script.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
+- 素材集: `templates/sample-token-saving-18scenes.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
+
+## 図解ドキュメンタリー風（paper テーマ + 3D）
+
+`public/script.json` は、紙の質感・紺×朱×墨の3色・明朝の見出しで作る「図解」スタイルのサンプル（半導体の露光装置の話・8シーン）です。
+
+- `meta.theme: "paper"` にすると、見出しは画面上部中央の明朝、左上に `meta.header` の柱、章扉（`section`）も紙の上に静かに出ます。`**強調**` はマーカーではなく朱色の文字になります
+- 落ち着いた見せ方にするため、サンプルでは `transition: "fade"`・`avatar: false`・`progressBar: false`・出現音なしにしています
+- `scene3d` レイアウトは three.js（`@remotion/three`）で描きます。3D のモデルとカメラの動きは `src/three/` にあり、新しい場面を足すときは `preset` を追加します
+- 明朝体（Noto Serif JP）は `public/fonts/` に同梱しています（`OFL-NotoSerifJP.txt` がライセンス）
+
+> 3D の場面は WebGL で描くため、GPU のない環境（Linux サーバーや CI）では `npm run render -- --gl=swangle` のようにソフトウェア描画を指定すると確実です。
+
+元の YouTube 向けサンプル（約9分・pop テーマ）は `templates/sample-token-saving-18scenes.json` に移しました。使うときは `public/script.json` に上書きコピーしてください。
 
 ## デザインの変更
 
-配色・カードの枠や影・字幕の既定スタイルは `src/themes/index.ts` の `THEMES`（clean / pop / dark）に集約しています。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。
+配色・カードの枠や影・字幕の既定スタイルは `src/themes/index.ts` の `THEMES`（clean / pop / dark / paper）に集約しています。テーマの `chrome: "editorial"` で見出し・章扉の流儀（paper 風）を、`fonts.display` で見出し・数字のフォントを切り替えます。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。
 
 ## トラブルシューティング
 
@@ -267,7 +283,7 @@ curl -X POST \
 
 gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-video -F 'client_payload[source_type]=url' -F 'client_payload[source]=https://…'`
 
-- 手動実行では `theme`（`keep` / `clean` / `pop` / `dark`）も選べます（台本生成時のみ。API からは `client_payload.theme`）
+- 手動実行では `theme`（`keep` / `clean` / `pop` / `dark` / `paper`）も選べます（台本生成時のみ。API からは `client_payload.theme`）
 
 **実行の流れ**: VOICEVOX Engine を service コンテナで起動 → `npm ci` → (台本生成) → `npm run audio` → `npm run render` → `npm run thumbnail` / `npm run youtube` → `video.mp4`・`thumbnail.png`・`youtube/`（概要欄の目次・字幕）をアーティファクトに保存（30日）→ 台本生成時は `script.json` / `timeline.json` もリポジトリにコミットして戻します。
 
@@ -288,7 +304,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── audio/           # 生成物: セリフごとの WAV
 │   ├── sfx/             # 効果音 (pop / whoosh / ding / click。npm run sfx で再生成)
 │   ├── avatar/          # キャラクター画像 (口: open / half / closed)
-│   └── fonts/           # Noto Sans JP (可変フォント)
+│   └── fonts/           # Noto Sans JP / Noto Serif JP (可変フォント)
 ├── scripts/
 │   ├── generate-audio.ts    # 音声生成 + タイムライン作成
 │   ├── generate-script.ts   # プロンプト/URL → 台本自動生成 (LLM)
@@ -300,7 +316,8 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 ├── docs/manual.html     # 手順書 (画面例つき。ブラウザで開く)
 └── src/
     ├── Root.tsx / Slideshow.tsx / Thumbnail.tsx / data.ts / schemas.ts / elements.ts / audio-events.ts / fonts.ts
-    ├── themes/          # テーマ (clean / pop / dark)
+    ├── themes/          # テーマ (clean / pop / dark / paper)
+    ├── three/           # 3D の場面 (three.js のモデルとカメラの動き)
     ├── animation/       # バネの設定・出現プリセット・トランジション
     ├── context/         # シーンごとの reveal / focus のタイミング
     ├── components/      # Reveal / KineticText / CountUp / DrawArrow / SubtitleLayer / AudioLayer /

@@ -40,6 +40,11 @@ export const elementIds = (scene: Scene): string[] => {
       return ['text', 'sub'];
     case 'image':
       return ['image', 'caption'];
+    case 'share':
+      return [...scene.content.segments.map((seg) => seg.id), 'source'];
+    case 'scene3d':
+      // open: 箱が開く / zoom: チップへ寄る / label: 注釈 / stat: 数字カード
+      return ['open', 'zoom', 'label', 'stat'];
   }
 };
 

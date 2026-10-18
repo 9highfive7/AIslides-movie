@@ -153,9 +153,63 @@ const sceneSchema = z.discriminatedUnion('layout', [
             value: z.string(),
             label: z.string(),
             body: z.string().optional(),
+            /** 数字の上の小見出し (例: "1つ目") */
+            kicker: z.string().optional(),
+            /** カード下端の出典・注記 (例: "ASMLの公表価格を円に換算") */
+            note: z.string().optional(),
+            /** warning: 朱色で目立たせる (paper テーマでは枠も朱色になる) */
+            tone: z.enum(['normal', 'warning']).default('normal'),
+            /** カード右下に付ける丸い印 (例: "日本") */
+            stamp: z.string().optional(),
           }),
         )
         .min(2),
+    }),
+  }),
+  z.object({
+    ...sceneBaseSchema,
+    layout: z.literal('share'),
+    content: z.object({
+      /** グラフの上に出す題 (例: "世界の半導体シェア（1988年）") */
+      title: z.string().optional(),
+      /** 1本の帯を区切って割合を見せる。value の合計で幅を割る */
+      segments: z
+        .array(
+          z.object({
+            id: z.string(),
+            /** 帯の中に大きく出す値 (例: "約5割") */
+            display: z.string(),
+            /** 値の下の小さな説明 (例: "日本製") */
+            label: z.string().optional(),
+            value: z.number().positive(),
+            tone: z.enum(['warning', 'accent', 'muted']).default('accent'),
+          }),
+        )
+        .min(1)
+        .max(5),
+      /** 帯の下の出典・注記 */
+      source: z.string().optional(),
+    }),
+  }),
+  z.object({
+    ...sceneBaseSchema,
+    layout: z.literal('scene3d'),
+    content: z.object({
+      /**
+       * 3D の場面の種類 (three.js で描画)。
+       *   phoneChip: スマホの箱が開き、基板の上のチップへカメラが寄っていく
+       */
+      preset: z.literal('phoneChip'),
+      /** 引き出し線で指す注釈 (reveal "label" で出る) */
+      label: z.object({ title: z.string(), sub: z.string().optional() }).optional(),
+      /** 右上の数字カード (reveal "stat" で出る) */
+      stat: z
+        .object({
+          kicker: z.string().optional(),
+          value: z.string(),
+          note: z.string().optional(),
+        })
+        .optional(),
     }),
   }),
   z.object({
@@ -205,6 +259,8 @@ const sceneSchema = z.discriminatedUnion('layout', [
     layout: z.literal('bars'),
     content: z.object({
       caption: z.string().optional(),
+      /** 棒の全幅にあたる値 (例: 割合なら 100)。省略時は items の最大値 */
+      max: z.number().positive().optional(),
       items: z
         .array(
           z.object({
@@ -295,13 +351,23 @@ const sceneSchema = z.discriminatedUnion('layout', [
   }),
 ]);
 
-export const themeNameSchema = z.enum(['clean', 'pop', 'dark']);
+export const themeNameSchema = z.enum(['clean', 'pop', 'dark', 'paper']);
 
 export const metaSchema = z.object({
   /** 動画タイトル (サムネイル・概要欄の既定値に使う) */
   title: z.string().optional(),
   /** 配色テーマ */
   theme: themeNameSchema.default('clean'),
+  /**
+   * 画面左上の柱 (editorial なテーマ = paper で表示)。例: label "図解 No.01" / title "半導体の回路を焼く機械"。
+   * シーンに chapter があれば title の代わりにそれを出す
+   */
+  header: z
+    .object({
+      label: z.string().optional(),
+      title: z.string().optional(),
+    })
+    .optional(),
   /** 既定のシーントランジション */
   transition: transitionSchema.default('slide'),
   /** 既定の出現アニメーション */

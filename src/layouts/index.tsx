@@ -15,6 +15,8 @@ import { AxesLayout } from './AxesLayout';
 import { StatementLayout } from './StatementLayout';
 import { ImageLayout } from './ImageLayout';
 import { RankingLayout } from './RankingLayout';
+import { ShareLayout } from './ShareLayout';
+import { Scene3DLayout } from './Scene3DLayout';
 
 /** レイアウト種別 → 描画コンポーネント */
 export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
@@ -50,5 +52,9 @@ export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
       return <ImageLayout content={scene.content} hasHeading={hasHeading} />;
     case 'ranking':
       return <RankingLayout content={scene.content} />;
+    case 'share':
+      return <ShareLayout content={scene.content} hasHeading={hasHeading} />;
+    case 'scene3d':
+      return <Scene3DLayout content={scene.content} />;
   }
 };

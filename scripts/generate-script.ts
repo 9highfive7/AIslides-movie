@@ -60,7 +60,9 @@ lines の各要素: { "text": "読み上げと字幕に使う日本語", "reveal
 8. "statement": 一文を大きく見せるキメの画面。content = { "text": "20字程度の一文 (**強調**にマーカーが引かれる。改行は\\n)", "sub": "補足(省略可)", "icon": "…(省略可)" }。要素IDは "text" と "sub"。結論や驚きの事実に使う。
 9. "ranking": ランキング。content = { "items": [ { "id": "r-1", "title": "…", "body": "…(省略可)", "icon": "…(省略可)" }, ... ] }。items は1位から順に3〜5個。下位から順に reveal すると盛り上がる。
 10. "checklist": 番号付きチェックリスト。content = { "items": [ { "id": "c-1", "text": "…", "note": "…(省略可)" }, ... ] }。items は2〜4個。
-11. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。最後のシーンは必ず outro。
+11. "share": 1本の帯を区切って割合 (シェア) を見せるグラフ。content = { "title": "グラフの題(省略可)", "segments": [ { "id": "sh-1", "display": "約5割", "label": "日本製(省略可)", "value": 50, "tone": "warning / accent / muted" }, ... ], "source": "出典(省略可)" }。segments は1〜3個。区分は reveal したときに左から伸びる。
+12. "scene3d": 3D の場面 (three.js)。現在は preset "phoneChip" (スマホの箱が開き、基板の上のチップへカメラが寄る) のみ。content = { "preset": "phoneChip", "label": { "title": "半導体", "sub": "スマホの頭脳(省略可)" }, "stat": { "kicker": "…(省略可)", "value": "190億個", "note": "出典(省略可)" } }。要素IDは "open" (箱が開く) / "zoom" (チップへ寄る) / "label" (注釈) / "stat" (数字カード)。スマホや半導体の話の導入にだけ使う。
+13. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。最後のシーンは必ず outro。
 
 ## ルール
 - シーン全体は5〜10個。1画面の情報量は絞る。同じレイアウトを3回以上連続させない

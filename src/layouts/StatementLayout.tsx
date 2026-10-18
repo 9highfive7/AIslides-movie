@@ -1,9 +1,11 @@
 import React from 'react';
+import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { Reveal } from '../components/Reveal';
 import { IconBox } from '../components/IconBox';
 import { KineticText } from '../components/KineticText';
 import { PAGE, useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
+import { SPRINGS, springFrom } from '../animation/presets';
 
 /**
  * 一文を大きく見せる「キメ」のレイアウト。
@@ -16,7 +18,13 @@ export const StatementLayout: React.FC<{
 }> = ({ content, hasHeading }) => {
   const theme = useTheme();
   const ctx = useSceneContext();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const textAt = ctx.appearAt('text', 1);
+  const editorial = theme.chrome === 'editorial';
+  const stagger = editorial ? 1.1 : 1.6;
+  const chars = [...content.text.replace(/\*\*|\n/g, '')].length;
+  const ruleP = springFrom(frame, textAt + chars * stagger + 6, fps, SPRINGS.smooth);
 
   return (
     <div
@@ -41,18 +49,24 @@ export const StatementLayout: React.FC<{
       <KineticText
         text={content.text}
         at={textAt}
-        stagger={1.6}
-        rise={0.7}
+        stagger={stagger}
+        rise={editorial ? 0.3 : 0.7}
         markerColor={theme.colors.highlight}
         markerInk={theme.colors.highlightInk}
         style={{
-          fontSize: 76,
-          fontWeight: 900,
-          lineHeight: 1.35,
+          fontFamily: theme.fonts.display,
+          fontSize: editorial ? 60 : 76,
+          fontWeight: editorial ? 600 : 900,
+          lineHeight: editorial ? 1.6 : 1.35,
+          letterSpacing: editorial ? '0.04em' : undefined,
           textAlign: 'center',
           color: theme.colors.ink,
         }}
       />
+      {editorial ? (
+        // 文の下に細い罫線を引く (図解ドキュメンタリー風)
+        <div style={{ width: 640 * ruleP, height: 2, backgroundColor: theme.colors.ink, marginTop: -6 }} />
+      ) : null}
       {content.sub ? (
         <Reveal id="sub" order={3} preset="fadeUp">
           <div style={{ fontSize: 26, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 1.6 }}>

@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Img, staticFile } from 'remotion';
 import { parseMarkup } from '../shared/markup';
 import { script } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
+import { THEMES, ThemeContext } from './themes';
 import { ensureFonts } from './fonts';
 import { SceneBackground } from './components/SceneBackground';
 
@@ -30,8 +30,10 @@ const outline = (color: string, width: number): string =>
  * 太い縁取り文字 + **強調** の色替えで、小さく表示されても読める。
  */
 export const Thumbnail: React.FC = () => {
-  ensureFonts();
   const theme = THEMES[script.meta.theme];
+  ensureFonts(theme.fonts);
+  // editorial なテーマ (paper) は紙の上に墨文字。縁取りはせず明朝で見せる
+  const editorial = theme.chrome === 'editorial';
   const thumb = resolveThumbnail();
   const lines = thumb.text.split('\n');
   const longest = Math.max(...lines.map((l) => [...l.replace(/\*\*/g, '')].length), 1);
@@ -43,8 +45,8 @@ export const Thumbnail: React.FC = () => {
 
   return (
     <ThemeContext.Provider value={theme}>
-      <AbsoluteFill style={{ fontFamily: FONT_FAMILY, backgroundColor: theme.colors.darkBg, overflow: 'hidden' }}>
-        <SceneBackground variant="dark" animated={false} seed={3} />
+      <AbsoluteFill style={{ fontFamily: theme.fonts.body, backgroundColor: theme.colors.darkBg, overflow: 'hidden' }}>
+        <SceneBackground variant={editorial ? 'light' : 'dark'} animated={false} seed={3} />
         {thumb.image ? (
           <>
             <Img src={staticFile(thumb.image)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -108,16 +110,17 @@ export const Thumbnail: React.FC = () => {
               key={i}
               style={{
                 fontSize,
+                fontFamily: theme.fonts.display,
                 fontWeight: 900,
                 lineHeight: 1.18,
-                color: '#FFFFFF',
+                color: editorial ? theme.colors.ink : '#FFFFFF',
                 textAlign: 'center',
                 letterSpacing: '0.01em',
-                textShadow: `${outline('#111111', 10)}, 0 14px 30px rgba(0,0,0,0.5)`,
+                textShadow: editorial ? undefined : `${outline('#111111', 10)}, 0 14px 30px rgba(0,0,0,0.5)`,
               }}
             >
               {parseMarkup(line).map((seg, j) => (
-                <span key={j} style={seg.strong ? { color: theme.name === 'pop' ? '#FFD60A' : theme.colors.onDarkAccent } : undefined}>
+                <span key={j} style={seg.strong ? { color: theme.name === 'pop' ? '#FFD60A' : editorial ? theme.colors.warning : theme.colors.onDarkAccent } : undefined}>
                   {seg.text}
                 </span>
               ))}
