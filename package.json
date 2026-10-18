@@ -2,13 +2,17 @@
   "name": "narration-slides",
   "version": "1.0.0",
   "private": true,
-  "description": "台本ファイルから音声・字幕・アニメーションタイミングを自動生成する解説スライド動画パイプライン (VOICEVOX × Remotion)",
+  "description": "台本ファイルから音声・字幕・アニメーション・効果音を自動生成する YouTube 向け解説動画パイプライン (VOICEVOX × Remotion)",
   "scripts": {
     "audio": "tsx scripts/generate-audio.ts",
     "audio:mock": "tsx scripts/generate-audio.ts --mock",
     "script": "tsx scripts/generate-script.ts",
+    "sfx": "tsx scripts/generate-sfx.ts",
     "dev": "remotion studio",
     "render": "remotion render Slideshow out/video.mp4",
+    "thumbnail": "remotion still Thumbnail out/thumbnail.png",
+    "youtube": "tsx scripts/generate-youtube.ts",
+    "build:youtube": "npm run render && npm run thumbnail && npm run youtube",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

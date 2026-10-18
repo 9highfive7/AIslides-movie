@@ -10,15 +10,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { scriptSchema, type ScriptConfig, type TimelineLine, type TimelineScene } from '../src/schemas';
+import { lintScript } from '../src/elements';
+import { stripMarkup } from '../shared/markup';
 import {
   FPS,
   GAP_BETWEEN_LINES_FRAMES,
   SCENE_LEAD_FRAMES,
   SCENE_TAIL_FRAMES,
+  TRANSITION_HALF_FRAMES,
 } from '../shared/timing';
 import { assertEngineAlive, loadVoicevoxConfig, synthesize } from './lib/voicevox';
-import { readWavDuration, writeSilentWav } from './lib/wav';
+import { readWavDuration, readWavPcm, writeSilentWav } from './lib/wav';
 import { estimateDurationSec } from './lib/estimate';
+import { levelsFromSamples, mockLevels } from './lib/levels';
 
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -43,10 +47,16 @@ const readScript = (scriptPath: string): ScriptConfig => {
           .join('\n'),
     );
   }
+  for (const issue of lintScript(result.data)) {
+    console.warn(`  注意: ${issue}`);
+  }
   return result.data;
 };
 
 async function main(): Promise<void> {
+  if (TRANSITION_HALF_FRAMES > Math.min(SCENE_LEAD_FRAMES, SCENE_TAIL_FRAMES)) {
+    throw new Error('shared/timing.ts: TRANSITION_FRAMES の半分は SCENE_LEAD / SCENE_TAIL 以下にしてください');
+  }
   const mock = process.argv.includes('--mock');
 
   const script = readScript(path.join(PUBLIC_DIR, 'script.json'));
@@ -77,20 +87,26 @@ async function main(): Promise<void> {
       const line = scene.lines[i];
       const fileName = `${scene.id}_${i}.wav`;
       const filePath = path.join(AUDIO_DIR, fileName);
+      // 字幕の **強調** は読み上げない。speech があれば読みを優先する
+      const speech = line.speech ?? stripMarkup(line.text);
 
       let durationSec: number;
+      let levels: string;
       if (mock) {
-        durationSec = estimateDurationSec(line.text, config.speedScale);
+        durationSec = estimateDurationSec(speech, config.speedScale);
         writeSilentWav(filePath, durationSec);
+        levels = mockLevels(Math.max(1, Math.round(durationSec * FPS)));
       } else {
         const wav = await synthesize({
           endpoint: config.endpoint,
           speakerId: config.speakerId,
           speedScale: config.speedScale,
-          text: line.text,
+          text: speech,
         });
         fs.writeFileSync(filePath, wav);
         durationSec = readWavDuration(wav);
+        const pcm = readWavPcm(wav);
+        levels = levelsFromSamples(pcm.samples, pcm.sampleRate, FPS, Math.max(1, Math.round(durationSec * FPS)));
       }
 
       const durationFrames = Math.max(1, Math.round(durationSec * FPS));
@@ -98,9 +114,12 @@ async function main(): Promise<void> {
         index: i,
         text: line.text,
         reveal: line.reveal,
+        focus: line.focus,
+        ...(line.sfx ? { sfx: line.sfx } : null),
         startFrame: lineStart,
         durationFrames,
         audioFile: `audio/${fileName}`,
+        levels,
         mock,
       });
       console.log(

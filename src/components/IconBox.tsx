@@ -48,9 +48,46 @@ import {
   Wallet,
   Workflow,
   Zap,
+  Atom,
+  Banknote,
+  Bell,
+  Bot,
+  Brain,
+  Calendar,
+  Camera,
+  Cpu,
+  Crown,
+  DollarSign,
+  Eye,
+  Flame,
+  Gift,
+  Hand,
+  Heart,
+  Hourglass,
+  Image,
+  Key,
+  Link,
+  Lock,
+  Mail,
+  Medal,
+  Megaphone,
+  MessageCircle,
+  Palette,
+  Puzzle,
+  Repeat,
+  Send,
+  Smartphone,
+  Sparkles,
+  Star,
+  Terminal,
+  ThumbsUp,
+  Trophy,
+  Video,
+  Wrench,
+  CircleX,
   type LucideIcon,
 } from 'lucide-react';
-import { COLORS } from '../theme';
+import { useTheme } from '../theme';
 
 /** script.json の icon フィールドに指定できるキー → lucide の線アイコン */
 const REGISTRY: Record<string, LucideIcon> = {
@@ -101,7 +138,47 @@ const REGISTRY: Record<string, LucideIcon> = {
   'piggy-bank': PiggyBank,
   scissors: Scissors,
   'square-check': SquareCheckBig,
+  atom: Atom,
+  banknote: Banknote,
+  bell: Bell,
+  bot: Bot,
+  brain: Brain,
+  calendar: Calendar,
+  camera: Camera,
+  cpu: Cpu,
+  crown: Crown,
+  dollar: DollarSign,
+  eye: Eye,
+  flame: Flame,
+  gift: Gift,
+  hand: Hand,
+  heart: Heart,
+  hourglass: Hourglass,
+  image: Image,
+  key: Key,
+  link: Link,
+  lock: Lock,
+  mail: Mail,
+  medal: Medal,
+  megaphone: Megaphone,
+  message: MessageCircle,
+  palette: Palette,
+  puzzle: Puzzle,
+  repeat: Repeat,
+  send: Send,
+  smartphone: Smartphone,
+  sparkles: Sparkles,
+  star: Star,
+  terminal: Terminal,
+  'thumbs-up': ThumbsUp,
+  trophy: Trophy,
+  video: Video,
+  wrench: Wrench,
+  'x-circle': CircleX,
 };
+
+/** 台本で使えるアイコンキーの一覧 (台本生成プロンプトにも使う) */
+export const ICON_NAMES = Object.keys(REGISTRY);
 
 /**
  * lucide系の線アイコンを淡い背景の四角に入れたもの。
@@ -112,16 +189,17 @@ export const IconBox: React.FC<{
   size?: number;
   tone?: 'accent' | 'warning';
 }> = ({ name, size = 60, tone = 'accent' }) => {
+  const theme = useTheme();
   const Icon = (name !== undefined && REGISTRY[name]) || CircleDot;
-  const color = tone === 'warning' ? COLORS.warning : COLORS.accent;
-  const backgroundColor = tone === 'warning' ? COLORS.warningSoft : COLORS.accentSoft;
+  const color = tone === 'warning' ? theme.colors.warning : theme.colors.accent;
+  const backgroundColor = tone === 'warning' ? theme.colors.warningSoft : theme.colors.accentSoft;
 
   return (
     <div
       style={{
         width: size,
         height: size,
-        borderRadius: 8,
+        borderRadius: Math.min(theme.radius, size * 0.3),
         backgroundColor,
         display: 'flex',
         alignItems: 'center',
@@ -129,7 +207,7 @@ export const IconBox: React.FC<{
         flexShrink: 0,
       }}
     >
-      <Icon size={Math.round(size * 0.5)} strokeWidth={1.75} color={color} />
+      <Icon size={Math.round(size * 0.5)} strokeWidth={theme.name === 'pop' ? 2.25 : 1.75} color={color} />
     </div>
   );
 };

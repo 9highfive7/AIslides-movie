@@ -6,6 +6,7 @@
 # source_type を prompt / url にすると、LLM で台本を自動生成してから動画化する
 # (リポジトリの Settings → Secrets and variables → Actions に OPENAI_API_KEY を登録)。
 # source_type = none の場合は、リポジトリにコミット済みの public/script.json を使う。
+# 成果物: 動画 (video.mp4)・サムネイル (thumbnail.png)・概要欄の目次と字幕 (youtube/)
 name: generate-video
 
 on:
@@ -23,6 +24,15 @@ on:
         description: プロンプトまたはURL (prompt / url 選択時のみ)
         required: false
         default: ''
+      theme:
+        description: 配色テーマ (keep = script.json の設定のまま。台本生成時のみ有効)
+        type: choice
+        default: keep
+        options:
+          - keep
+          - clean
+          - pop
+          - dark
   repository_dispatch:
     types: [generate-video]
 
@@ -81,9 +91,11 @@ jobs:
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             echo "type=${{ github.event.client_payload.source_type }}" >> "$GITHUB_OUTPUT"
             echo "value=${{ github.event.client_payload.source }}" >> "$GITHUB_OUTPUT"
+            echo "theme=${{ github.event.client_payload.theme }}" >> "$GITHUB_OUTPUT"
           else
             echo "type=${{ inputs.source_type }}" >> "$GITHUB_OUTPUT"
             echo "value=${{ inputs.source }}" >> "$GITHUB_OUTPUT"
+            echo "theme=${{ inputs.theme }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate script (prompt / url)
@@ -94,15 +106,20 @@ jobs:
           SCRIPT_MODEL: ${{ vars.SCRIPT_MODEL }}
           SRC_TYPE: ${{ steps.src.outputs.type }}
           SRC_VALUE: ${{ steps.src.outputs.value }}
+          SRC_THEME: ${{ steps.src.outputs.theme }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
             echo "OPENAI_API_KEY が未設定です。リポジトリの Secrets に登録するか、source_type=none で既存の script.json を使ってください。"
             exit 1
           fi
+          THEME_ARGS=()
+          if [ -n "$SRC_THEME" ] && [ "$SRC_THEME" != "keep" ]; then
+            THEME_ARGS=(--theme "$SRC_THEME")
+          fi
           if [ "$SRC_TYPE" = "url" ]; then
-            npm run script -- --url "$SRC_VALUE"
+            npm run script -- "${THEME_ARGS[@]}" --url "$SRC_VALUE"
           else
-            npm run script -- "$SRC_VALUE"
+            npm run script -- "${THEME_ARGS[@]}" "$SRC_VALUE"
           fi
 
       - name: Generate audio + timeline
@@ -110,6 +127,11 @@ jobs:
 
       - name: Render video
         run: npm run render
+
+      - name: Render thumbnail + YouTube metadata (chapters / captions)
+        run: |
+          npm run thumbnail
+          npm run youtube
 
       - name: Commit script + timeline back to repo
         if: ${{ steps.src.outputs.type != 'none' && steps.src.outputs.type != '' }}
@@ -130,5 +152,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: video
-          path: out/video.mp4
+          path: |
+            out/video.mp4
+            out/thumbnail.png
+            out/youtube/
           retention-days: 30

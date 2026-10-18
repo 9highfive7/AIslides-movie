@@ -1,54 +1,23 @@
 import React from 'react';
 import { Reveal } from '../components/Reveal';
 import { IconBox } from '../components/IconBox';
-import { CARD, COLORS, PAGE } from '../theme';
-import type { Scene } from '../schemas';
-import type { RevealAt } from '../Slideshow';
+import { useTheme } from '../theme';
+import { ContentArea, type ContentOf } from './common';
 
-type BulletsScene = Extract<Scene, { layout: 'bullets' }>;
-
-/** 縦の箇条書きレイアウト。白背景カードを縦に積む */
-export const BulletsLayout: React.FC<{
-  content: BulletsScene['content'];
-  revealAt: RevealAt;
-}> = ({ content, revealAt }) => {
+/** 縦の箇条書きレイアウト。カードが左から順に滑り込む */
+export const BulletsLayout: React.FC<{ content: ContentOf<'bullets'> }> = ({ content }) => {
+  const theme = useTheme();
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: PAGE.paddingX,
-        right: PAGE.paddingX,
-        top: PAGE.contentTop,
-        bottom: 220,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <ContentArea>
       <div style={{ width: 1160, display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {content.items.map((item) => (
-          <Reveal key={item.id} at={revealAt(item.id)}>
-            <div
-              style={{
-                ...CARD,
-                padding: '26px 32px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 24,
-              }}
-            >
+        {content.items.map((item, i) => (
+          <Reveal key={item.id} id={item.id} order={i} preset="slideLeft">
+            <div style={{ ...theme.card, padding: '26px 32px', display: 'flex', alignItems: 'center', gap: 24 }}>
               <IconBox name={item.icon} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 23, fontWeight: 700 }}>{item.title}</div>
+                <div style={{ fontSize: 24, fontWeight: 800 }}>{item.title}</div>
                 {item.body ? (
-                  <div
-                    style={{
-                      fontSize: 16,
-                      lineHeight: 1.65,
-                      color: COLORS.textSecondary,
-                      marginTop: 6,
-                    }}
-                  >
+                  <div style={{ fontSize: 17, lineHeight: 1.65, color: theme.colors.textSecondary, marginTop: 6 }}>
                     {item.body}
                   </div>
                 ) : null}
@@ -57,6 +26,6 @@ export const BulletsLayout: React.FC<{
           </Reveal>
         ))}
       </div>
-    </div>
+    </ContentArea>
   );
 };

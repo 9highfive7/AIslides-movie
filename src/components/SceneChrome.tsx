@@ -1,14 +1,24 @@
 import React from 'react';
-import { COLORS, PAGE } from '../theme';
+import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { PAGE, useTheme } from '../theme';
+import { SPRINGS, springFrom } from '../animation/presets';
 
 /**
  * コンテンツシーンの補助装飾。
- * 左下の章タグ (reference動画の「02 仕組み」相当) と右上部のバッジ。
+ * 左下の章タグ (例:「02 仕組み」) は下から、右上部のバッジは弾んで出現する。
  */
-export const SceneChrome: React.FC<{ chapter?: string; badge?: string }> = ({
+export const SceneChrome: React.FC<{ chapter?: string; badge?: string; at: number }> = ({
   chapter,
   badge,
+  at,
 }) => {
+  const theme = useTheme();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const chapterP = springFrom(frame, at + 8, fps, SPRINGS.snappy);
+  const badgeP = springFrom(frame, at + 14, fps, SPRINGS.bouncy);
+  const fade = (p: number) => interpolate(p, [0, 0.5], [0, 1], { extrapolateRight: 'clamp' });
+
   return (
     <>
       {chapter ? (
@@ -17,13 +27,15 @@ export const SceneChrome: React.FC<{ chapter?: string; badge?: string }> = ({
             position: 'absolute',
             left: PAGE.paddingX,
             bottom: 216,
-            border: `1.5px solid ${COLORS.accent}`,
+            border: `1.5px solid ${theme.colors.accent}`,
             borderRadius: 6,
             padding: '8px 18px',
             fontSize: 17,
             fontWeight: 700,
-            color: COLORS.accent,
-            backgroundColor: '#FFFFFF',
+            color: theme.colors.accent,
+            backgroundColor: theme.colors.surface,
+            opacity: fade(chapterP),
+            transform: `translateY(${(1 - chapterP) * 24}px)`,
           }}
         >
           {chapter}
@@ -35,13 +47,14 @@ export const SceneChrome: React.FC<{ chapter?: string; badge?: string }> = ({
             position: 'absolute',
             right: PAGE.paddingX,
             top: 92,
-            borderRadius: 6,
-            padding: '8px 18px',
-            fontSize: 17,
-            fontWeight: 700,
-            color: COLORS.accent,
-            backgroundColor: COLORS.accentSoft,
-            border: `1px solid ${COLORS.accentBorder}`,
+            borderRadius: 999,
+            padding: '10px 24px',
+            fontSize: 19,
+            fontWeight: 800,
+            color: theme.colors.onAccent,
+            backgroundColor: theme.colors.accent,
+            opacity: fade(badgeP),
+            transform: `scale(${badgeP}) rotate(${(1 - badgeP) * -12 + 3}deg)`,
           }}
         >
           {badge}
