@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "title": "なぜ自販機は1台で冷たいと温かいを同時に出せるのか",
+    "theme": "paper",
+    "header": {
+      "label": "図解 No.02",
+      "title": "自販機の冷温の秘密"
+    },
+    "transition": "fade",
+    "progressBar": false,
+    "avatar": false,
+    "subtitle": {
+      "style": "box"
+    },
+    "sfx": {
+      "volume": 0.35,
+      "reveal": false,
+      "transition": false
+    },
+    "thumbnail": {
+      "text": "冷たいと温かいを\n**1台で**出せる理由",
+      "sub": "道端の箱のヒミツ"
+    }
+  },
+  "scenes": [
+    {
+      "id": "hook-box",
+      "layout": "statement",
+      "content": {
+        "text": "道端のあの箱は\n日本に**約390万台**",
+        "sub": "自動販売機。世界でも有数の自販機大国です"
+      },
+      "lines": [
+        {
+          "text": "あなたの近くにもある、あの箱。",
+          "reveal": [
+            "text"
+          ]
+        },
+        {
+          "text": "自動販売機は日本に**約390万台**。世界でも有数の自販機大国です。",
+          "reveal": [
+            "sub"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "layout": "statement",
+      "content": {
+        "text": "なぜ1台で\n**冷たい**と温かいを\n出せるのか",
+        "sub": "コーヒーはホットもアイスも選べます"
+      },
+      "lines": [
+        {
+          "text": "しかもこの箱、冷たい飲み物と温かい飲み物を同時に売っています。",
+          "reveal": [
+            "text"
+          ]
+        },
+        {
+          "text": "なぜ、1台で両方を出せるのでしょうか。",
+          "reveal": [
+            "sub"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-pump",
+      "layout": "section",
+      "chapter": "秘密は熱の使い回し",
+      "content": {
+        "number": "1つ目",
+        "title": "秘密は\nヒートポンプ"
+      },
+      "lines": [
+        {
+          "text": "その秘密は、エアコンと同じ**ヒートポンプ**です。"
+        }
+      ]
+    },
+    {
+      "id": "flow-heat",
+      "layout": "flow",
+      "chapter": "秘密は熱の使い回し",
+      "content": {
+        "steps": [
+          {
+            "id": "compress",
+            "title": "圧縮",
+            "body": "気体をぎゅっと圧縮して熱くする"
+          },
+          {
+            "id": "release",
+            "title": "放熱",
+            "body": "温かい側に熱を放出する"
+          },
+          {
+            "id": "expand",
+            "title": "膨張",
+            "body": "一気に膨らませて冷たくする"
+          },
+          {
+            "id": "absorb",
+            "title": "吸熱",
+            "body": "冷たい側から熱を吸い取る"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "text": "中では、冷媒という気体がぐるぐる回っています。",
+          "reveal": [
+            "compress"
+          ]
+        },
+        {
+          "text": "冷やすときに出る捨てるはずの熱を、**温める側に再利用**します。",
+          "reveal": [
+            "release"
+          ]
+        },
+        {
+          "text": "冷媒の流れを切り替えると、冷やすと温めるが入れ替わります。",
+          "reveal": [
+            "expand",
+            "absorb"
+          ]
+        }
+      ],
+      "heading": "冷媒が熱を運ぶ"
+    },
+    {
+      "id": "section-num",
+      "layout": "section",
+      "chapter": "だから省エネ",
+      "content": {
+        "number": "2つ目",
+        "title": "熱をムダにしない\nから省エネ"
+      },
+      "lines": [
+        {
+          "text": "熱をムダにしない仕組みは、省エネにもつながっています。"
+        }
+      ]
+    },
+    {
+      "id": "stats-num",
+      "layout": "stats",
+      "chapter": "だから省エネ",
+      "content": {
+        "items": [
+          {
+            "id": "card1",
+            "kicker": "1つ目",
+            "value": "約220万台",
+            "label": "飲料用自販機の台数",
+            "body": "全部でも約390万台。道端の定番です",
+            "note": "日本自動販売システム機械工業会（2024年末）",
+            "tone": "warning"
+          },
+          {
+            "id": "card2",
+            "kicker": "2つ目",
+            "value": "約1,000kWh",
+            "label": "1台の年間消費電力",
+            "body": "一般家庭の約2〜3か月分に相当",
+            "note": "自販機業界の公表資料に基づく解説",
+            "tone": "normal"
+          },
+          {
+            "id": "card3",
+            "kicker": "3つ目",
+            "value": "約7割",
+            "label": "20年間で減らした消費電力",
+            "body": "1991年比。省エネ機の普及で",
+            "note": "日本自動販売システム機械工業会",
+            "tone": "normal",
+            "stamp": "省エネ"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "text": "1つ目。飲料用だけでも**約220万台**並んでいます。",
+          "reveal": [
+            "card1"
+          ]
+        },
+        {
+          "text": "2つ目。1台の年間消費電力は**約1,000kWh**。家庭の2〜3か月分です。",
+          "reveal": [
+            "card2"
+          ],
+          "speech": "2つ目。1台の年間消費電力は約1000キロワットアワー。家庭の2〜3か月分です。"
+        },
+        {
+          "text": "3つ目。省エネ機の普及で、20年間で約7割減らしました。",
+          "reveal": [
+            "card3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "layout": "statement",
+      "chapter": "だから省エネ",
+      "content": {
+        "text": "捨てるはずの熱の\n**使い回し**が答え",
+        "sub": "冷たいを上手に作ると、温かいも安く作れる"
+      },
+      "lines": [
+        {
+          "text": "答えは、捨てるはずの熱の使い回しでした。",
+          "reveal": [
+            "text"
+          ]
+        },
+        {
+          "text": "冷たいを上手に作ると、温かいも安く作れるんです。",
+          "reveal": [
+            "sub"
+          ]
+        }
+      ]
+    }
+  ]
+}
