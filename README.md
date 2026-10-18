@@ -136,13 +136,26 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | `table` | `headers[]`（`{ label, tone? }`）+ `rows[]` — `{ id, label, note?, cells: [{ text, tone? }] }` + `source?`。`tone` は `good` / `bad` / `normal` | 各行の `id` | ヘッダーが降り、行が滑り込む |
 | `bars` | `items[]` — `{ id, label, value, display?, tone? }` + `caption?` + `max?`（棒の全幅にあたる値。割合なら `100`。省略時は最大値） | 各項目の `id` / `caption` | バーが伸び、数値がカウントアップ |
 | `share` | 1本の帯を区切った割合のグラフ。`title?` / `segments[]` — `{ id, display, label?, value, tone? }`（`tone`: `warning` 朱 / `accent` 紺 / `muted` 灰）/ `source?` | 各区分の `id` / `source` | 空の枠が出て、区分が reveal で左から伸びる |
-| `scene3d` | three.js の 3D の場面。`preset: "phoneChip"`（スマホの箱が開き、基板の上のチップへカメラが寄る）/ `label?`（`{ title, sub? }` 引き出し線の注釈）/ `stat?`（`{ kicker?, value, note? }` 右上の数字カード） | `open`（箱が開く）/ `label` / `zoom`（チップへ寄る）/ `stat`（zoom の後なら、さらに表面まで寄る） | 蓋が開く → 注釈 → カメラが寄る → 数字がカウントアップ |
+| `scene3d` | three.js の 3D の場面。`preset` で場面を選ぶ（下の表）。共通: `title?`（上部中央の一文。`**強調**` は朱）/ `stat?`（`{ kicker?, value, note? }` 数字カード）/ `callouts?`（`[{ id, title, sub?, tone? }]` 物を指す注釈。場面ごとに決まった位置に順に入る。`tone`: `accent` 紺 / `warning` 朱 / `muted` 灰）/ `label?`（phoneChip 用） | 場面ごとの要素ID（下の表）＋ `title` / `stat` / 各 callout の `id` | 物の動きが reveal に合わせて始まる。注釈の線は物を追いかける |
 | `checklist` | `items[]` — `{ id, text, note? }` | 各項目の `id` | カードの後にチェックが「ポン」と付く |
 | `axes` | `xAxis { label }` / `yAxis { label }` / `hint?` | `axes` / `hint` | 軸が線を引くように描かれる |
 | `statement` | 一文を大きく見せるキメ画面。`text`（`**強調**` にマーカー・`\n` 改行）/ `sub?` / `icon?` | `text` / `sub` | 1文字ずつ弾み、マーカーが引かれる |
 | `ranking` | `items[]` — `{ id, rank?, icon?, title, body? }`（2〜5個。1位から順に書く） | 各項目の `id` | reveal なしなら下位から出現。1位は王冠と光の帯 |
 | `image` | `src`（`public/` からの相対パス or https URL）/ `caption?` / `fit?`（`cover` / `contain`） | `image` / `caption` | 画像がゆっくりズーム＆パン |
 | `outro` | `title?`（既定「ご視聴ありがとうございました」）/ `message?` / `subscribe?`（既定 true）/ `endScreen?`（既定 true） | なし | 登録ボタンのクリック演出。`endScreen` で YouTube 終了画面用の枠を表示 |
+
+**scene3d の場面（preset）**
+
+| preset | 見せるもの | 要素ID | callouts の位置 |
+|---|---|---|---|
+| `phoneChip` | スマホの箱が開き、基板の上のチップへカメラが寄る | `open` / `label` / `zoom` | — |
+| `vendingCount` | 自販機が1台 → カメラが引くと、同じ自販機がずらっと並んでいる（台数の多さ） | `machine` / `many` | — |
+| `vendingHotCold` | 自販機の左右に「冷たさ」と「熱」の玉が飛んでくる | `machine` / `cold` / `heat` | 1: 冷たさの玉 / 2: 熱の玉 |
+| `vendingCutaway` | 扉が開いて中が見え、冷媒の管の中を「熱」の玉が運ばれる（ヒートポンプ） | `open` / `flow` | 1: 吸熱 / 2: 圧縮機 / 3: 放熱 / 4: 膨張弁 |
+| `heatReuse` | 左: 冷蔵庫は熱を外へ捨てる / 右: 自販機は熱を温める側へ回す | `left` / `right` | 1: 捨てる熱 / 2: 回す熱 |
+| `vendingEnergy` | 自販機 → 稲妻 → 家。カレンダーの1〜3月がめくれて朱色になる | `machine` / `bolt` / `house` / `months` | 1: カレンダー |
+
+物（自販機・熱の玉・冷蔵庫・家・稲妻・カレンダー）は `src/three/objects.tsx` と `src/three/parts.tsx`、場面の組み立てとカメラの動きは `src/three/presets.tsx` にあります。新しい場面は `presets.tsx` に1つ足し、`src/schemas.ts` の `preset` と `src/elements.ts` の `SCENE3D_ELEMENT_IDS` に名前を足します。サンプル: `templates/zukai-02-vending-machine.json`（5つの 3D 場面を使った自販機の話）。
 
 - シーンには `chapter`（左下の章タグ、例: `"chapter": "02 仕組み"`）と `badge`（右上のバッジ、例: `"badge": "おすすめ"`）を付けられます。
 - `icon` に指定できるキーは約85種（`check` `search` `shield-check` `target` `chart-bar` `trophy` `sparkles` `brain` `bell` など）。一覧は `src/components/IconBox.tsx` のレジストリを参照。未登録キーはプレースホルダー表示になります。

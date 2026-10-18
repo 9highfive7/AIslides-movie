@@ -1,5 +1,21 @@
 import type { ScriptConfig, Scene } from './schemas';
 
+/** 3D の場面ごとに、reveal で動かせる物のID */
+export const SCENE3D_ELEMENT_IDS = {
+  // open: 箱が開く / zoom: チップへ寄る / label: 注釈
+  phoneChip: ['open', 'zoom', 'label'],
+  // machine: 自販機が出る / many: 引いて大量の自販機を見せる
+  vendingCount: ['machine', 'many'],
+  // cold / heat: 冷たさと熱の玉が飛んでくる
+  vendingHotCold: ['machine', 'cold', 'heat'],
+  // open: 扉が開いて中が見える / flow: 管の中を熱が流れ始める
+  vendingCutaway: ['open', 'flow'],
+  // left: 冷蔵庫 (熱を捨てる) / right: 自販機 (熱を回す)
+  heatReuse: ['left', 'right'],
+  // machine / bolt: 稲妻 / house: 家 / months: カレンダーがめくれる
+  vendingEnergy: ['machine', 'bolt', 'house', 'months'],
+} as const;
+
 /**
  * シーン内で reveal / focus に指定できる要素IDの一覧。
  * レイアウトの描画側と同じ規則 (矢印の自動ID など) をここに集約する。
@@ -43,8 +59,12 @@ export const elementIds = (scene: Scene): string[] => {
     case 'share':
       return [...scene.content.segments.map((seg) => seg.id), 'source'];
     case 'scene3d':
-      // open: 箱が開く / zoom: チップへ寄る / label: 注釈 / stat: 数字カード
-      return ['open', 'zoom', 'label', 'stat'];
+      return [
+        ...SCENE3D_ELEMENT_IDS[scene.content.preset],
+        'title',
+        'stat',
+        ...scene.content.callouts.map((c) => c.id),
+      ];
   }
 };
 

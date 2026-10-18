@@ -196,13 +196,20 @@ const sceneSchema = z.discriminatedUnion('layout', [
     layout: z.literal('scene3d'),
     content: z.object({
       /**
-       * 3D の場面の種類 (three.js で描画)。
-       *   phoneChip: スマホの箱が開き、基板の上のチップへカメラが寄っていく
+       * 3D の場面の種類 (three.js で描画)。要素IDは src/elements.ts の scene3dElementIds を参照。
+       *   phoneChip:      スマホの箱が開き、基板の上のチップへカメラが寄っていく
+       *   vendingCount:   自販機が1台 → 引くと同じ自販機がずらっと並んでいる (台数の多さ)
+       *   vendingHotCold: 自販機の左右に「冷たさ」と「熱」の玉が飛んでくる
+       *   vendingCutaway: 自販機の扉が開き、冷媒の管の中を「熱」が運ばれていく (ヒートポンプ)
+       *   heatReuse:      冷蔵庫は熱を外へ捨てる / 自販機は温める側へ回す (比較)
+       *   vendingEnergy:  自販機 → 稲妻 → 家。カレンダーがめくれて「何か月分」かを見せる
        */
-      preset: z.literal('phoneChip'),
-      /** 引き出し線で指す注釈 (reveal "label" で出る) */
+      preset: z.enum(['phoneChip', 'vendingCount', 'vendingHotCold', 'vendingCutaway', 'heatReuse', 'vendingEnergy']),
+      /** 画面上部中央の明朝の一文 (reveal "title"。**強調** は朱色) */
+      title: z.string().optional(),
+      /** 引き出し線で指す注釈 (phoneChip 用。reveal "label" で出る) */
       label: z.object({ title: z.string(), sub: z.string().optional() }).optional(),
-      /** 右上の数字カード (reveal "stat" で出る) */
+      /** 数字カード (reveal "stat" で出る) */
       stat: z
         .object({
           kicker: z.string().optional(),
@@ -210,6 +217,22 @@ const sceneSchema = z.discriminatedUnion('layout', [
           note: z.string().optional(),
         })
         .optional(),
+      /**
+       * 3D の物を引き出し線で指す注釈。場面ごとに決まった位置 (スロット) に順番に入る。
+       * 例: vendingCutaway は 吸熱 / 圧縮 / 放熱 / 膨張 の4か所
+       */
+      callouts: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            sub: z.string().optional(),
+            /** accent: 紺 / warning: 朱 / muted: 灰 / normal: 墨 */
+            tone: z.enum(['normal', 'accent', 'warning', 'muted']).default('normal'),
+          }),
+        )
+        .max(4)
+        .default([]),
     }),
   }),
   z.object({

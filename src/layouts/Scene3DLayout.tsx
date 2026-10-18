@@ -1,5 +1,4 @@
 import React from 'react';
-import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Reveal } from '../components/Reveal';
@@ -9,27 +8,22 @@ import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { PhoneChipModel } from '../three/PhoneChipModel';
 import { CHIP_CENTER, FOV, LID_OPEN_DEG, cameraAt, projectToScreen } from '../three/phoneChip';
+import { CameraRig, ObjectScene, TitleOverlay } from '../three/ObjectScene';
 import type { ContentOf } from './common';
 
 /** 寄りのバネ。ゆっくり滑らかに (約1.5秒) */
 const DOLLY = { damping: 200, mass: 3, stiffness: 60 };
 
-/** カメラを毎フレーム決まった位置へ置く (R3F の useFrame ではなく Remotion のフレームで動かす) */
-const CameraRig: React.FC<{ shot: ReturnType<typeof cameraAt> }> = ({ shot }) => {
-  const camera = useThree((state) => state.camera);
-  camera.position.copy(shot.position);
-  camera.lookAt(shot.target);
-  camera.updateMatrixWorld();
-  return null;
-};
+/** three.js で描く 3D の場面。phoneChip 以外 (自販機・熱など) は three/presets.tsx に定義 */
+export const Scene3DLayout: React.FC<{ content: ContentOf<'scene3d'> }> = ({ content }) =>
+  content.preset === 'phoneChip' ? <PhoneChipScene content={content} /> : <ObjectScene content={content} preset={content.preset} />;
 
 /**
- * three.js で描く 3D の場面。
  * phoneChip: スマホの箱が開き (reveal "open")、基板の上のチップへカメラが寄る (reveal "zoom")。
  * 注釈 (reveal "label") は引き出し線でチップを指し、数字カード (reveal "stat") は右上に出る。
  * stat が zoom より後に出るときは、さらにチップの表面まで寄る。
  */
-export const Scene3DLayout: React.FC<{ content: ContentOf<'scene3d'> }> = ({ content }) => {
+const PhoneChipScene: React.FC<{ content: ContentOf<'scene3d'> }> = ({ content }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -120,6 +114,7 @@ export const Scene3DLayout: React.FC<{ content: ContentOf<'scene3d'> }> = ({ con
           </div>
         </Reveal>
       ) : null}
+      {content.title ? <TitleOverlay text={content.title} at={ctx.appearAt('title', 1)} /> : null}
     </AbsoluteFill>
   );
 };
