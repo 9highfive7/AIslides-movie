@@ -20,3 +20,11 @@ export const secToFrames = (sec: number): number => Math.round(sec * FPS);
 export const GAP_BETWEEN_LINES_FRAMES = secToFrames(GAP_BETWEEN_LINES_SEC);
 export const SCENE_LEAD_FRAMES = secToFrames(SCENE_LEAD_SEC);
 export const SCENE_TAIL_FRAMES = secToFrames(SCENE_TAIL_SEC);
+
+/**
+ * シーン切り替えトランジションの長さ [フレーム]。シーン境界を中心に前後半分ずつ
+ * 重なって再生される。前後のセリフに食い込まないよう、半分の長さは
+ * SCENE_LEAD_FRAMES / SCENE_TAIL_FRAMES 以下にすること。
+ */
+export const TRANSITION_FRAMES = 18;
+export const TRANSITION_HALF_FRAMES = Math.floor(TRANSITION_FRAMES / 2);

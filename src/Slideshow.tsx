@@ -1,126 +1,104 @@
-import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
-import { script, timeline } from './data';
-import { COLORS, FONT_FAMILY, CROSSFADE_FRAMES } from './theme';
+import React, { useMemo } from 'react';
+import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { TRANSITION_HALF_FRAMES } from '../shared/timing';
+import { isDarkLayout, script, sceneOf, timeline, transitionOf } from './data';
+import { FONT_FAMILY, THEMES, ThemeContext } from './theme';
 import { ensureFonts } from './fonts';
+import { buildSceneContext, SceneProvider } from './context/SceneContext';
+import { transitionIn, transitionOut } from './animation/transitions';
 import { HeadingChrome } from './components/HeadingChrome';
+import { SceneChrome } from './components/SceneChrome';
+import { SceneBackground } from './components/SceneBackground';
+import { Camera } from './components/Camera';
 import { SubtitleLayer } from './components/SubtitleLayer';
 import { AudioLayer } from './components/AudioLayer';
-import { TitleLayout } from './layouts/TitleLayout';
-import { CompareLayout } from './layouts/CompareLayout';
-import { FlowLayout } from './layouts/FlowLayout';
-import { InputOutputLayout } from './layouts/InputOutputLayout';
-import { BulletsLayout } from './layouts/BulletsLayout';
-import { StatsLayout } from './layouts/StatsLayout';
-import { SectionLayout } from './layouts/SectionLayout';
-import { TableLayout } from './layouts/TableLayout';
-import { BarsLayout } from './layouts/BarsLayout';
-import { ChecklistLayout } from './layouts/ChecklistLayout';
-import { AxesLayout } from './layouts/AxesLayout';
-import { SceneChrome } from './components/SceneChrome';
-import type { Scene, TimelineScene } from './schemas';
+import { Avatar } from './components/Avatar';
+import { ProgressBar } from './components/ProgressBar';
+import { SubscribePopup } from './components/SubscribePopup';
+import { SceneLayoutView } from './layouts';
+import type { Scene, TimelineScene, TransitionType } from './schemas';
 
-/** 要素IDが最初に reveal されるフレーム。未指定 (常に表示) の場合は null */
-export type RevealAt = (elementId: string) => number | null;
+const H = TRANSITION_HALF_FRAMES;
 
-const sceneOpacity = (frame: number, ts: TimelineScene): number => {
-  // 短いクロスフェード: 背景色の上でシーン全体がフェードイン/アウトする
-  const fadeIn = interpolate(
-    frame,
-    [ts.startFrame, ts.startFrame + CROSSFADE_FRAMES],
-    [0, 1],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
-  );
-  const fadeOut = interpolate(
-    frame,
-    [ts.startFrame + ts.durationFrames - CROSSFADE_FRAMES, ts.startFrame + ts.durationFrames],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
-  );
-  return Math.min(fadeIn, fadeOut);
-};
-
-const SceneView: React.FC<{ scene: Scene; ts: TimelineScene }> = ({ scene, ts }) => {
+/**
+ * 1シーン分。シーン境界の前後 H フレームずつ前後のシーンと重なり、
+ * その間に入る側/出る側のトランジションを再生する。
+ */
+const SceneView: React.FC<{
+  scene: Scene;
+  ts: TimelineScene;
+  index: number;
+  inType: TransitionType | null;
+  outType: TransitionType | null;
+}> = ({ scene, ts, index, inType, outType }) => {
   const frame = useCurrentFrame();
+  const ctx = useMemo(() => buildSceneContext(scene, ts, script.meta), [scene, ts]);
 
-  const revealAt: RevealAt = (elementId) => {
-    for (const line of ts.lines) {
-      if (line.reveal.includes(elementId)) {
-        return line.startFrame;
-      }
-    }
-    return null; // reveal に書かれない要素はシーン開始から常時表示
-  };
+  const start = ts.startFrame;
+  const end = ts.startFrame + ts.durationFrames;
+  const visibleFrom = inType ? start - H : start;
+  const visibleTo = outType ? end + H : end;
+  if (frame < visibleFrom || frame >= visibleTo) {
+    return null;
+  }
+
+  let transitionStyle: React.CSSProperties = {};
+  if (inType && frame < start + H) {
+    transitionStyle = transitionIn(inType, (frame - (start - H)) / (2 * H));
+  } else if (outType && frame >= end - H) {
+    transitionStyle = transitionOut(outType, (frame - (end - H)) / (2 * H));
+  }
+
+  const dark = isDarkLayout(scene.layout);
+  const { meta } = script;
 
   return (
-    <AbsoluteFill style={{ opacity: sceneOpacity(frame, ts) }}>
-      {scene.layout === 'title' || scene.layout === 'section' ? (
-        <>
-          <AbsoluteFill style={{ backgroundColor: COLORS.ink }} />
-          {scene.layout === 'title' ? (
-            <TitleLayout scene={scene} />
-          ) : (
-            <SectionLayout scene={scene} />
-          )}
-        </>
-      ) : (
-        <>
-          <HeadingChrome heading={scene.heading ?? ''} label={scene.label} />
-          <SceneChrome chapter={scene.chapter} badge={scene.badge} />
-          {scene.layout === 'compare' ? (
-            <CompareLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'flow' ? (
-            <FlowLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'inputOutput' ? (
-            <InputOutputLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'bullets' ? (
-            <BulletsLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'stats' ? (
-            <StatsLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'table' ? (
-            <TableLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'bars' ? (
-            <BarsLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'checklist' ? (
-            <ChecklistLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-          {scene.layout === 'axes' ? (
-            <AxesLayout content={scene.content} revealAt={revealAt} />
-          ) : null}
-        </>
-      )}
+    <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
+      <SceneProvider value={ctx}>
+        <SceneBackground variant={dark ? 'dark' : 'light'} animated={meta.animatedBackground} seed={index} />
+        <Camera enabled={meta.camera === 'subtle' && !dark} from={start} to={end}>
+          <SceneLayoutView scene={scene} />
+        </Camera>
+        {!dark && (scene.heading || scene.label) ? (
+          <HeadingChrome heading={scene.heading ?? ''} label={scene.label} at={ctx.introAt} />
+        ) : null}
+        {!dark ? <SceneChrome chapter={scene.chapter} badge={scene.badge} at={ctx.introAt} /> : null}
+      </SceneProvider>
     </AbsoluteFill>
   );
 };
 
 export const Slideshow: React.FC = () => {
   ensureFonts();
+  const theme = THEMES[script.meta.theme];
+  const avatar = script.meta.avatar;
 
   return (
-    <AbsoluteFill
-      style={{ backgroundColor: COLORS.bg, fontFamily: FONT_FAMILY, color: COLORS.ink }}
-    >
-      {timeline.scenes.map((ts) => {
-        const scene = script.scenes.find((s) => s.id === ts.id);
-        if (!scene) {
-          throw new Error(
-            `timeline.json にシーン "${ts.id}" がありますが、script.json に対応するシーンがありません。\n` +
-              '台本を変更した場合は npm run audio を再実行してください。',
+    <ThemeContext.Provider value={theme}>
+      <AbsoluteFill style={{ backgroundColor: theme.colors.bg, fontFamily: FONT_FAMILY, color: theme.colors.ink }}>
+        {timeline.scenes.map((ts, i) => {
+          const scene = sceneOf(ts.id);
+          const next = timeline.scenes[i + 1];
+          const inType = i > 0 ? transitionOf(scene) : null;
+          const outType = next ? transitionOf(sceneOf(next.id)) : null;
+          return (
+            <SceneView
+              key={ts.id}
+              scene={scene}
+              ts={ts}
+              index={i}
+              inType={inType === 'none' ? null : inType}
+              outType={outType === 'none' ? null : outType}
+            />
           );
-        }
-        return <SceneView key={ts.id} scene={scene} ts={ts} />;
-      })}
-      {/* ナレーション音声 (各lineの startFrame から再生) */}
-      <AudioLayer />
-      {/* 字幕はシーンのフェードとは独立したレイヤー */}
-      <SubtitleLayer />
-    </AbsoluteFill>
+        })}
+        <AudioLayer />
+        <SubscribePopup />
+        <Avatar />
+        {/* 字幕はシーンのトランジションとは独立したレイヤー */}
+        <SubtitleLayer rightInset={avatar ? avatar.size + 40 : 0} />
+        <ProgressBar />
+      </AbsoluteFill>
+    </ThemeContext.Provider>
   );
 };
