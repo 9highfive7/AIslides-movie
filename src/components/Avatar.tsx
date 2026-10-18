@@ -1,7 +1,7 @@
 import React from 'react';
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { script, timeline } from '../data';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { SPRINGS, springFrom } from '../animation/presets';
 
 /**

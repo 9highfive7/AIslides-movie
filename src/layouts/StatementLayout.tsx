@@ -2,7 +2,7 @@ import React from 'react';
 import { Reveal } from '../components/Reveal';
 import { IconBox } from '../components/IconBox';
 import { KineticText } from '../components/KineticText';
-import { PAGE, useTheme } from '../theme';
+import { PAGE, useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 
 /**

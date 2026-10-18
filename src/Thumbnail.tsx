@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Img, staticFile } from 'remotion';
 import { parseMarkup } from '../shared/markup';
 import { script } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './theme';
+import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
 import { ensureFonts } from './fonts';
 import { SceneBackground } from './components/SceneBackground';
 

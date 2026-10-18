@@ -1,7 +1,7 @@
 import React from 'react';
 import { Img, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import { Reveal } from '../components/Reveal';
-import { PAGE, useTheme } from '../theme';
+import { PAGE, useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import type { ContentOf } from './common';
 

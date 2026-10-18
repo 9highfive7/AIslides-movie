@@ -1,5 +1,5 @@
 import React from 'react';
-import { PAGE } from '../theme';
+import { PAGE } from '../themes';
 import type { Scene } from '../schemas';
 
 export type ContentOf<L extends Scene['layout']> = Extract<Scene, { layout: L }>['content'];

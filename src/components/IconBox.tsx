@@ -87,7 +87,7 @@ import {
   CircleX,
   type LucideIcon,
 } from 'lucide-react';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 
 /** script.json の icon フィールドに指定できるキー → lucide の線アイコン */
 const REGISTRY: Record<string, LucideIcon> = {

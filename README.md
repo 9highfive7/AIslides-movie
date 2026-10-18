@@ -231,7 +231,7 @@ npm run audio && npm run build:youtube                           # いつもの�
 
 ## デザインの変更
 
-配色・カードの枠や影・字幕の既定スタイルは `src/theme/index.ts` の `THEMES`（clean / pop / dark）に集約しています。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。
+配色・カードの枠や影・字幕の既定スタイルは `src/themes/index.ts` の `THEMES`（clean / pop / dark）に集約しています。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。
 
 ## トラブルシューティング
 
@@ -300,7 +300,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 ├── docs/manual.html     # 手順書 (画面例つき。ブラウザで開く)
 └── src/
     ├── Root.tsx / Slideshow.tsx / Thumbnail.tsx / data.ts / schemas.ts / elements.ts / audio-events.ts / fonts.ts
-    ├── theme/           # テーマ (clean / pop / dark)
+    ├── themes/          # テーマ (clean / pop / dark)
     ├── animation/       # バネの設定・出現プリセット・トランジション
     ├── context/         # シーンごとの reveal / focus のタイミング
     ├── components/      # Reveal / KineticText / CountUp / DrawArrow / SubtitleLayer / AudioLayer /

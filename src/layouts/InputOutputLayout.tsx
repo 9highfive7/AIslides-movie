@@ -3,7 +3,7 @@ import { useCurrentFrame } from 'remotion';
 import { Reveal } from '../components/Reveal';
 import { IconBox } from '../components/IconBox';
 import { DrawArrow } from '../components/DrawArrow';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { ContentArea, type ContentOf } from './common';
 

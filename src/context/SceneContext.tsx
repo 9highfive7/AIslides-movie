@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import { interpolate } from 'remotion';
-import { FOCUS_FADE_FRAMES } from '../theme';
+import { FOCUS_FADE_FRAMES } from '../themes';
 import type { Meta, RevealPreset, Scene, TimelineScene } from '../schemas';
 
 /** 同じセリフで複数の要素を出すときの、要素間の時間差 [フレーム] */

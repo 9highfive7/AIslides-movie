@@ -1,7 +1,7 @@
 import React from 'react';
 import { Reveal } from '../components/Reveal';
 import { IconBox } from '../components/IconBox';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { ContentArea, type ContentOf } from './common';
 
 /** 縦の箇条書きレイアウト。カードが左から順に滑り込む */

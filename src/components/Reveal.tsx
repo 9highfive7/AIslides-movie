@@ -2,7 +2,7 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { useSceneContext } from '../context/SceneContext';
 import { revealStyle, springForPreset, springFrom } from '../animation/presets';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import type { RevealPreset } from '../schemas';
 
 /** シーン・meta 指定のプリセットを優先し、'auto' ならレイアウトの既定を使う */

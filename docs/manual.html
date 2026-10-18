@@ -505,12 +505,12 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     <tr><td><code>TRANSITION_FRAMES</code></td><td>18フレーム（シーン切り替えの長さ。半分は LEAD / TAIL 以下）</td><td><code>shared/timing.ts</code></td></tr>
     <tr><td>バネの硬さ（<code>SPRINGS</code>）</td><td>出現の弾み具合</td><td><code>src/animation/presets.ts</code></td></tr>
     <tr><td>トランジションの見た目</td><td>slide / wipe などの動き</td><td><code>src/animation/transitions.ts</code></td></tr>
-    <tr><td>テーマの配色・カードの枠や影</td><td>clean / pop / dark</td><td><code>src/theme/index.ts</code></td></tr>
+    <tr><td>テーマの配色・カードの枠や影</td><td>clean / pop / dark</td><td><code>src/themes/index.ts</code></td></tr>
     <tr><td>効果音の音色</td><td>pop / whoosh / ding / click</td><td><code>scripts/lib/sfx.ts</code>（変更後に <code>npm run sfx</code>）</td></tr>
   </tbody>
 </table>
 </div>
-<p><code>shared/timing.ts</code> を変えたら <code>npm run audio</code> を再実行してください。新しいテーマを足すときは <code>src/theme/index.ts</code> の <code>THEMES</code> と、<code>src/schemas.ts</code> の <code>themeNameSchema</code> に追加します。</p>
+<p><code>shared/timing.ts</code> を変えたら <code>npm run audio</code> を再実行してください。新しいテーマを足すときは <code>src/themes/index.ts</code> の <code>THEMES</code> と、<code>src/schemas.ts</code> の <code>themeNameSchema</code> に追加します。</p>
 
 <h2 id="trouble">困ったとき</h2>
 <div class="table-wrap">
@@ -545,7 +545,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 ├── templates/           台本サンプル
 ├── docs/                この手順書
 └── src/
-    ├── theme/           テーマ（clean / pop / dark）
+    ├── themes/          テーマ（clean / pop / dark）
     ├── animation/       バネ・出現の動き・トランジション
     ├── context/         シーンごとの reveal / focus のタイミング
     ├── components/      字幕・音声・キャラクター・登録ボタンなどの部品
