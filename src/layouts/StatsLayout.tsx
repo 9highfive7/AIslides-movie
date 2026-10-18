@@ -2,7 +2,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { Reveal } from '../components/Reveal';
 import { CountUp } from '../components/CountUp';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { ContentArea, type ContentOf } from './common';
 

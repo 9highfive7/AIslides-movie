@@ -1,7 +1,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import { script, timeline } from '../data';
-import { SUBTITLE_FADE_FRAMES, useTheme } from '../theme';
+import { SUBTITLE_FADE_FRAMES, useTheme } from '../themes';
 import { RichText } from './RichText';
 
 /**

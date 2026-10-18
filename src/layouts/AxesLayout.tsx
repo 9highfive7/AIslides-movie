@@ -1,7 +1,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Reveal } from '../components/Reveal';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';

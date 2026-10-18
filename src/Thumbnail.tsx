@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Img, staticFile } from 'remotion';
 import { parseMarkup } from '../shared/markup';
 import { script } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './theme';
+import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
 import { ensureFonts } from './fonts';
 import { SceneBackground } from './components/SceneBackground';
 
@@ -35,7 +35,11 @@ export const Thumbnail: React.FC = () => {
   const thumb = resolveThumbnail();
   const lines = thumb.text.split('\n');
   const longest = Math.max(...lines.map((l) => [...l.replace(/\*\*/g, '')].length), 1);
-  const fontSize = Math.min(150, Math.floor(1100 / longest), Math.floor(480 / lines.length));
+  // キャラクター画像があれば右下に大きく置き、文字はその分左に寄せる
+  const avatar = script.meta.avatar;
+  const character = avatar && avatar.type === 'image' ? avatar.open : null;
+  const textWidth = character ? 820 : 1100;
+  const fontSize = Math.min(150, Math.floor(textWidth / longest), Math.floor(480 / lines.length));
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -78,13 +82,25 @@ export const Thumbnail: React.FC = () => {
             {thumb.badge}
           </div>
         ) : null}
+        {character ? (
+          <Img
+            src={staticFile(character)}
+            style={{
+              position: 'absolute',
+              right: 10,
+              bottom: -30,
+              height: 560,
+              filter: 'drop-shadow(0 10px 24px rgba(0,0,0,0.45))',
+            }}
+          />
+        ) : null}
         <AbsoluteFill
           style={{
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '60px 70px 110px',
+            padding: character ? '60px 400px 110px 50px' : '60px 70px 110px',
           }}
         >
           {lines.map((line, i) => (

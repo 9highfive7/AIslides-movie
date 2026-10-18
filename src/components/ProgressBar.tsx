@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { script, sceneOf, timeline } from '../data';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 
 /** 画面下端の進行バー。章扉 (section) の位置に区切りを入れる */
 export const ProgressBar: React.FC = () => {

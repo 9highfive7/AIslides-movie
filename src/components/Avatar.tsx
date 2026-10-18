@@ -1,7 +1,7 @@
 import React from 'react';
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { script, timeline } from '../data';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { SPRINGS, springFrom } from '../animation/presets';
 
 /**
@@ -30,7 +30,7 @@ export const mouthOpenAt = (frame: number): number => {
   return 0;
 };
 
-/** 右下で喋るキャラクター。meta.avatar 指定時のみ表示 */
+/** 右下で喋るキャラクター。meta.avatar が false のときは表示しない */
 export const Avatar: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -58,18 +58,8 @@ export const Avatar: React.FC = () => {
         transform: `translateY(${(1 - enter) * 260 + bob}px)`,
       }}
     >
-      {avatar.type === 'image' && avatar.open && avatar.closed ? (
-        <>
-          {/* 2枚とも読み込んでおき、表示だけ切り替える (切り替え時のちらつき防止) */}
-          <Img
-            src={staticFile(avatar.open)}
-            style={{ width: size, height: size, objectFit: 'contain', display: open > 0.3 ? 'block' : 'none' }}
-          />
-          <Img
-            src={staticFile(avatar.closed)}
-            style={{ width: size, height: size, objectFit: 'contain', display: open > 0.3 ? 'none' : 'block' }}
-          />
-        </>
+      {avatar.type === 'image' ? (
+        <MouthImages avatar={avatar} open={open} size={size} />
       ) : (
         <BuiltinCharacter size={size} open={open} frame={frame} />
       )}
@@ -90,6 +80,36 @@ export const Avatar: React.FC = () => {
         </div>
       ) : null}
     </div>
+  );
+};
+
+type ImageAvatar = Exclude<typeof script.meta.avatar, false>;
+
+/**
+ * 画像2〜3枚の口パク。全部読み込んでおき、表示だけ切り替える (切り替え時のちらつき防止)。
+ * half (半開き) があれば 3段階、なければ開く/閉じるの 2段階。
+ */
+const MouthImages: React.FC<{ avatar: ImageAvatar; open: number; size: number }> = ({ avatar, open, size }) => {
+  const frames = avatar.half
+    ? [
+        { src: avatar.closed, show: open < 0.22 },
+        { src: avatar.half, show: open >= 0.22 && open < 0.55 },
+        { src: avatar.open, show: open >= 0.55 },
+      ]
+    : [
+        { src: avatar.closed, show: open < 0.3 },
+        { src: avatar.open, show: open >= 0.3 },
+      ];
+  return (
+    <>
+      {frames.map((f) => (
+        <Img
+          key={f.src}
+          src={staticFile(f.src)}
+          style={{ width: size, height: size, objectFit: 'contain', display: f.show ? 'block' : 'none' }}
+        />
+      ))}
+    </>
   );
 };
 

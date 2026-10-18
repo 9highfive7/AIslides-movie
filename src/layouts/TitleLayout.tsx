@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { KineticText } from '../components/KineticText';

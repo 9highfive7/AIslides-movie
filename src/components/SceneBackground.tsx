@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
-import { useTheme } from '../theme';
+import { useTheme } from '../themes';
 
 /**
  * シーンの背景。各シーンが自前で不透明な背景を持つので、

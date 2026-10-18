@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { TRANSITION_HALF_FRAMES } from '../shared/timing';
 import { isDarkLayout, script, sceneOf, timeline, transitionOf } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './theme';
+import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
 import { ensureFonts } from './fonts';
 import { buildSceneContext, SceneProvider } from './context/SceneContext';
 import { transitionIn, transitionOut } from './animation/transitions';
@@ -96,7 +96,7 @@ export const Slideshow: React.FC = () => {
         <SubscribePopup />
         <Avatar />
         {/* 字幕はシーンのトランジションとは独立したレイヤー */}
-        <SubtitleLayer rightInset={avatar ? avatar.size + 40 : 0} />
+        <SubtitleLayer rightInset={avatar ? avatar.size * 0.85 + 40 : 0} />
         <ProgressBar />
       </AbsoluteFill>
     </ThemeContext.Provider>
