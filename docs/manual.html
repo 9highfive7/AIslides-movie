@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>動画生成ガイド</title>
+<style>
+:root {
+  --sp-1: 8px; --sp-2: 16px; --sp-3: 24px; --sp-4: 40px; --sp-5: 64px;
+  --measure: 40ch;
+  --fs-body: 16px; --fs-h2: 1.5rem; --fs-h1: 2rem;
+  --fg: #1f2328; --fg-muted: #57606a; --bg: #ffffff; --bg-soft: #f3f6fa;
+  --border: #d0d7de; --accent: #2b5fc7; --warn: #b0432f; --code-bg: #f6f8fa;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e6edf3; --fg-muted: #9da7b3; --bg: #0d1117; --bg-soft: #161b22;
+    --border: #30363d; --accent: #79a6ff; --warn: #ff8c78; --code-bg: #161b22; }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: var(--fs-body); line-height: 1.7; color: var(--fg); background: var(--bg);
+}
+header.hero { background: #0f1f3d; color: #fff; padding: var(--sp-5) var(--sp-2); }
+header.hero > div { max-width: 960px; margin: 0 auto; }
+header.hero h1 { font-size: var(--fs-h1); line-height: 1.3; margin: 0 0 var(--sp-2); }
+header.hero p { margin: 0; max-width: var(--measure); color: #dbe4f5; }
+.layout { max-width: 960px; margin: 0 auto; padding: 0 var(--sp-2) var(--sp-5); }
+nav.toc { margin: var(--sp-4) 0; padding: var(--sp-3); background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; }
+nav.toc strong { display: block; margin-bottom: var(--sp-1); }
+nav.toc ol { margin: 0; padding-inline-start: 1.5em; columns: 2 16em; }
+nav.toc li + li { margin-top: 4px; }
+a { color: var(--accent); text-decoration: underline; text-underline-offset: .15em; }
+h2 { font-size: var(--fs-h2); line-height: 1.4; margin: var(--sp-5) 0 var(--sp-2); padding-bottom: var(--sp-1); border-bottom: 2px solid var(--accent); }
+h3 { font-size: var(--fs-body); font-weight: 700; line-height: 1.5; margin: var(--sp-4) 0 var(--sp-1); }
+p { margin: 0; max-width: 60ch; }
+p + p { margin-top: var(--sp-2); }
+ul, ol { margin: var(--sp-2) 0; padding-inline-start: 1.5em; max-width: 60ch; }
+li + li { margin-top: var(--sp-1); }
+.steps { list-style: none; padding: 0; counter-reset: s; max-width: none; }
+.steps > li { counter-increment: s; position: relative; padding: var(--sp-2) var(--sp-2) var(--sp-2) 64px; border: 1px solid var(--border); border-radius: 6px; margin: 0; }
+.steps > li + li { margin-top: var(--sp-2); }
+.steps > li::before { content: counter(s); position: absolute; left: var(--sp-2); top: var(--sp-2); width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; }
+.steps h3 { margin: 0 0 var(--sp-1); }
+.callout { border: 1px solid var(--border); border-left: 4px solid var(--accent); padding: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0; background: var(--bg-soft); max-width: 60ch; }
+.callout.warn { border-left-color: var(--warn); }
+.callout b { display: block; margin-bottom: 4px; }
+pre { margin: var(--sp-2) 0; padding: var(--sp-2); background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; line-height: 1.6; overflow-x: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .875em; }
+:not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
+.table-wrap { overflow-x: auto; margin: var(--sp-2) 0; }
+table { border-collapse: collapse; width: 100%; font-size: .9375rem; }
+th, td { padding: var(--sp-1) var(--sp-2); line-height: 1.5; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+thead th { border-bottom: 2px solid var(--fg-muted); white-space: nowrap; }
+figure { margin: var(--sp-3) 0; }
+figcaption { margin-top: var(--sp-1); font-size: .875rem; color: var(--fg-muted); }
+svg { display: block; max-width: 100%; height: auto; color: var(--fg); }
+svg text { font-size: 13px; fill: currentColor; font-family: inherit; }
+svg .box { fill: var(--bg-soft); stroke: var(--accent); stroke-width: 2; }
+svg .gen { fill: var(--bg); stroke: var(--fg-muted); stroke-width: 1.5; stroke-dasharray: 5 3; }
+svg .arrow { stroke: var(--fg-muted); stroke-width: 2; fill: none; }
+svg .head { fill: var(--fg-muted); }
+footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); color: var(--fg-muted); font-size: .875rem; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div>
+    <h1>動画生成ガイド</h1>
+    <p>台本（script.json）から、音声・字幕・図解アニメーション付きの解説スライド動画（MP4）を作る手順書です。</p>
+  </div>
+</header>
+
+<main class="layout">
+
+<nav class="toc" aria-label="目次">
+  <strong>目次</strong>
+  <ol>
+    <li><a href="#overview">全体像</a></li>
+    <li><a href="#prep">準備する</a></li>
+    <li><a href="#local">ローカルで作る</a></li>
+    <li><a href="#script">台本を書く</a></li>
+    <li><a href="#auto">台本を自動生成する</a></li>
+    <li><a href="#actions">GitHub Actionsで作る</a></li>
+    <li><a href="#settings">設定を変える</a></li>
+    <li><a href="#trouble">困ったとき</a></li>
+  </ol>
+</nav>
+
+<h2 id="overview">全体像</h2>
+<p>やることは「台本を用意する → 音声を作る → 動画に書き出す」の3ステップです。台本を差し替えるだけで、音声の長さに合わせて字幕と図の表示タイミングが自動で決まります。</p>
+
+<figure>
+  <svg viewBox="0 0 880 150" role="img" aria-labelledby="flow-t">
+    <title id="flow-t">台本から音声、タイムライン、MP4までの流れ</title>
+    <defs><marker id="ah" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
+    <rect class="box" x="10" y="30" width="170" height="70" rx="8"/>
+    <text x="95" y="60" text-anchor="middle" font-weight="700">1. 台本</text>
+    <text x="95" y="82" text-anchor="middle">public/script.json</text>
+    <line class="arrow" x1="180" y1="65" x2="238" y2="65" marker-end="url(#ah)"/>
+    <text x="209" y="52" text-anchor="middle">npm run audio</text>
+    <rect class="box" x="240" y="30" width="200" height="70" rx="8"/>
+    <text x="340" y="60" text-anchor="middle" font-weight="700">2. 音声とタイミング</text>
+    <text x="340" y="82" text-anchor="middle">audio/*.wav + timeline.json</text>
+    <line class="arrow" x1="440" y1="65" x2="498" y2="65" marker-end="url(#ah)"/>
+    <text x="469" y="52" text-anchor="middle">npm run render</text>
+    <rect class="box" x="500" y="30" width="170" height="70" rx="8"/>
+    <text x="585" y="60" text-anchor="middle" font-weight="700">3. 動画</text>
+    <text x="585" y="82" text-anchor="middle">out/video.mp4</text>
+    <rect class="gen" x="700" y="30" width="170" height="70" rx="8"/>
+    <text x="785" y="60" text-anchor="middle" font-weight="700">任意: 台本の自動生成</text>
+    <text x="785" y="82" text-anchor="middle">npm run script</text>
+    <text x="95" y="130" text-anchor="middle">VOICEVOX Engineが必要 ↑</text>
+  </svg>
+  <figcaption>実線が必須の流れ、破線が任意の工程です（動画は1920×1080・30fps）。</figcaption>
+</figure>
+
+<h3>作り方は3通り</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>方法</th><th>向いている人</th><th>必要なもの</th></tr></thead>
+  <tbody>
+    <tr><td><a href="#local">ローカルで作る</a></td><td>台本を手元で編集・プレビューしたい</td><td>Node.js 18以上、VOICEVOX Engine</td></tr>
+    <tr><td><a href="#auto">LLMで台本も作る</a></td><td>題材やURLから下書きを作りたい</td><td>上記 + <code>OPENAI_API_KEY</code></td></tr>
+    <tr><td><a href="#actions">GitHub Actionsで作る</a></td><td>手元に環境を作りたくない</td><td>GitHubリポジトリのみ</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="prep">準備する</h2>
+<ol class="steps">
+  <li>
+    <h3>依存パッケージを入れる</h3>
+    <p>Node.js 18以上を用意し、リポジトリのルートで実行します。フォント（Noto Sans JP）は同梱済みで、レンダリング時に外部通信は不要です。</p>
+    <pre><code>npm install</code></pre>
+  </li>
+  <li>
+    <h3>VOICEVOX Engineを起動する</h3>
+    <p>音声生成（<code>npm run audio</code>）の前に、<code>http://localhost:50021</code> でエンジンを動かします。</p>
+    <p><strong>Dockerの場合</strong></p>
+    <pre><code>docker run -d --rm --name voicevox -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest</code></pre>
+    <p><strong>デスクトップアプリの場合</strong>：<a href="https://voicevox.hiroshiba.jp/">VOICEVOX</a>を起動し、設定で「APIサーバー」を有効にします。</p>
+    <div class="callout warn">
+      <b>Windowsの注意</b>
+      <code>-p</code> の値を引用符で囲まないでください。cmd.exeでは引用符が値の一部になり、<code>invalid IP address</code> エラーになります。Docker Desktopが起動していることも確認してください。
+    </div>
+  </li>
+  <li>
+    <h3>起動を確認する</h3>
+    <pre><code>curl http://localhost:50021/version</code></pre>
+    <p>バージョンが表示されれば準備完了です。</p>
+    <div class="callout">
+      <b>エンジンなしで試す</b>
+      <code>npm run audio:mock</code> なら無音WAVと概算の長さでタイムラインを作れます。レイアウトやタイミングの確認に便利です。
+    </div>
+  </li>
+</ol>
+
+<h2 id="local">ローカルで作る</h2>
+<ol class="steps">
+  <li>
+    <h3>音声とタイムラインを作る</h3>
+    <pre><code>npm run audio</code></pre>
+    <p><code>public/script.json</code> の各セリフを音声にして <code>public/audio/</code> に保存し、各セリフの開始フレームを <code>public/timeline.json</code> に書き出します。</p>
+  </li>
+  <li>
+    <h3>プレビューで確認する</h3>
+    <pre><code>npm run dev</code></pre>
+    <p>Remotion Studio（<a href="http://localhost:3000">http://localhost:3000</a>）が開きます。音声・字幕・図の出現タイミングを再生して確認します。</p>
+  </li>
+  <li>
+    <h3>MP4に書き出す</h3>
+    <pre><code>npm run render</code></pre>
+    <p><code>out/video.mp4</code> が出力されます。動作が重いときは <code>npm run render -- --concurrency=4</code> のように同時実行数を指定します。</p>
+  </li>
+</ol>
+<div class="callout warn">
+  <b>台本を直したら必ず音声を作り直す</b>
+  <code>script.json</code> を編集したら、プレビューや書き出しの前に <code>npm run audio</code> を再実行します。しないと <code>timeline.json</code> が古いままになり、Remotionがエラーを出します。
+</div>
+
+<h3>コマンド早見表</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>コマンド</th><th>役割</th></tr></thead>
+  <tbody>
+    <tr><td><code>npm run script -- "題材"</code></td><td>LLMで台本を生成（任意）</td></tr>
+    <tr><td><code>npm run audio</code></td><td>VOICEVOXで音声生成 + タイムライン作成</td></tr>
+    <tr><td><code>npm run audio:mock</code></td><td>無音WAVで代用（エンジン不要）</td></tr>
+    <tr><td><code>npm run dev</code></td><td>Remotion Studioでプレビュー</td></tr>
+    <tr><td><code>npm run render</code></td><td>MP4に書き出し（<code>out/video.mp4</code>）</td></tr>
+    <tr><td><code>npm run typecheck</code></td><td>型チェック</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="script">台本を書く</h2>
+<p>台本は <code>public/script.json</code> です。1シーンが1枚のスライドで、シーンの中に複数のセリフを並べます。</p>
+<pre><code>{
+  "scenes": [
+    {
+      "id": "flow",              // シーンID（音声ファイル名に使う）
+      "layout": "flow",          // レイアウト種別（下表）
+      "label": "FLOW",           // 左上の英字ラベル（省略可）
+      "heading": "処理の流れ",    // 見出し（titleでは省略）
+      "content": { ... },        // レイアウトごとの中身
+      "lines": [
+        {
+          "text": "ナレーション文（読み上げと字幕に使われる）",
+          "reveal": ["step-1"]   // このセリフの開始時に出す要素のID
+        }
+      ]
+    }
+  ]
+}</code></pre>
+
+<h3>reveal の考え方</h3>
+<ul>
+  <li><code>reveal</code> に書いた要素は、そのセリフが始まる瞬間にフェードインします。</li>
+  <li><code>reveal</code> に書かれない要素は、<strong>シーン開始から常に表示</strong>されます。</li>
+  <li>シーンには <code>chapter</code>（左下の章タグ）と <code>badge</code>（右上のバッジ）も付けられます。</li>
+</ul>
+
+<h3>レイアウト一覧</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>layout</th><th>用途と content の中身</th><th>reveal に使えるID</th></tr></thead>
+  <tbody>
+    <tr><td><code>title</code></td><td>タイトル画面。<code>kicker?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし（常時表示）</td></tr>
+    <tr><td><code>section</code></td><td>章扉。<code>number?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし（常時表示）</td></tr>
+    <tr><td><code>compare</code></td><td>左右比較。<code>leftTitle</code> / <code>rightTitle</code> / <code>left[]</code> / <code>right[]</code>（各項目 <code>{ id, icon?, title, body?, tone? }</code>）</td><td>各項目の <code>id</code></td></tr>
+    <tr><td><code>flow</code></td><td>手順の流れ。<code>steps[]</code>（2つ以上）</td><td>各stepの <code>id</code>、矢印 <code>arrow-1</code>〜</td></tr>
+    <tr><td><code>inputOutput</code></td><td>入力→変換→出力。<code>input</code> / <code>transform</code> / <code>output</code></td><td>各 <code>id</code>、矢印 <code>arrow-1</code>, <code>arrow-2</code></td></tr>
+    <tr><td><code>bullets</code></td><td>縦の箇条書き。<code>items[]</code></td><td>各項目の <code>id</code></td></tr>
+    <tr><td><code>stats</code></td><td>数字を強調するカード（2〜4枚）。<code>items[]</code> は <code>{ id, value, label, body? }</code></td><td>各項目の <code>id</code></td></tr>
+    <tr><td><code>table</code></td><td>比較表。<code>headers[]</code> + <code>rows[]</code> + <code>source?</code></td><td>各行の <code>id</code></td></tr>
+    <tr><td><code>bars</code></td><td>横棒グラフ。<code>items[]</code> + <code>caption?</code></td><td>各項目の <code>id</code>、<code>caption</code></td></tr>
+    <tr><td><code>checklist</code></td><td>番号付きチェックカード。<code>items[]</code> は <code>{ id, text, note? }</code></td><td>各項目の <code>id</code></td></tr>
+    <tr><td><code>axes</code></td><td>空の座標軸の図解。<code>xAxis</code> / <code>yAxis</code> / <code>hint?</code></td><td><code>axes</code>、<code>hint</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>アイコンと素材集</h3>
+<ul>
+  <li><code>icon</code> には約45種のキー（<code>check</code>、<code>search</code>、<code>shield-check</code> など）が使えます。一覧は <code>src/components/IconBox.tsx</code> の <code>REGISTRY</code> にあり、追加もそこに書くだけです。</li>
+  <li>書き方の見本は <code>public/script.json</code>（約9分・全レイアウト網羅）と <code>templates/sample-claude-code-7scenes.json</code>（7シーン版）。シーン単位でコピーして使えます。</li>
+</ul>
+
+<h3>長さの目安</h3>
+<p>10分の動画はナレーション約3,000字、25〜30シーン・80〜90セリフが目安です。長い動画は <code>section</code>（章扉）と <code>chapter</code> タグで章立てすると見やすくなります。10分を超えると <code>npm run audio</code> が警告を出します（止まりはしません）。</p>
+
+<h2 id="auto">台本を自動生成する</h2>
+<p>OpenAI互換のChat Completions APIで、プロンプトまたは記事URLから台本を作れます。生成結果は <code>public/script.json</code> を<strong>上書き</strong>します。</p>
+<pre><code>export OPENAI_API_KEY="sk-..."
+
+# プロンプトから
+npm run script -- "Remotionの魅力を解説する動画の台本を作って"
+
+# 記事URLから
+npm run script -- --url https://example.com/article
+
+# 続けて音声 → 書き出し
+npm run audio &amp;&amp; npm run render</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>環境変数</th><th>既定値</th><th>説明</th></tr></thead>
+  <tbody>
+    <tr><td><code>OPENAI_API_KEY</code></td><td>（必須）</td><td>APIキー</td></tr>
+    <tr><td><code>OPENAI_BASE_URL</code></td><td><code>https://api.openai.com/v1</code></td><td>互換エンドポイント（Ollamaなら <code>http://localhost:11434/v1</code>）</td></tr>
+    <tr><td><code>SCRIPT_MODEL</code></td><td><code>gpt-4o-mini</code></td><td>モデル名（JSON mode対応を推奨）</td></tr>
+  </tbody>
+</table>
+</div>
+<ul>
+  <li>スキーマ検証に失敗すると、エラー内容を渡して1回だけ自動リトライします。</li>
+  <li>URL指定は本文テキストを抽出します。JavaScriptで描画されるページやログイン必須のページは取得できません。その場合は本文をコピーしてプロンプトとして渡してください。</li>
+  <li>生成後は内容を確認・手直ししてから <code>npm run audio</code> を実行してください。</li>
+</ul>
+
+<h2 id="actions">GitHub Actionsで作る</h2>
+<p>手元に環境を作らずに、GitHub上で音声生成からレンダリングまで実行できます。ワークフローは <code>.github/workflows/generate-video.yml</code> です。</p>
+
+<h3>起動方法</h3>
+<ol class="steps">
+  <li>
+    <h3>手動で実行する</h3>
+    <p>GitHubの <strong>Actions</strong> タブ → <code>generate-video</code> → <strong>Run workflow</strong> を開き、<code>source_type</code> を選びます。</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>source_type</th><th>動作</th></tr></thead>
+      <tbody>
+        <tr><td><code>none</code></td><td>リポジトリの <code>public/script.json</code> をそのまま動画化</td></tr>
+        <tr><td><code>prompt</code></td><td>入力したプロンプトからLLMで台本を作って動画化</td></tr>
+        <tr><td><code>url</code></td><td>入力したURLの記事から台本を作って動画化</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p><code>prompt</code> / <code>url</code> を使うには、リポジトリの Settings → Secrets and variables → Actions に <code>OPENAI_API_KEY</code> を登録します。任意で Variables に <code>OPENAI_BASE_URL</code> / <code>SCRIPT_MODEL</code> も設定できます。</p>
+  </li>
+  <li>
+    <h3>APIから実行する</h3>
+    <p><code>repository_dispatch</code> で外部から起動できます（repo権限のPATが必要）。</p>
+    <pre><code>curl -X POST \
+  -H "Authorization: Bearer &lt;YOUR_PAT&gt;" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/&lt;user&gt;/&lt;repo&gt;/dispatches \
+  -d '{"event_type":"generate-video","client_payload":{"source_type":"url","source":"https://example.com/article"}}'</code></pre>
+  </li>
+  <li>
+    <h3>完成した動画を受け取る</h3>
+    <p>実行が終わったら、そのRunのページ下部の <strong>Artifacts</strong> から <code>video</code>（<code>video.mp4</code>）をダウンロードします。保存期間は30日です。台本を自動生成した場合は、<code>script.json</code> と <code>timeline.json</code> もリポジトリにコミットされます。</p>
+  </li>
+</ol>
+
+<h3>ワークフローの流れ</h3>
+<ol>
+  <li>VOICEVOX Engineをサービスコンテナで起動し、応答するまで待つ</li>
+  <li><code>npm ci</code> と Remotion用ブラウザの準備</li>
+  <li>（prompt / url のとき）台本を生成</li>
+  <li><code>npm run audio</code> → <code>npm run render</code></li>
+  <li><code>out/video.mp4</code> をアーティファクトに保存</li>
+</ol>
+
+<div class="callout">
+  <b>費用の目安</b>
+  公開リポジトリなら無料です。プライベートは無料枠が月2,000分で、10分の動画1本につき実行時間は約20〜40分を見込みます。
+</div>
+
+<h2 id="settings">設定を変える</h2>
+
+<h3>声と話速（voicevox.config.json）</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>キー</th><th>既定値</th><th>説明</th></tr></thead>
+  <tbody>
+    <tr><td><code>endpoint</code></td><td><code>http://localhost:50021</code></td><td>VOICEVOX EngineのURL</td></tr>
+    <tr><td><code>speakerId</code></td><td><code>3</code></td><td>話者ID（3 = ずんだもん ノーマル）。一覧は <code>curl http://localhost:50021/speakers</code></td></tr>
+    <tr><td><code>speedScale</code></td><td><code>1.0</code></td><td>話速。<code>1.2</code> などで速くなる</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>間の長さとアニメーション</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>定数</th><th>値</th><th>場所</th></tr></thead>
+  <tbody>
+    <tr><td><code>GAP_BETWEEN_LINES_SEC</code></td><td>0.3秒（セリフ間）</td><td><code>shared/timing.ts</code></td></tr>
+    <tr><td><code>SCENE_LEAD_SEC</code></td><td>0.6秒（シーン開始→最初のセリフ）</td><td><code>shared/timing.ts</code></td></tr>
+    <tr><td><code>SCENE_TAIL_SEC</code></td><td>0.8秒（最後のセリフ→シーン終了）</td><td><code>shared/timing.ts</code></td></tr>
+    <tr><td><code>CROSSFADE_FRAMES</code> / <code>REVEAL_FRAMES</code></td><td>クロスフェード0.5秒 / 出現0.4秒</td><td><code>src/theme.ts</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p><code>shared/timing.ts</code> を変えたら <code>npm run audio</code> を再実行してください。配色・余白・影も <code>src/theme.ts</code> にまとまっています。</p>
+
+<h2 id="trouble">困ったとき</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>症状</th><th>原因と対処</th></tr></thead>
+  <tbody>
+    <tr><td>「VOICEVOX Engine に接続できません」</td><td>エンジンが未起動です。<a href="#prep">準備</a>のコマンドで起動するか、<code>npm run audio:mock</code> を使います。</td></tr>
+    <tr><td><code>docker: invalid IP address</code></td><td><code>-p</code> の値を引用符で囲んでいます。引用符なしで実行してください。</td></tr>
+    <tr><td>「timeline.json に … 対応するエントリがありません」</td><td>台本を直した後に <code>npm run audio</code> を実行していません。再実行します。</td></tr>
+    <tr><td>音声と表示がずれる</td><td><code>npm run audio</code> をやり直します。タイムラインは音声の実寸から再計算されます。</td></tr>
+    <tr><td>レンダリングが遅い・落ちる</td><td><code>npm run render -- --concurrency=4</code> のように同時実行数を下げます。</td></tr>
+    <tr><td>Actionsで「OPENAI_API_KEY が未設定」</td><td>Secretsに登録するか、<code>source_type=none</code> で既存の台本を使います。</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>ファイル構成</h3>
+<pre><code>├── public/
+│   ├── script.json      台本（差し替え対象）
+│   ├── timeline.json    生成物: フレーム計算の結果
+│   ├── audio/           生成物: セリフごとのWAV
+│   └── fonts/           Noto Sans JP
+├── scripts/             音声生成・台本生成
+├── shared/timing.ts     音声側とRemotion側の共通定数
+├── templates/           台本サンプル
+└── src/                 Remotion本体（layouts / components / theme）</code></pre>
+
+</main>
+
+<footer>narration-slides 動画生成ガイド — 詳細は README.md も参照してください。</footer>
+</body>
+</html>
