@@ -156,7 +156,7 @@ npm run audio && npm run render                                  # いつもの�
 - 目安: 10分 ≒ ナレーション約3,000字 ≒ **25〜30シーン / 80〜90セリフ**
 - 長尺では `section`（章扉）と `chapter` タグで章構成を作ると視聴者が迷わない
 - 総尺が10分を超えると `npm run audio` が警告を出します（目安超過。ブロックはしない）
-- 素材集: `public/script.json`（約9分のフルデモ — 全レイアウトを網羅）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版）。シーン単位でコピーして組み合わせて使えます
+- 素材集: `templates/sample-full-demo-9min.json`（約9分のフルデモ — 全レイアウトを網羅）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版）、`templates/zatsugaku-ao-shingou.json`（雑学解説「緑なのになぜ青信号？」約3〜4分）。シーン単位でコピーして組み合わせて使えます。`public/script.json` にコピーすると動画化できます
 
 ## デザインの変更
 

@@ -1,0 +1,196 @@
+{
+  "scenes": [
+    {
+      "id": "intro",
+      "layout": "title",
+      "content": {
+        "kicker": "身近な「なぜ？」の雑学",
+        "title": "緑なのに\nなぜ「青信号」？",
+        "subtitle": "信号の色にかくれた、日本語と法律の話"
+      },
+      "lines": [
+        { "text": "信号の「進め」の色、よく見ると、青というより緑に見えませんか？", "reveal": [] },
+        { "text": "それなのに、私たちは当たり前のように「青信号」と呼んでいます。今日は、この不思議の理由を解説します。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "question",
+      "layout": "compare",
+      "label": "QUESTION",
+      "chapter": "00 ふしぎ",
+      "heading": "海外では「緑」、日本では「青」",
+      "content": {
+        "leftTitle": "海外の呼び方",
+        "rightTitle": "日本の呼び方",
+        "left": [
+          { "id": "q-en", "icon": "globe", "title": "英語: Green light", "body": "そのまま「緑の光」" },
+          { "id": "q-fr", "icon": "globe", "title": "フランス語: Feu vert", "body": "こちらも「緑の灯り」" }
+        ],
+        "right": [
+          { "id": "q-ja", "icon": "flag", "title": "日本語: 青信号", "body": "法律の文章でも「青色の灯火」" },
+          { "id": "q-gap", "icon": "alert-triangle", "title": "でも実物は緑っぽい", "body": "見た目と名前がずれている", "tone": "warning" }
+        ]
+      },
+      "lines": [
+        { "text": "まず、海外ではどう呼ぶのでしょうか。英語ではグリーンライト、つまり緑の光です。", "reveal": ["q-en"] },
+        { "text": "フランス語でも、フー・ヴェール、緑の灯りです。見たままの色ですね。", "reveal": ["q-fr"] },
+        { "text": "一方の日本は青信号。しかも口ぐせだけでなく、法律の文章でも「青色」と書かれています。", "reveal": ["q-ja"] },
+        { "text": "でも実物は、やっぱり緑っぽい。名前と見た目がずれているわけです。", "reveal": ["q-gap"] }
+      ]
+    },
+    {
+      "id": "sec-history",
+      "layout": "section",
+      "content": {
+        "number": "01",
+        "title": "最初は「緑」だった",
+        "subtitle": "信号機がやってきた1930年"
+      },
+      "lines": [
+        { "text": "まずは歴史から。実は、最初から青と呼ばれていたわけではありません。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "history-flow",
+      "layout": "flow",
+      "label": "HISTORY",
+      "chapter": "01 歴史",
+      "heading": "「緑」が「青」になるまで",
+      "content": {
+        "steps": [
+          { "id": "h-1930", "icon": "flag", "title": "1930年 日比谷に登場", "body": "アメリカ製。法令上は「緑」" },
+          { "id": "h-news", "icon": "book-open", "title": "新聞は「青」と紹介", "body": "この呼び方が広まったとする説" },
+          { "id": "h-1947", "icon": "scale", "title": "1947年 法令も「青」に", "body": "道路交通取締法で青色と表記" }
+        ]
+      },
+      "lines": [
+        { "text": "日本で最初の自動の信号機は、1930年、東京の日比谷の交差点に置かれました。", "reveal": ["h-1930"] },
+        { "text": "アメリカから輸入したもので、当時の決まりでも、進めの色は「緑」とされていました。", "reveal": [] },
+        { "text": "ところが、新聞などでは「青、黄、赤」と紹介され、その呼び方が世の中に広まったと言われています。", "reveal": ["arrow-1", "h-news"] },
+        { "text": "そして1947年。道路交通取締法ができたとき、法令の表記も「青」に変わりました。", "reveal": ["arrow-2", "h-1947"] },
+        { "text": "つまり、人々の呼び方に、法律のほうが合わせたのです。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "sec-language",
+      "layout": "section",
+      "content": {
+        "number": "02",
+        "title": "日本語の「青」は広い",
+        "subtitle": "なぜ「青」で違和感がなかったのか"
+      },
+      "lines": [
+        { "text": "では、なぜ緑のものを青と呼んでも、誰も違和感を持たなかったのでしょうか。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "old-colors",
+      "layout": "stats",
+      "label": "LANGUAGE",
+      "chapter": "02 ことば",
+      "heading": "昔の日本語にあった四つの色",
+      "content": {
+        "items": [
+          { "id": "c-aka", "value": "赤", "label": "明るい", "body": "夜明けの光のような色" },
+          { "id": "c-kuro", "value": "黒", "label": "暗い", "body": "夜の闇のような色" },
+          { "id": "c-shiro", "value": "白", "label": "はっきり", "body": "くっきり目立つ色" },
+          { "id": "c-ao", "value": "青", "label": "ぼんやり", "body": "緑や灰色もふくむ、あいまいな色" }
+        ]
+      },
+      "lines": [
+        { "text": "大昔の日本語では、色を表す基本の言葉は、四つしかなかったと言われています。", "reveal": [] },
+        { "text": "明るいことを表す「赤」。暗いことを表す「黒」。", "reveal": ["c-aka", "c-kuro"] },
+        { "text": "はっきりしていることを表す「白」。そして、ぼんやりしていることを表す「青」です。", "reveal": ["c-shiro", "c-ao"] },
+        { "text": "緑も、灰色っぽい色も、この広い「青」の中に入っていました。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "ao-words",
+      "layout": "table",
+      "label": "EXAMPLES",
+      "chapter": "02 ことば",
+      "heading": "今も残る「緑の青」",
+      "content": {
+        "headers": [
+          { "label": "実際の色", "tone": "accent" },
+          { "label": "意味" }
+        ],
+        "rows": [
+          { "id": "w-1", "label": "青葉", "cells": [{ "text": "緑", "tone": "good" }, { "text": "初夏の若葉" }] },
+          { "id": "w-2", "label": "青菜", "cells": [{ "text": "緑", "tone": "good" }, { "text": "ほうれん草などの葉物野菜" }] },
+          { "id": "w-3", "label": "青りんご", "cells": [{ "text": "黄緑", "tone": "good" }, { "text": "緑色の皮のりんご" }] },
+          { "id": "w-4", "label": "青虫", "cells": [{ "text": "緑", "tone": "good" }, { "text": "チョウの幼虫" }] }
+        ]
+      },
+      "lines": [
+        { "text": "その名残は、今の言葉にもたくさん残っています。", "reveal": [] },
+        { "text": "初夏の若葉は青葉。ほうれん草などの葉物は青菜。", "reveal": ["w-1", "w-2"] },
+        { "text": "青りんごも、青虫も、実際の色はどれも緑です。", "reveal": ["w-3", "w-4"] },
+        { "text": "緑のものを青と呼ぶのは、日本語ではずっと自然なことだったんですね。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "sec-color",
+      "layout": "section",
+      "content": {
+        "number": "03",
+        "title": "色のほうを名前に寄せた",
+        "subtitle": "信号の緑は、少し青っぽい"
+      },
+      "lines": [
+        { "text": "最後に、もうひとつ面白い話があります。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "color-shift",
+      "layout": "inputOutput",
+      "label": "COLOR",
+      "chapter": "03 色",
+      "heading": "名前に合わせて色を調整",
+      "content": {
+        "input": { "id": "cs-green", "icon": "alert-triangle", "title": "実物は緑", "body": "名前は青、見た目は緑" },
+        "transform": { "id": "cs-rule", "label": "1970年代 決まりを変更" },
+        "output": { "id": "cs-bluegreen", "icon": "check-circle", "title": "青っぽい緑", "body": "「緑」の範囲内で、なるべく青寄りに" }
+      },
+      "lines": [
+        { "text": "名前は青なのに、見た目は緑。このずれは、ずっと残っていました。", "reveal": ["cs-green"] },
+        { "text": "そこで1970年代、信号の色の決まりが見直されます。", "reveal": ["arrow-1", "cs-rule"] },
+        { "text": "国際的に緑と認められる範囲の中で、なるべく青に近い色を使う、とされたのです。", "reveal": ["arrow-2", "cs-bluegreen"] },
+        { "text": "日本の信号が、海外の信号より少し青っぽいと言われるのは、このためです。", "reveal": [] }
+      ]
+    },
+    {
+      "id": "summary",
+      "layout": "checklist",
+      "label": "SUMMARY",
+      "heading": "まとめ",
+      "content": {
+        "items": [
+          { "id": "s-1", "text": "最初の信号機は、決まりの上では「緑」だった", "note": "1930年、日比谷。新聞などでは「青」と紹介された" },
+          { "id": "s-2", "text": "呼び方が広まり、法令も「青」に合わせた", "note": "1947年の道路交通取締法から" },
+          { "id": "s-3", "text": "日本語の「青」は、もともと緑も含む広い色", "note": "青葉・青菜・青りんごも同じ仲間" },
+          { "id": "s-4", "text": "最後は、色のほうを名前に寄せた", "note": "緑の範囲の中で、なるべく青に近い色に" }
+        ]
+      },
+      "lines": [
+        { "text": "まとめます。最初の信号機は、決まりの上では緑でした。", "reveal": ["s-1"] },
+        { "text": "でも青という呼び方が広まり、法律のほうがそれに合わせました。", "reveal": ["s-2"] },
+        { "text": "その背景には、緑も含む、日本語の広い「青」があります。", "reveal": ["s-3"] },
+        { "text": "そして最後は、色そのものを、名前に寄せていったのです。", "reveal": ["s-4"] }
+      ]
+    },
+    {
+      "id": "outro",
+      "layout": "title",
+      "content": {
+        "kicker": "身近な「なぜ？」の雑学",
+        "title": "次の「なぜ？」も\nお楽しみに",
+        "subtitle": "気になる「なぜ？」があれば、コメントで教えてください"
+      },
+      "lines": [
+        { "text": "明日から信号を見るとき、ちょっと青っぽい緑に注目してみてください。", "reveal": [] },
+        { "text": "気になる「なぜ？」があれば、ぜひコメントで教えてください。ご視聴ありがとうございました。", "reveal": [] }
+      ]
+    }
+  ]
+}
