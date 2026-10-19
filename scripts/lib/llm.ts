@@ -51,11 +51,13 @@ export const chatJson = async (cfg: LlmConfig, system: string, user: string): Pr
   return content;
 };
 
-/** 応答からJSON部分を取り出す (コードフェンスが付いていても許容) */
+/** 応答からJSON部分を取り出す (コードフェンスや前後の説明文が付いていても許容) */
 export const extractJson = (raw: string): unknown => {
   const trimmed = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/, '');
-  return JSON.parse(trimmed) as unknown;
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  return JSON.parse(start >= 0 && end > start ? trimmed.slice(start, end + 1) : trimmed) as unknown;
 };

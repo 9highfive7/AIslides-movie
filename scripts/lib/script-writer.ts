@@ -225,11 +225,20 @@ export const validateScript = (value: unknown): { data?: ScriptConfig; problems:
 
 /** AI に JSON を出させ、形式が不正なら1回だけエラーを伝えて直させる */
 const askValidScript = async (system: string, request: string, onStatus?: (message: string) => void): Promise<ScriptConfig> => {
-  let result = validateScript(await askJson(system, request));
+  // JSON として読めない出力 (文字列中の " の書き忘れなど) も、形式の誤りとして直させる
+  const ask = async (user: string): Promise<{ data?: ScriptConfig; problems: string[] }> => {
+    try {
+      return validateScript(await askJson(system, user));
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      return { problems: [`- JSON として読めません: ${error.message}。文字列の中の " は \\" と書き、カンマや括弧の抜けがないようにしてください`] };
+    }
+  };
+  let result = await ask(request);
   if (!result.data) {
     onStatus?.('台本の形式を直しています');
     const repair = `${request}\n\n-----\n前回の出力には次のエラーがありました。エラーをすべて修正した完全なJSONを再度出力してください。\n${result.problems.join('\n')}`;
-    result = validateScript(await askJson(system, repair));
+    result = await ask(repair);
   }
   if (!result.data) {
     throw new Error(`生成された台本の形式が不正です (2回試行しました):\n${result.problems.join('\n')}`);
