@@ -7,6 +7,7 @@ import type { Meta, ThemeName } from '../schemas';
  *   clean: 淡いグレー寄りの青 × 濃紺 × アクセント青1色 (落ち着いた解説向け)
  *   pop:   クリーム地 × 太い枠線 × 黄色マーカー (YouTube のバラエティ系)
  *   dark:  濃紺地 × 発光する青 (テック・ガジェット系)
+ *   paper: 生成り色の紙 × 紺・朱・墨の3色 × 明朝体 (図解ドキュメンタリー風)
  */
 export interface Theme {
   name: ThemeName;
@@ -57,13 +58,30 @@ export interface Theme {
   };
   card: CSSProperties;
   radius: number;
-  pattern: 'dots' | 'grid';
+  pattern: 'dots' | 'grid' | 'paper';
   subtitleStyle: 'box' | 'outline';
   /** カードの厚み [px]。0 なら平面 (style: "flat") */
   depth: number;
   /** 3D の背景で回る積み木・ボールの色 (#RRGGBB) */
   toys: string[];
+  fonts: {
+    /** 本文・ラベル */
+    body: string;
+    /** 見出し・大きな数字・キメの一文 */
+    display: string;
+  };
+  /**
+   * 画面の飾りの流儀。
+   *   standard:  左上に大きな見出し、章扉は濃い背景 (YouTube の解説動画風)
+   *   editorial: 左上に小さな柱 (例:「図解 No.01 …」)、見出しは中央の明朝、章扉も紙の上 (図解ドキュメンタリー風)
+   */
+  chrome: 'standard' | 'editorial';
 }
+
+export const FONT_FAMILY = 'Noto Sans JP';
+export const SERIF_FONT_FAMILY = 'Noto Serif JP';
+
+const SANS_FONTS = { body: FONT_FAMILY, display: FONT_FAMILY };
 
 const clean: Theme = {
   name: 'clean',
@@ -112,6 +130,8 @@ const clean: Theme = {
   subtitleStyle: 'box',
   depth: 0,
   toys: ['#2B5FC7', '#9DB9F2', '#2B5FC7', '#9DB9F2'],
+  fonts: SANS_FONTS,
+  chrome: 'standard',
 };
 
 const pop: Theme = {
@@ -161,6 +181,8 @@ const pop: Theme = {
   subtitleStyle: 'outline',
   depth: 0,
   toys: ['#2563EB', '#FFD60A', '#E63946', '#FFD60A'],
+  fonts: SANS_FONTS,
+  chrome: 'standard',
 };
 
 const dark: Theme = {
@@ -210,6 +232,8 @@ const dark: Theme = {
   subtitleStyle: 'box',
   depth: 0,
   toys: ['#5B9BFF', '#FFD166', '#5B9BFF', '#FF6B5B'],
+  fonts: SANS_FONTS,
+  chrome: 'standard',
 };
 
 const kids: Theme = {
@@ -259,9 +283,64 @@ const kids: Theme = {
   subtitleStyle: 'outline',
   depth: 0,
   toys: ['#339AF0', '#FFD43B', '#FF8FA3', '#69DB7C'],
+  fonts: SANS_FONTS,
+  chrome: 'standard',
 };
 
-export const THEMES: Record<ThemeName, Theme> = { kids, clean, pop, dark };
+const paper: Theme = {
+  name: 'paper',
+  colors: {
+    bg: '#E9E1CF',
+    surface: '#F2ECDF',
+    ink: '#24211C',
+    accent: '#3F5F86',
+    accentSoft: 'rgba(63, 95, 134, 0.12)',
+    accentBorder: 'rgba(63, 95, 134, 0.45)',
+    onAccent: '#FFFFFF',
+    warning: '#C63A2B',
+    warningSoft: 'rgba(198, 58, 43, 0.10)',
+    textSecondary: 'rgba(36, 33, 28, 0.70)',
+    textFaint: 'rgba(36, 33, 28, 0.50)',
+    line: 'rgba(36, 33, 28, 0.55)',
+    track: 'rgba(242, 236, 223, 0.9)',
+    // 章扉・タイトルも紙の上に描く
+    darkBg: '#E9E1CF',
+    darkShape: 'rgba(36, 33, 28, 0.06)',
+    onDark: '#24211C',
+    onDarkAccent: '#C63A2B',
+    onDarkSecondary: 'rgba(36, 33, 28, 0.70)',
+    onDarkLine: 'rgba(36, 33, 28, 0.12)',
+    // **強調** はマーカーを引かず、朱色の文字にする
+    highlight: 'transparent',
+    highlightInk: '#C63A2B',
+    darkHighlight: 'transparent',
+    darkHighlightInk: '#C63A2B',
+    pattern: 'rgba(36, 33, 28, 0.05)',
+    blob: 'transparent',
+    subtitleBg: '#262420',
+    subtitleStrong: '#F2B8A8',
+    edge: '#BFB49C',
+    stage: '#DED3BB',
+    stageEdge: '#B9AC90',
+    sky: '#E9E1CF',
+    floorLine: 'rgba(36, 33, 28, 0.12)',
+  },
+  card: {
+    backgroundColor: '#F2ECDF',
+    border: '2px solid #24211C',
+    borderRadius: 0,
+    boxShadow: 'none',
+  },
+  radius: 0,
+  pattern: 'paper',
+  subtitleStyle: 'box',
+  depth: 0,
+  toys: ['#3F5F86', '#C63A2B', '#24211C', '#3F5F86'],
+  fonts: { body: FONT_FAMILY, display: SERIF_FONT_FAMILY },
+  chrome: 'editorial',
+};
+
+export const THEMES: Record<ThemeName, Theme> = { kids, clean, pop, dark, paper };
 
 /** カードの厚み [px] (style: "3d")。おもちゃのブロックのように側面が見える */
 const DEPTH_3D = 12;
@@ -279,9 +358,13 @@ const with3d = (theme: Theme): Theme => ({
   },
 });
 
+/** 立体の見た目 (style: "3d") で描くか。editorial なテーマ (paper) は紙の図解なので常に平面 */
+export const uses3dStyle = (meta: Pick<Meta, 'theme' | 'style'>): boolean =>
+  meta.style === '3d' && THEMES[meta.theme].chrome !== 'editorial';
+
 /** 台本の meta (theme / style) から使うテーマを決める */
 export const resolveTheme = (meta: Pick<Meta, 'theme' | 'style'>): Theme =>
-  meta.style === '3d' ? with3d(THEMES[meta.theme]) : THEMES[meta.theme];
+  uses3dStyle(meta) ? with3d(THEMES[meta.theme]) : THEMES[meta.theme];
 
 /** #RRGGBB を明るく (amt > 0) / 暗く (amt < 0) する。解釈できない色はそのまま返す */
 export const shade = (color: string, amt: number): string => {
@@ -299,8 +382,6 @@ export const shade = (color: string, amt: number): string => {
 export const ThemeContext = createContext<Theme>(kids);
 
 export const useTheme = (): Theme => useContext(ThemeContext);
-
-export const FONT_FAMILY = 'Noto Sans JP';
 
 /** 余白は広めに。1画面の情報量は絞る */
 export const PAGE = {

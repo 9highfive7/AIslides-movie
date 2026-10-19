@@ -1,12 +1,28 @@
-import type { ScriptConfig, Scene } from './schemas';
+import { isPresetScene3D, type ScriptConfig, type Scene, type Scene3DObjectsContent } from './schemas';
 import { isShapeName, resolveColor } from './three/catalog';
 
 /** scene3d の矢印のID。flow は物と物の間 (N-1本)、cycle は輪を一周 (N本) */
-export const scene3dArrowIds = (content: Extract<Scene, { layout: 'scene3d' }>['content']): string[] => {
+export const scene3dArrowIds = (content: Scene3DObjectsContent): string[] => {
   const n = content.objects.length;
   const count = content.arrangement === 'flow' ? n - 1 : content.arrangement === 'cycle' && n >= 2 ? n : 0;
   return Array.from({ length: count }, (_, i) => `arrow-${i + 1}`);
 };
+
+/** 3D の場面ごとに、reveal で動かせる物のID */
+export const SCENE3D_ELEMENT_IDS = {
+  // open: 箱が開く / zoom: チップへ寄る / label: 注釈
+  phoneChip: ['open', 'zoom', 'label'],
+  // machine: 自販機が出る / many: 引いて大量の自販機を見せる
+  vendingCount: ['machine', 'many'],
+  // cold / heat: 冷たさと熱の玉が飛んでくる
+  vendingHotCold: ['machine', 'cold', 'heat'],
+  // open: 扉が開いて中が見える / flow: 管の中を熱が流れ始める
+  vendingCutaway: ['open', 'flow'],
+  // left: 冷蔵庫 (熱を捨てる) / right: 自販機 (熱を回す)
+  heatReuse: ['left', 'right'],
+  // machine / bolt: 稲妻 / house: 家 / months: カレンダーがめくれる
+  vendingEnergy: ['machine', 'bolt', 'house', 'months'],
+} as const;
 
 /**
  * シーン内で reveal / focus に指定できる要素IDの一覧。
@@ -48,8 +64,12 @@ export const elementIds = (scene: Scene): string[] => {
       return ['text', 'sub'];
     case 'image':
       return ['image', 'caption'];
+    case 'share':
+      return [...scene.content.segments.map((seg) => seg.id), 'source'];
     case 'scene3d':
-      return [...scene.content.objects.map((obj) => obj.id), ...scene3dArrowIds(scene.content), 'caption'];
+      return isPresetScene3D(scene.content)
+        ? [...SCENE3D_ELEMENT_IDS[scene.content.preset], 'title', 'stat', ...scene.content.callouts.map((c) => c.id)]
+        : [...scene.content.objects.map((obj) => obj.id), ...scene3dArrowIds(scene.content), 'caption'];
   }
 };
 
@@ -70,7 +90,7 @@ export const lintScript = (script: ScriptConfig): string[] => {
       issues.push(`scenes.${si}.id: シーンIDは英数字・ハイフン・アンダースコアのみ使えます ("${scene.id}")`);
     }
 
-    if (scene.layout === 'scene3d') {
+    if (scene.layout === 'scene3d' && !isPresetScene3D(scene.content)) {
       scene.content.objects.forEach((obj, oi) => {
         if (!isShapeName(obj.shape)) {
           issues.push(

@@ -56,12 +56,13 @@ export const TitleLayout: React.FC<{ content: ContentOf<'title'> }> = ({ content
         markerInk={theme.colors.darkHighlightInk}
         marker="block"
         style={{
+          fontFamily: theme.fonts.display,
           fontSize: 84,
-          fontWeight: 900,
+          fontWeight: theme.chrome === 'editorial' ? 700 : 900,
           color: theme.colors.onDark,
           lineHeight: 1.3,
           textAlign: 'center',
-          textShadow: '0 6px 24px rgba(0,0,0,0.25)',
+          textShadow: theme.chrome === 'editorial' ? undefined : '0 6px 24px rgba(0,0,0,0.25)',
         }}
       />
       <div

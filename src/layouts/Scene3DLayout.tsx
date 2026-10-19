@@ -21,9 +21,11 @@ import {
   type PlacedGroup,
   type V3,
 } from '../three/stage';
+import { isPresetScene3D, type Scene3DObjectsContent } from '../schemas';
 import type { ContentOf } from './common';
+import { PresetScene3DLayout } from './PresetScene3DLayout';
 
-type Content = ContentOf<'scene3d'>;
+type Content = Scene3DObjectsContent;
 
 /** 同じ物を count 個出すときの、1個ずつの時間差 [フレーム] (「いち、に、さん」と数えられる間) */
 const COUNT_STAGGER_FRAMES = 5;
@@ -281,12 +283,16 @@ const Label: React.FC<{ text: string; x: number; y: number; above: boolean; at: 
   );
 };
 
+/** scene3d: preset があれば作り込んだ場面、なければ objects を舞台に並べる */
+export const Scene3DLayout: React.FC<{ content: ContentOf<'scene3d'> }> = ({ content }) =>
+  isPresetScene3D(content) ? <PresetScene3DLayout content={content} /> : <ObjectsScene3DLayout content={content} />;
+
 /**
  * 3D オブジェクトで見せるレイアウト。台本の objects (形・色・数・大きさ) を舞台に並べ、
  * 上から落ちてきて弾むように登場させる。flow は矢印でつなぎ、cycle は輪にして一周させる。
  * focus 中の物はぴょんぴょん跳ねて足もとが光り、他の物は淡くなる。
  */
-export const Scene3DLayout: React.FC<{ content: Content }> = ({ content }) => {
+const ObjectsScene3DLayout: React.FC<{ content: Content }> = ({ content }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const ctx = useSceneContext();

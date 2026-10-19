@@ -1,0 +1,367 @@
+{
+  "meta": {
+    "title": "Claude Codeのトークン節約 — 四つの方法を実測した結果",
+    "theme": "pop",
+    "transition": "slide",
+    "animation": "auto",
+    "camera": "subtle",
+    "subtitle": {
+      "style": "auto"
+    },
+    "sfx": {
+      "volume": 0.5
+    },
+    "subscribePopup": {
+      "sceneId": "sec2"
+    },
+    "thumbnail": {
+      "text": "トークン節約\n**4つの方法**を実測",
+      "sub": "Claude Code 検証レポート",
+      "badge": "実測"
+    }
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "layout": "title",
+      "content": {"kicker": "CLAUDE CODE LAB", "title": "トークン節約の\n**試行錯誤**", "subtitle": "四つの方法を実測して分かった、費用を下げる本当の作法"},
+      "lines": [
+        {"text": "この動画は、Claude Codeのトークン節約を、四つの方法で実測した記録です。", "reveal": []},
+        {"text": "AIは毎回、会話をぜんぶ読み直してから答えます。この**読み直しをどう減らすか**が、今日のテーマです。", "reveal": []}
+      ]
+    },
+    {
+      "id": "premise",
+      "layout": "bullets",
+      "label": "PREMISE",
+      "heading": "前提 — 読み直しの仕組み",
+      "content": {
+        "items": [
+          {"id": "pre-1", "icon": "settings", "title": "毎回ぜんぶ読み直す", "body": "AIは前の会話を覚えていない。話すたびに最初から読む"},
+          {"id": "pre-2", "icon": "trending-up", "title": "長いほど増える", "body": "会話が長くなるほど、1リクエストあたりの読む量が増加"},
+          {"id": "pre-3", "icon": "compass", "title": "四つの方法で検証", "body": "モデル切替・サブエージェント・積み重ね・基本所作"}
+        ]
+      },
+      "lines": [
+        {"text": "まず前提です。AIは前の会話を覚えていないため、話すたびに会話全体を読み直します。", "reveal": ["pre-1"]},
+        {"text": "会話が長くなるほど、1回ごとに読む量は増えていきます。", "reveal": ["pre-2"]},
+        {"text": "この読み直しを減らすため、四つの方法を実際の費用で検証しました。", "reveal": ["pre-3"]}
+      ]
+    },
+    {
+      "id": "sec1",
+      "layout": "section",
+      "transition": "circle",
+      "content": {"number": "01", "title": "きっかけ", "subtitle": "使用量が見えると、節約したくなる"},
+      "lines": [
+        {"text": "きっかけは、自作のModで使用量が見えるようになったことでした。", "reveal": []}
+      ]
+    },
+    {
+      "id": "mods",
+      "layout": "bullets",
+      "label": "MODS",
+      "chapter": "01 きっかけ",
+      "heading": "導入した自作Mod",
+      "content": {
+        "items": [
+          {"id": "mod-1", "icon": "timer", "title": "usage-limits", "body": "プランの使用量とリセット時間を1行で表示"},
+          {"id": "mod-2", "icon": "gauge", "title": "token-weather", "body": "使用状況を天気予報風に表示し、/clearを促す"},
+          {"id": "mod-3", "icon": "chart-bar", "title": "flight-recorder", "body": "リクエストごとのモデル別トークンを時系列表示"},
+          {"id": "mod-4", "icon": "workflow", "title": "model-router", "body": "入力の難易度を判定し、モデルを自動で切り替え"}
+        ]
+      },
+      "lines": [
+        {"text": "Modはプラグインの一種で、小さなフックを書くと機能を足せます。まずは見える化から。", "reveal": ["mod-1", "mod-2"]},
+        {"text": "使用量の表示と、モデル別トークンの時系列記録を足しました。", "reveal": ["mod-3"]},
+        {"text": "さらに、入力の難易度でモデルを自動で切り替えるModを作り、ここから検証が始まります。", "reveal": ["mod-4"]}
+      ]
+    },
+    {
+      "id": "sec2",
+      "layout": "section",
+      "transition": "circle",
+      "content": {"number": "02", "title": "検証結果", "subtitle": "四つの方法を、実測の費用で比べる"},
+      "lines": [
+        {"text": "ここからは、四つの方法の検証結果です。", "reveal": []}
+      ]
+    },
+    {
+      "id": "router",
+      "layout": "compare",
+      "label": "TRY 1",
+      "chapter": "02 検証結果",
+      "heading": "モデルの自動切り替え",
+      "content": {
+        "leftTitle": "期待したこと",
+        "rightTitle": "実際に起きたこと",
+        "left": [
+          {"id": "left-1", "icon": "zap", "title": "安いモデルへ自動切替", "body": "かんたんはHaiku、むずかしいはOpusへ"},
+          {"id": "left-2", "icon": "check-circle", "title": "判定は的中していた", "body": "評価84件で81%正解。高確信度は全問正解"}
+        ],
+        "right": [
+          {"id": "right-1", "icon": "database", "title": "キャッシュはモデル別", "body": "切り替えるたび、会話を定価で読み直す", "tone": "warning"},
+          {"id": "right-2", "icon": "alert-triangle", "title": "かえって増えた", "body": "118kのセッションで、$2〜3が読み直しの損", "tone": "warning"}
+        ]
+      },
+      "lines": [
+        {"text": "一つ目の方法は、モデルの自動切り替えです。", "reveal": ["left-1"]},
+        {"text": "判定精度は、八十四件の評価で八十一パーセント。確信度の高い分野は全問正解でした。", "reveal": ["left-2"]},
+        {"text": "しかし、キャッシュはモデルごとに別のため、切り替えるたびに会話を定価で読み直します。", "reveal": ["right-1"]},
+        {"text": "結果は、かえって**増える**。約十一万八千トークンのセッションで、二〜三ドルの損でした。", "reveal": ["right-2"], "focus": ["right-2"]}
+      ]
+    },
+    {
+      "id": "subagent-table",
+      "layout": "table",
+      "label": "TRY 2",
+      "chapter": "02 検証結果",
+      "heading": "サブエージェントの実測",
+      "content": {
+        "headers": [
+          {"label": "合計費用", "tone": "accent"},
+          {"label": "メイン最大"},
+          {"label": "仕上がり"}
+        ],
+        "rows": [
+          {
+            "id": "r1",
+            "label": "A メインのみ",
+            "note": "テーマ間で /clear",
+            "cells": [
+              {"text": "$5.14"},
+              {"text": "194k", "tone": "bad"},
+              {"text": "2位"}
+            ]
+          },
+          {
+            "id": "r2",
+            "label": "B サブエージェント",
+            "note": "調査Sonnet・仕上げOpus",
+            "cells": [
+              {"text": "$6.19"},
+              {"text": "88k", "tone": "good"},
+              {"text": "1位", "tone": "good"}
+            ]
+          },
+          {
+            "id": "r3",
+            "label": "B' 同じ構成",
+            "note": "/clear なし",
+            "cells": [
+              {"text": "$4.00"},
+              {"text": "95k", "tone": "good"},
+              {"text": "3位"}
+            ]
+          },
+          {
+            "id": "r4",
+            "label": "C 委任を拡大",
+            "note": "調査・仕上げSonnet",
+            "cells": [
+              {"text": "$3.90"},
+              {"text": "89k", "tone": "good"},
+              {"text": "4位", "tone": "bad"}
+            ]
+          }
+        ],
+        "source": "学習レポート作成フローで同じ2テーマを各条件1回ずつ作成した結果"
+      },
+      "lines": [
+        {"text": "二つ目は、サブエージェントです。四つの条件で、同じ作業を作らせて比べました。", "reveal": ["r1"]},
+        {"text": "メインが全工程をやる条件Aは、十九万四千トークンまでコンテキストが伸びます。", "reveal": ["r2"]},
+        {"text": "サブエージェントを使う条件BとBプライム、Cは、メインの最大が八万八千から九万五千で抑えられました。", "reveal": ["r3"], "focus": ["r3"]},
+        {"text": "ただし、費用と仕上がりは条件ごとに大きくぶれています。詳細は次の画面です。", "reveal": ["r4"]}
+      ]
+    },
+    {
+      "id": "subagent-learn",
+      "layout": "bullets",
+      "label": "FINDINGS",
+      "chapter": "02 検証結果",
+      "heading": "サブエージェントで分かったこと",
+      "content": {
+        "items": [
+          {"id": "f-1", "icon": "shield-check", "title": "メインは確実に軽くなる", "body": "最大コンテキストが194kから88〜95kに減少"},
+          {"id": "f-2", "icon": "scale", "title": "費用も質もぶれる", "body": "同じ構成のBとB'で、$6.19と$4.00、仕上がりは1位と3位"},
+          {"id": "f-3", "icon": "trending-down", "title": "安いほど質も下がった", "body": "費用の高い順と、仕上がりの良い順が一致"}
+        ]
+      },
+      "lines": [
+        {"text": "確実に効いたのは、メインの軽さです。調査で読んだものが、メインに残りません。", "reveal": ["f-1"]},
+        {"text": "一方で、同じ構成でも費用と仕上がりはぶれました。違いは、メインが渡す指示文でした。", "reveal": ["f-2"]},
+        {"text": "そして、安いモデルに任せるほど、費用と仕上がりの両方が下がる結果になりました。", "reveal": ["f-3"]}
+      ]
+    },
+    {
+      "id": "context-bars",
+      "layout": "bars",
+      "label": "EVIDENCE",
+      "chapter": "02 検証結果",
+      "badge": "効果は確実",
+      "heading": "メインのコンテキスト削減",
+      "content": {
+        "caption": "学習レポート作成時の、メインセッションの最大コンテキスト使用量",
+        "items": [
+          {"id": "b-1", "label": "メインで全工程", "value": 194000, "display": "194k", "tone": "warning"},
+          {"id": "b-2", "label": "サブエージェント活用", "value": 88000, "display": "88k", "tone": "accent"}
+        ]
+      },
+      "lines": [
+        {"text": "効果を数字で見ると、こうなります。", "reveal": ["b-1"]},
+        {"text": "メインで全部やると十九万四千。サブエージェントに任せると、八万八千で済んでいます。", "reveal": ["b-2"], "focus": ["b-2"]}
+      ]
+    },
+    {
+      "id": "key-insight",
+      "layout": "statement",
+      "chapter": "02 検証結果",
+      "transition": "zoom",
+      "content": {"icon": "target", "text": "コンテキストを\n**半分以下**に保てる", "sub": "費用の節約は使い方次第。でも、この効果は確実でした"},
+      "lines": [
+        {"text": "費用の節約は使い方次第ですが、コンテキストを**半分以下**に保つ効果は、確実でした。", "reveal": ["sub"], "sfx": "ding"}
+      ]
+    },
+    {
+      "id": "accumulate",
+      "layout": "bullets",
+      "label": "TRY 3",
+      "chapter": "02 検証結果",
+      "heading": "会話の積み重ね",
+      "content": {
+        "items": [
+          {"id": "a-1", "icon": "messages", "title": "話題が変わっても重りになる", "body": "ハリポタ8作のあとのスターウォーズ6作でも、前の8作分を読み直す"},
+          {"id": "a-2", "icon": "clock", "title": "小さいうちは差が出ない", "body": "/clearの直後は、キャッシュの作り直しにも費用がかかる"},
+          {"id": "a-3", "icon": "trending-up", "title": "大きくなると一気に効く", "body": "放置セッションは約97万トークンまで成長"}
+        ]
+      },
+      "lines": [
+        {"text": "三つ目は、会話の積み重ねです。話題が変わっても、前の会話はただの重りになります。", "reveal": ["a-1"]},
+        {"text": "ただし、クリアの直後はキャッシュの作り直しがかかるため、会話が小さいうちは差が出ません。", "reveal": ["a-2"]},
+        {"text": "代わりに、大きくなってから切ると、一気に効きます。", "reveal": ["a-3"]}
+      ]
+    },
+    {
+      "id": "clear-compare",
+      "layout": "compare",
+      "label": "/CLEAR",
+      "chapter": "02 検証結果",
+      "heading": "/clear はいつ得か",
+      "content": {
+        "leftTitle": "まだ小さいとき",
+        "rightTitle": "大きくなったら",
+        "left": [
+          {"id": "left-1", "icon": "wallet", "title": "/clearにも費用", "body": "キャッシュ書き直しに、この回は約$0.18", "tone": "warning"},
+          {"id": "left-2", "icon": "refresh-cw", "title": "持ち越しの読み直しは安い", "body": "1リクエストあたり約$0.01。8〜12回では元が取れない"}
+        ],
+        "right": [
+          {"id": "right-1", "icon": "alert-triangle", "title": "放置は高くつく", "body": "97万トークン・1,617回のやりとりで、API換算約$398", "tone": "warning"},
+          {"id": "right-2", "icon": "square-check", "title": "書き出してから /clear", "body": "要点をファイルに残してから切り替える"}
+        ]
+      },
+      "lines": [
+        {"text": "クリアはいつ得かを、実測で比べました。", "reveal": ["left-1"]},
+        {"text": "小さいうちのクリアは、キャッシュ書き直しの十八セントが勝ってしまい、元が取れません。", "reveal": ["left-2"]},
+        {"text": "逆に放置は危険です。九十七万トークンのセッションでは、合計**三百九十八ドル**に達していました。", "reveal": ["right-1"], "focus": ["right-1"]},
+        {"text": "だから基本は、大きくなってきたら書き出してからクリアです。手順は次の章で。", "reveal": ["right-2"]}
+      ]
+    },
+    {
+      "id": "sec3",
+      "layout": "section",
+      "transition": "circle",
+      "content": {"number": "03", "title": "基本所作", "subtitle": "場面別の、使い分けの型"},
+      "lines": [
+        {"text": "最後に、日々の基本所作をまとめます。", "reveal": []}
+      ]
+    },
+    {
+      "id": "habits",
+      "layout": "checklist",
+      "label": "HABITS",
+      "chapter": "03 基本所作",
+      "heading": "場面別の基本動作",
+      "content": {
+        "items": [
+          {"id": "h-1", "text": "使用率が高い → 書き出して /clear", "note": "PROGRESS.mdなどに要点を残してから切り替える"},
+          {"id": "h-2", "text": "話題がまるごと変わる → 別セッション", "note": "セッション同士は記憶を共有しない。経緯はファイルで渡す"},
+          {"id": "h-3", "text": "同じ話題を長く続ける → /compact", "note": "「〇〇を中心に残して」と、残す内容も指定できる"},
+          {"id": "h-4", "text": "会話がまだ小さい → 何もしない", "note": "小まめすぎる/clearは、キャッシュの作り直しで得にならない"}
+        ]
+      },
+      "lines": [
+        {"text": "基本所作は、場面ごとに四つです。", "reveal": ["h-1"]},
+        {"text": "使用率が高くなったら、要点を書き出してからクリア。話題が変わるなら、別セッションが最も軽い。", "reveal": ["h-2"]},
+        {"text": "同じ話題を続けるなら、コンパクトで要約。", "reveal": ["h-3"]},
+        {"text": "そして、会話がまだ小さいときは、何もしないのが正解です。", "reveal": ["h-4"]}
+      ]
+    },
+    {
+      "id": "progress",
+      "layout": "flow",
+      "label": "ROUTINE",
+      "chapter": "03 基本所作",
+      "heading": "書き出してから切り替え",
+      "content": {
+        "steps": [
+          {"id": "step-1", "icon": "notebook-pen", "title": "まとめる", "body": "決めたことと次を5行で"},
+          {"id": "step-2", "icon": "scissors", "title": "切り替える", "body": "/clear で白紙に戻す"},
+          {"id": "step-3", "icon": "play", "title": "続きから再開", "body": "PROGRESS.md を読ませる"}
+        ]
+      },
+      "lines": [
+        {"text": "書き出しのルーティンは、三ステップです。", "reveal": ["step-1"]},
+        {"text": "まず、決まったことと次にやることを、プログレスmdに五行でまとめさせます。", "reveal": ["arrow-1", "step-2"]},
+        {"text": "クリアしたあとの新しい会話で、そのファイルを読ませれば、続きから再開できます。", "reveal": ["arrow-2", "step-3"]},
+        {"text": "CLAUDE.mdやファイル、gitの設定は、クリアしても残ります。", "reveal": []}
+      ]
+    },
+    {
+      "id": "cautions",
+      "layout": "bullets",
+      "label": "READ ME",
+      "chapter": "03 基本所作",
+      "heading": "読むときの注意",
+      "content": {
+        "items": [
+          {"id": "ca-1", "icon": "chart-bar", "title": "実測は各1回ずつ", "body": "条件ごとに1回で、ぶれがあります"},
+          {"id": "ca-2", "icon": "wallet", "title": "金額はAPI換算の目安", "body": "Pro・Maxプランでは、実際の請求ではありません"},
+          {"id": "ca-3", "icon": "piggy-bank", "title": "キャッシュは約1/10", "body": "の料金で読める（2026年9月時点の仕様）"}
+        ]
+      },
+      "lines": [
+        {"text": "数字を受け取るときの、三点の注意です。", "reveal": ["ca-1"]},
+        {"text": "実測は各条件一回ずつでぶれがあり、金額はAPI料金を掛けた目安です。", "reveal": ["ca-2"]},
+        {"text": "また、キャッシュは十分の一の料金で読める、という仕組みが前提になっています。", "reveal": ["ca-3"]}
+      ]
+    },
+    {
+      "id": "final",
+      "layout": "bullets",
+      "label": "TAKEAWAY",
+      "chapter": "03 基本所作",
+      "heading": "持ち帰り三つ",
+      "content": {
+        "items": [
+          {"id": "t-1", "icon": "refresh-cw", "title": "モデル切替は開始時に1回", "body": "会話が長いほど、切り替えは割に合わない"},
+          {"id": "t-2", "icon": "target", "title": "サブエージェントは指示を固定", "body": "呼び出しは数を絞り、指示文を毎回同じにする"},
+          {"id": "t-3", "icon": "square-check", "title": "大きくなったら書き出して /clear", "body": "小まめすぎるクリアは、得にならない"}
+        ]
+      },
+      "lines": [
+        {"text": "持ち帰りは三つです。まず、モデルの切り替えは、会話が空の開始時に一回だけ。", "reveal": ["t-1"]},
+        {"text": "サブエージェントは、呼び出しを絞り、指示文を固定する。メインは確実に軽くなります。", "reveal": ["t-2"]},
+        {"text": "そして、大きくなってきたら、**書き出してからクリア**。節約の型は、今日から使えます。", "reveal": ["t-3"]}
+      ]
+    },
+    {
+      "id": "outro",
+      "layout": "outro",
+      "content": {"title": "ご視聴ありがとうございました", "message": "次回は、サブエージェントの指示文の作り方を深掘りします"},
+      "lines": [
+        {"text": "最後までご覧いただき、ありがとうございました。", "reveal": []},
+        {"text": "参考になったら、**チャンネル登録**と高評価をお願いします。", "reveal": []}
+      ]
+    }
+  ]
+}

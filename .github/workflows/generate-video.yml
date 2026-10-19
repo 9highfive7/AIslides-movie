@@ -43,6 +43,7 @@ on:
           - clean
           - pop
           - dark
+          - paper
   repository_dispatch:
     types: [generate-video]
 
@@ -144,7 +145,8 @@ jobs:
         run: npm run audio
 
       - name: Render video
-        run: npm run render
+        # GPU のないランナーでも 3D の場面 (scene3d) を描けるよう、WebGL をソフトウェア描画にする
+        run: npm run render -- --gl=swangle
 
       - name: Render thumbnail + YouTube metadata (chapters / captions)
         run: |

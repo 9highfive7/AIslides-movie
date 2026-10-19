@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "title": "なぜ自販機は1台で冷たいと温かいを同時に出せるのか",
+    "theme": "paper",
+    "header": { "label": "図解 No.02", "title": "自販機の冷温の秘密" },
+    "transition": "fade",
+    "progressBar": false,
+    "avatar": false,
+    "subtitle": { "style": "box" },
+    "sfx": { "volume": 0.35, "reveal": false, "transition": false },
+    "thumbnail": { "text": "冷たいと温かいを\n**1台で**出せる理由", "sub": "道端の箱のヒミツ" }
+  },
+  "scenes": [
+    {
+      "id": "hook-box",
+      "layout": "scene3d",
+      "content": {
+        "preset": "vendingCount",
+        "title": "日本に**約390万台**",
+        "stat": { "kicker": "そのうち飲み物の自販機", "value": "約220万台", "note": "日本自動販売システム機械工業会" }
+      },
+      "lines": [
+        { "text": "あなたの近くにもある、あの箱。", "reveal": ["machine"] },
+        { "text": "自動販売機は日本に**約390万台**。世界でも有数の自販機大国です。", "reveal": ["many", "title"] },
+        { "text": "飲み物の自販機だけでも、**約220万台**あります。", "reveal": ["stat"] }
+      ]
+    },
+    {
+      "id": "question",
+      "layout": "scene3d",
+      "content": {
+        "preset": "vendingHotCold",
+        "title": "同じ箱の中で、**冷やす**と**温める**",
+        "callouts": [
+          { "id": "cold-cap", "title": "つめた〜い", "sub": "約5℃", "tone": "accent" },
+          { "id": "hot-cap", "title": "あったか〜い", "sub": "約55℃", "tone": "warning" }
+        ]
+      },
+      "lines": [
+        { "text": "しかもこの箱、**冷たい**飲み物と、", "reveal": ["cold", "cold-cap"] },
+        { "text": "**温かい**飲み物を、同時に売っています。", "reveal": ["heat", "hot-cap"] },
+        { "text": "なぜ、1台で両方を出せるのでしょうか。", "reveal": ["title"] }
+      ]
+    },
+    {
+      "id": "section-pump",
+      "layout": "section",
+      "chapter": "秘密は熱の使い回し",
+      "content": { "number": "1つ目", "title": "秘密は\nヒートポンプ" },
+      "lines": [
+        { "text": "その秘密は、エアコンと同じ**ヒートポンプ**です。" }
+      ]
+    },
+    {
+      "id": "cutaway",
+      "layout": "scene3d",
+      "chapter": "秘密は熱の使い回し",
+      "content": {
+        "preset": "vendingCutaway",
+        "title": "自販機の中を透かして見ると",
+        "callouts": [
+          { "id": "absorb", "title": "① 吸熱", "sub": "冷たい室から熱を吸い取る", "tone": "accent" },
+          { "id": "compress", "title": "② 圧縮", "sub": "気体を縮めて熱くする" },
+          { "id": "release", "title": "③ 放熱", "sub": "温かい室へ熱を渡す", "tone": "warning" },
+          { "id": "expand", "title": "④ 膨張", "sub": "一気に膨らませて冷たく", "tone": "accent" }
+        ]
+      },
+      "lines": [
+        { "text": "中をのぞくと、冷媒という気体が、管の中をぐるぐる回っています。", "reveal": ["open", "title"] },
+        { "text": "冷たい室で熱を吸い取り、圧縮機でぎゅっと縮めて熱くします。", "reveal": ["flow", "absorb", "compress"] },
+        { "text": "その熱を温かい室で放し、膨らませて、また冷たく戻します。", "reveal": ["release", "expand"] }
+      ]
+    },
+    {
+      "id": "reuse",
+      "layout": "scene3d",
+      "chapter": "秘密は熱の使い回し",
+      "content": {
+        "preset": "heatReuse",
+        "title": "捨てる熱を、**使う熱**に",
+        "callouts": [
+          { "id": "waste", "title": "外へ捨てる", "sub": "冷やすだけの冷蔵庫", "tone": "muted" },
+          { "id": "reuse-cap", "title": "温める側に再利用", "sub": "自販機（ヒートポンプ）", "tone": "warning" }
+        ]
+      },
+      "lines": [
+        { "text": "ふつうの冷蔵庫は、冷やすときに出た熱を、外へ逃がすだけです。", "reveal": ["waste"] },
+        { "text": "自販機は、その捨てるはずの熱を、**温める側に再利用**しています。", "reveal": ["right", "reuse-cap", "title"] },
+        { "text": "冷媒の流れを切り替えれば、冷やす室と温める室を入れ替えることもできます。" }
+      ]
+    },
+    {
+      "id": "section-num",
+      "layout": "section",
+      "chapter": "だから省エネ",
+      "content": { "number": "2つ目", "title": "熱をムダにしない\nから省エネ" },
+      "lines": [
+        { "text": "熱をムダにしない仕組みは、省エネにもつながっています。" }
+      ]
+    },
+    {
+      "id": "energy",
+      "layout": "scene3d",
+      "chapter": "だから省エネ",
+      "content": {
+        "preset": "vendingEnergy",
+        "stat": { "kicker": "自販機1台の年間消費電力", "value": "約1,000kWh", "note": "業界の公表資料に基づく目安" },
+        "callouts": [
+          { "id": "months-cap", "title": "家庭の2〜3か月分", "sub": "一般家庭の電気の使用量に換算", "tone": "warning" }
+        ]
+      },
+      "lines": [
+        { "text": "自販機1台が1年に使う電気は、およそ**1,000kWh**。", "speech": "自販機1台が1年に使う電気は、およそ1000キロワットアワー。", "reveal": ["bolt", "stat"] },
+        { "text": "一般家庭なら、**2〜3か月分**にあたります。", "speech": "一般家庭なら、2から3か月分にあたります。", "reveal": ["house", "months", "months-cap"] }
+      ]
+    },
+    {
+      "id": "saving",
+      "layout": "statement",
+      "chapter": "だから省エネ",
+      "content": {
+        "text": "20年間で消費電力を\n**約7割**減らした",
+        "sub": "1991年比・省エネ機の普及による（日本自動販売システム機械工業会）"
+      },
+      "lines": [
+        { "text": "それでも省エネ機の普及で、この20年間で消費電力を**約7割**減らしてきました。", "reveal": ["text", "sub"] }
+      ]
+    },
+    {
+      "id": "closing",
+      "layout": "statement",
+      "chapter": "だから省エネ",
+      "content": {
+        "text": "捨てるはずの熱の\n**使い回し**が答え",
+        "sub": "冷たいを上手に作ると、温かいも安く作れる"
+      },
+      "lines": [
+        { "text": "答えは、捨てるはずの熱の使い回しでした。", "reveal": ["text"] },
+        { "text": "冷たいを上手に作ると、温かいも安く作れるんです。", "reveal": ["sub"] }
+      ]
+    }
+  ]
+}
