@@ -8,6 +8,7 @@ import { KineticText } from '../components/KineticText';
 import { SubscribeButton } from '../components/SubscribeButton';
 import { OUTRO_SUBSCRIBE_DELAY } from '../audio-events';
 import type { ContentOf } from './common';
+import { useVertical } from '../stage';
 
 /**
  * エンディング。お礼の一言 + 登録ボタンのクリック演出 +
@@ -19,6 +20,9 @@ export const OutroLayout: React.FC<{ content: ContentOf<'outro'> }> = ({ content
   const { fps } = useVideoConfig();
   const { introAt } = useSceneContext();
   const msgP = springFrom(frame, introAt + 16, fps, SPRINGS.snappy);
+  // ショート (縦の動画) には終了画面 (関連動画のカード) がないので、枠は出さずに中央にまとめる
+  const vertical = useVertical();
+  const endScreen = content.endScreen && !vertical;
 
   return (
     <AbsoluteFill
@@ -26,9 +30,11 @@ export const OutroLayout: React.FC<{ content: ContentOf<'outro'> }> = ({ content
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: content.endScreen ? 'flex-start' : 'center',
-        paddingTop: content.endScreen ? 110 : 0,
-        paddingBottom: content.endScreen ? 0 : 160,
+        justifyContent: endScreen ? 'flex-start' : 'center',
+        paddingTop: endScreen ? 110 : 0,
+        paddingBottom: endScreen ? 0 : vertical ? 300 : 160,
+        paddingLeft: vertical ? 80 : 0,
+        paddingRight: vertical ? 120 : 0,
       }}
     >
       <KineticText
@@ -38,7 +44,7 @@ export const OutroLayout: React.FC<{ content: ContentOf<'outro'> }> = ({ content
         markerColor={theme.colors.darkHighlight}
         markerInk={theme.colors.darkHighlightInk}
         marker="block"
-        style={{ fontSize: content.endScreen ? 56 : 72, fontWeight: 900, color: theme.colors.onDark, textAlign: 'center' }}
+        style={{ fontSize: endScreen ? 56 : 72, fontWeight: 900, color: theme.colors.onDark, textAlign: 'center' }}
       />
       {content.message ? (
         <div
@@ -53,7 +59,7 @@ export const OutroLayout: React.FC<{ content: ContentOf<'outro'> }> = ({ content
           {content.message}
         </div>
       ) : null}
-      {content.endScreen ? (
+      {endScreen ? (
         <div style={{ display: 'flex', gap: 60, marginTop: 50 }}>
           {['おすすめ動画', '次の動画'].map((label, i) => {
             const p = springFrom(frame, introAt + 12 + i * 6, fps, SPRINGS.bouncy);
@@ -86,7 +92,7 @@ export const OutroLayout: React.FC<{ content: ContentOf<'outro'> }> = ({ content
         </div>
       ) : null}
       {content.subscribe ? (
-        <div style={{ marginTop: content.endScreen ? 44 : 60, marginLeft: 120 }}>
+        <div style={{ marginTop: endScreen ? 44 : 60, marginLeft: vertical ? 0 : 120 }}>
           <SubscribeButton at={introAt + OUTRO_SUBSCRIBE_DELAY} text="チャンネル登録" scale={1.15} showLike />
         </div>
       ) : null}

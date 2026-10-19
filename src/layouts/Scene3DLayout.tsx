@@ -22,6 +22,7 @@ import {
   type V3,
 } from '../three/stage';
 import { isBuildScene3D, isPresetScene3D, type Scene3DObjectsContent } from '../schemas';
+import { canvasFrame, useStage } from '../stage';
 import { BuildScene } from '../three/BuildScene';
 import type { ContentOf } from './common';
 import { PresetScene3DLayout } from './PresetScene3DLayout';
@@ -254,6 +255,7 @@ const Label: React.FC<{ text: string; x: number; y: number; above: boolean; at: 
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = springFrom(frame, at, fps, SPRINGS.bouncy);
+  const k = useStage().textScale;
   if (frame < at) {
     return null;
   }
@@ -264,7 +266,7 @@ const Label: React.FC<{ text: string; x: number; y: number; above: boolean; at: 
         position: 'absolute',
         left: x,
         top: y,
-        transform: `translate(-50%, ${above ? '-100%' : '0'}) scale(${(0.4 + 0.6 * Math.min(p, 1.2)) * (1 + 0.12 * focus)})`,
+        transform: `translate(-50%, ${above ? '-100%' : '0'}) scale(${(0.4 + 0.6 * Math.min(p, 1.2)) * (1 + 0.12 * focus) * k})`,
         transformOrigin: above ? '50% 100%' : '50% 0%',
         opacity: interpolate(p, [0, 0.4], [0, 1], { extrapolateRight: 'clamp' }) * (1 - 0.55 * dim),
         padding: '8px 26px',
@@ -309,6 +311,8 @@ const ObjectsScene3DLayout: React.FC<{ content: Content }> = ({ content }) => {
 
   const stage = useMemo(() => layoutStage(objects, arrangement), [objects, arrangement]);
   const pose = cameraPose(arrangement, frame, start, end);
+  // 縦の動画の帯の中では、3D を上下に描き足す (画角だけ広げる。名札の位置は 16:9 の pose のまま計算する)
+  const canvas = canvasFrame(useStage(), pose.fov);
   const arrowIds = scene3dArrowIds(content);
 
   const objectAt = objects.map((obj, i) => ctx.appearAt(obj.id, i * 3));
@@ -322,14 +326,15 @@ const ObjectsScene3DLayout: React.FC<{ content: Content }> = ({ content }) => {
   return (
     <AbsoluteFill>
       <ThreeCanvas
-        width={VIDEO_W}
-        height={VIDEO_H}
+        width={canvas.style ? canvas.width : VIDEO_W}
+        height={canvas.style ? canvas.height : VIDEO_H}
         shadows
         flat
         gl={{ antialias: true }}
-        camera={{ fov: pose.fov, position: pose.position, near: 0.1, far: 200 }}
+        camera={{ fov: canvas.fov, position: pose.position, near: 0.1, far: 200 }}
+        style={canvas.style}
       >
-        <CameraRig pose={pose} />
+        <CameraRig pose={canvas.style ? { ...pose, fov: canvas.fov } : pose} />
         <StageLights />
         <Floor color={theme.colors.stage} edge={theme.colors.stageEdge} />
         {stage.groups.map((group, i) => (
@@ -413,6 +418,7 @@ const Caption: React.FC<{ text: string; at: number }> = ({ text, at }) => {
   const ctx = useSceneContext();
   const p = springFrom(frame, at, fps, SPRINGS.snappy);
   const { focus, dim } = ctx.focusOf('caption', frame);
+  const k = useStage().textScale;
   return (
     <div
       style={{
@@ -423,7 +429,8 @@ const Caption: React.FC<{ text: string; at: number }> = ({ text, at }) => {
         display: 'flex',
         justifyContent: 'center',
         opacity: interpolate(p, [0, 0.5], [0, 1], { extrapolateRight: 'clamp' }) * (1 - 0.55 * dim),
-        transform: `translateY(${(1 - p) * 30}px) scale(${1 + 0.05 * focus})`,
+        transform: `translateY(${(1 - p) * 30}px) scale(${(1 + 0.05 * focus) * k})`,
+        transformOrigin: k === 1 ? undefined : '50% 100%',
       }}
     >
       <div

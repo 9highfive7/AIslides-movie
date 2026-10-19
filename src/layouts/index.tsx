@@ -18,10 +18,12 @@ import { RankingLayout } from './RankingLayout';
 import { ShareLayout } from './ShareLayout';
 import { Scene3DLayout } from './Scene3DLayout';
 import { LayeredLayout } from './LayeredLayout';
+import { StageBand, useVertical } from '../stage';
 
 /** レイアウト種別 → 描画コンポーネント */
 export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
   const hasHeading = Boolean(scene.heading || scene.label);
+  const vertical = useVertical();
   switch (scene.layout) {
     case 'title':
       return <TitleLayout content={scene.content} />;
@@ -56,7 +58,14 @@ export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
     case 'share':
       return <ShareLayout content={scene.content} hasHeading={hasHeading} />;
     case 'scene3d':
-      return <Scene3DLayout content={scene.content} />;
+      // 縦の動画では、16:9 で組んだ 3D の場面を画面の幅いっぱいの帯にして置く (上下にも 3D を描き足す)
+      return vertical ? (
+        <StageBand>
+          <Scene3DLayout content={scene.content} />
+        </StageBand>
+      ) : (
+        <Scene3DLayout content={scene.content} />
+      );
     case 'layered':
       return <LayeredLayout content={scene.content} />;
   }

@@ -4,7 +4,7 @@
  *   studio-data/projects/<id>/project.json      テーマ・設定・版の一覧
  *   studio-data/projects/<id>/v<n>/script.json  その版の台本
  *                                  timeline.json, audio/   音声とタイミング (修正時に引き継ぐ)
- *                                  video.mp4, thumbnail.png, scenes/<シーンID>.png
+ *                                  video.mp4, thumbnail.png (縦の動画ではショートのカバー 1080×1920), scenes/<シーンID>.png
  *                                  youtube/description.txt, captions.srt, tags.txt, upload.txt, metadata.json
  */
 import fs from 'node:fs';
@@ -20,8 +20,13 @@ export const DATA_DIR = path.join(ROOT, 'studio-data', 'projects');
  */
 export type Look = 'paper' | 'zukai3d' | 'illust' | 'kids' | 'pop' | 'clean' | 'dark';
 
+/** 動画の形式。landscape: 横 16:9 (ふつうの動画) / vertical: 縦 9:16 (YouTube ショート) */
+export type VideoFormat = 'landscape' | 'vertical';
+
 export interface ProjectOptions {
   look: Look;
+  /** 動画の形式 (省略時は横。この項目ができる前のプロジェクトも横) */
+  format?: VideoFormat;
   /** 目安の尺 [秒] */
   durationSec: number;
   /** VOICEVOX の話者ID */

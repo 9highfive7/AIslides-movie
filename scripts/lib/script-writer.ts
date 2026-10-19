@@ -13,6 +13,7 @@ import { ICON_NAMES } from '../../src/components/IconBox';
 import { BUILD_BASIC_SHAPES, BUILD_COLORS, BUILD_PROPS, COLOR_NAMES, SHAPES, SHAPE_NAMES } from '../../src/three/catalog';
 import { chatJson, extractJson, resolveLlmConfig } from './llm';
 import { CLAUDE_MODEL, claudeText, hasClaudeEnvCredentials } from './claude';
+import { SHORTS_MAX_SEC } from './youtube';
 
 export const scriptProvider = (): { provider: 'claude' | 'openai'; model: string } => {
   const forced = process.env.SCRIPT_PROVIDER;
@@ -115,13 +116,43 @@ const NATURAL_VOICE = `## 人が話しているように書く (AI っぽさを�
 export interface WriterOptions {
   /** 画像生成 AI の絵を重ねる場面 (layered) を使わせる */
   layered?: boolean;
+  /** 縦の動画 (YouTube ショート 1080x1920) の台本にする */
+  vertical?: boolean;
+  /** 目安の尺 [秒] (縦の動画で、場面の数とセリフの量を決めるのに使う) */
+  targetSec?: number;
 }
+
+export { SHORTS_MAX_SEC };
+
+/**
+ * 縦の動画 (ショート) の書き方。スマホで縦にスクロールしながら見られるので、
+ * 1〜2秒で「何の話か」「なぜ見るか」がわからないと次へ送られる。最後まで見られた割合が伸びるかどうかを決める
+ */
+const shortsRules = (targetSec: number, layered: boolean): string => {
+  const sec = Math.min(SHORTS_MAX_SEC, Math.max(15, Math.round(targetSec)));
+  const scenes = sec <= 35 ? '3〜4' : sec <= 65 ? '4〜6' : '6〜9';
+  return `## 縦の動画 (YouTube ショート) の決まり — 他の決まりより優先する
+- 縦 1080x1920 のショート動画です。尺は約${sec}秒 (ナレーションは全体で約${Math.round(sec * 6)}字)。${SHORTS_MAX_SEC}秒を超えてはいけない
+- 1セリフ目 (フック) で結論・意外な事実・具体的な数字を言い切る。あいさつ・前置き・「今回は〜」「〜について解説します」は書かない。1セリフ目は25字以内
+- 最初のシーンは title にしない。いきなり内容のシーン (statement / stats / scene3d${layered ? ' / layered' : ''} など) から始め、1シーン目の heading をフックの見出しにする
+- section / outro / title シーンは使わない。subscribePopup は書かない。チャンネル登録のお願いもしない (ショートの画面に登録ボタンがある)
+- シーンは${scenes}個。1シーン1〜2セリフ、1セリフ1文・40字以内でテンポよく切り替える
+- 最後のセリフは、話のオチ・まとめの一言にする (「詳しくは〜」「いかがでしたか」で終えない)。最初のセリフにつながる言い方にすると、くり返し見てもらいやすい
+- heading は14字以内 (縦の画面の上に大きく出る)。chapter は書かない
+- 画面は縦長で幅が狭い。カードやグラフは上から下へ積んで表示されるので、項目は少なくする: stats は2〜3個 / bars は2〜4本 / flow は3ステップまで / compare は左右1枚ずつ / bullets・checklist・ranking は3個まで / share は2〜3区分。statement の text は1行10字以内で改行を入れる。table・axes・inputOutput は使わない
+- scene3d は横長の舞台が画面の中央に帯で出る。objects は3個まで、callouts は2つまでにし、callouts の title は6字以内
+${layered ? `- layered の配置は縦の画面に合わせる: x は横幅 (0〜1)、y と height は縦の高さ (0〜1)。見出しが上 25%、字幕が下 30% にあるので、y は 0.62〜0.68・y - height は 0.28 以上にする。物は1〜2個、主役の height は 0.25〜0.34、2つ並べるときは x = 0.28 / 0.74 で height は 0.22 以下。callouts は物の下か上の中央に出る (1つまで)
+- layered の background の prompt は縦長の舞台 (上に空・天井、中央に物を置く場所) として書く
+` : ''}- meta.title は40字以内、meta.thumbnail.text は縦の画面に大きく出すので1行8字以内・3行まで
+- meta.youtube.hashtags の先頭は "Shorts" にし、残り2つは題材の語句にする`;
+};
 
 export const buildSystemPrompt = (audience: Audience, options: WriterOptions = {}): string => {
   const rules = AUDIENCE_RULES[audience];
   const layered = options.layered === true;
+  const vertical = options.vertical === true;
   return `${rules.role}
-出力するのは、ナレーション付きの動画 (1920x1080) の台本JSONです。
+出力するのは、ナレーション付きの動画 (${vertical ? '縦 1080x1920 の YouTube ショート' : '1920x1080'}) の台本JSONです。
 
 ## 出力形式
 {"meta": {...}, "scenes": [ ... ]} というJSONオブジェクトのみを出力してください。JSON以外の文章は禁止です。
@@ -129,8 +160,7 @@ export const buildSystemPrompt = (audience: Audience, options: WriterOptions = {
 ## meta に書けるキー
 - title: YouTube の動画タイトル (32字以内。数字や具体的な言葉で興味を引く)
 - thumbnail: { "text": "サムネイルの大きな文字 (2行まで。改行は\\n、強調語は **で囲む**)", "sub": "補足 (省略可)", "badge": "左上の短いラベル (省略可)" }
-- subscribePopup: { "sceneId": "チャンネル登録を促すポップアップを出すシーンID (動画の中盤の section シーン)" }
-- youtube: YouTube に投稿するときの文言 (必ず書く)。{ "titles": ["タイトル案", ...] (title とは別の切り口で3つ。各40字以内。検索されやすい言葉を前半に置き、煽りすぎない), "summary": "概要欄の冒頭 (動画でわかることを2〜4文。です・ます)", "tags": ["タグ", ...] (検索用の語句を8〜15個。題材の言い換え・関連語), "hashtags": ["ハッシュタグ", ...] (3つ。# なし・空白なし), "sources": [ { "label": "出典 (著者・機関名, 年, 資料名)" }, ... ] (動画で使った数字・研究の出どころをすべて。URL は書かない) }
+${vertical ? '' : '- subscribePopup: { "sceneId": "チャンネル登録を促すポップアップを出すシーンID (動画の中盤の section シーン)" }\n'}- youtube: YouTube に投稿するときの文言 (必ず書く)。{ "titles": ["タイトル案", ...] (title とは別の切り口で3つ。各40字以内。検索されやすい言葉を前半に置き、煽りすぎない), "summary": "概要欄の冒頭 (動画でわかることを2〜4文。です・ます)", "tags": ["タグ", ...] (検索用の語句を8〜15個。題材の言い換え・関連語), "hashtags": ["ハッシュタグ", ...] (3つ。# なし・空白なし), "sources": [ { "label": "出典 (著者・機関名, 年, 資料名)" }, ... ] (動画で使った数字・研究の出どころをすべて。URL は書かない) }
 ${layered ? '- imageStyle: layered の絵すべてに共通の絵柄 (日本語で30〜80字。例: "やわらかい陰影のアニメ調の立体イラスト、明るくあたたかい色、細部まで描き込む")。動画全体で1つ\n' : ''}
 ## scenes の各要素に書けるキー
 - id: シーンID (英小文字とハイフン)
@@ -153,8 +183,8 @@ ${NATURAL_VOICE}
 ${rules.visual}
 
 ## layout と content
-1. "title": 動画の最初のタイトル画面。content = { "kicker": "短いラベル(省略可)", "title": "タイトル(改行は\\n、**強調**可)", "subtitle": "補足(省略可)", "objects": ["形のキー", ...] (省略可・6個まで) }。最初のシーンは必ず title。
-2. "section": 章扉。content = { "number": "01", "title": "章タイトル", "subtitle": "補足(省略可)", "objects": ["形のキー", ...] (省略可・4個まで) }。5シーン以上の動画では章ごとに入れる。
+1. "title": 動画の最初のタイトル画面。content = { "kicker": "短いラベル(省略可)", "title": "タイトル(改行は\\n、**強調**可)", "subtitle": "補足(省略可)", "objects": ["形のキー", ...] (省略可・6個まで) }。${vertical ? '縦の動画では使わない。' : '最初のシーンは必ず title。'}
+2. "section": 章扉。content = { "number": "01", "title": "章タイトル", "subtitle": "補足(省略可)", "objects": ["形のキー", ...] (省略可・4個まで) }。${vertical ? '縦の動画では使わない。' : '5シーン以上の動画では章ごとに入れる。'}
 3. ${SCENE3D_SPEC}
 4. "statement": 一文を大きく見せるキメの画面。content = { "text": "20字程度の一文 (**強調**にマーカーが引かれる。改行は\\n)", "sub": "補足(省略可)", "icon": "…(省略可)" }。要素IDは "text" と "sub"。結論や驚きの事実に使う。
 5. "flow": 横並びのステップカード。content = { "steps": [ { "id": "step-1", "icon": "…", "title": "短い名前", "body": "補足(省略可)" }, ... ] }。steps は3〜4個。矢印は "arrow-1", "arrow-2", ... というIDで自動的に用意される。
@@ -165,13 +195,13 @@ ${rules.visual}
 10. "checklist": 番号付きチェックリスト。content = { "items": [ { "id": "c-1", "text": "…", "note": "…(省略可)" }, ... ] }。items は2〜4個。おさらいに使う。
 11. "inputOutput": 入力→変換→出力。content = { "input": { "id": "input", "icon": "…", "title": "…", "body": "…" }, "transform": { "id": "transform", "label": "短い説明" }, "output": { "id": "output", "icon": "…", "title": "…", "body": "…" } }。矢印は arrow-1 / arrow-2。
 12. "share": 1本の帯を区切って割合 (シェア) を見せるグラフ。content = { "title": "グラフの題(省略可)", "segments": [ { "id": "sh-1", "display": "約5割", "label": "日本製(省略可)", "value": 50, "tone": "warning / accent / muted" }, ... ], "source": "出典(省略可)" }。segments は1〜3個。区分は reveal したときに左から伸びる。
-${layered ? `13. ${LAYERED_SPEC}\n` : ''}${layered ? 14 : 13}. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。最後のシーンは必ず outro。
+${layered ? `13. ${LAYERED_SPEC}\n` : ''}${layered ? 14 : 13}. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。${vertical ? '縦の動画では使わない。' : '最後のシーンは必ず outro。'}
 
 ## ルール
-- シーン全体は6〜12個。1画面の情報量は絞る。同じレイアウトを3回以上連続させない
+- シーン全体は${vertical ? '縦の動画の決まりの数' : '6〜12個'}。1画面の情報量は絞る。同じレイアウトを3回以上連続させない
 - icon に使えるキー: ${ICON_NAMES.join(', ')}
 - 要素の id はシーン内で重複しない。reveal / focus に書くIDは必ずそのシーンの content に存在する
-- outro では高評価とチャンネル登録を自然に呼びかける`;
+${vertical ? '' : '- outro では高評価とチャンネル登録を自然に呼びかける'}${vertical ? `\n\n${shortsRules(options.targetSec ?? 60, layered)}` : ''}`;
 };
 
 interface IssueLike {
@@ -237,11 +267,13 @@ export const reviseScript = async (
   const request =
     `次の台本 (JSON) を、修正の指示に従って直してください。直した後の台本全体を、同じ形式のJSONで出力してください。\n` +
     `${scope}\n` +
+    (options.vertical ? '縦の動画 (YouTube ショート) の台本です。縦の動画の決まりを守ってください。\n' : '') +
     (options.layered ? 'layered の絵は prompt から作られます。絵を変えたい物だけ prompt を書き換え、変えない物の prompt は一字一句そのままにしてください (src は書かなくてかまいません)。\n' : '') +
     `\n## 修正の指示\n${instruction}\n\n## 今の台本\n${JSON.stringify(current, null, 2)}`;
   const revised = await askValidScript(buildSystemPrompt(audience, options), request, onStatus);
   if (!target) {
-    return { ...revised, meta: { ...current.meta, ...revised.meta } };
+    // 画面の向きは、修正では変えない (縦の動画を直しても縦のまま)
+    return { ...revised, meta: { ...current.meta, ...revised.meta, format: current.meta.format } };
   }
   const replacement = revised.scenes.find((s) => s.id === target.id);
   if (!replacement) {

@@ -5,6 +5,45 @@ import { DrawArrow } from '../components/DrawArrow';
 import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
+
+type Step = ContentOf<'flow'>['steps'][number];
+
+/** 縦の動画 (ショート) のステップ: 横長のカードに、左に番号 (とアイコン)、右に名前と補足 */
+const ShortsStep: React.FC<{ step: Step; n: number }> = ({ step, n }) => {
+  const theme = useTheme();
+  const editorial = theme.chrome === 'editorial';
+  return (
+    <div style={{ ...theme.card, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 18 }}>
+      <div
+        style={
+          editorial
+            ? { fontFamily: theme.fonts.display, fontSize: 34, fontWeight: 600, color: theme.colors.textSecondary, width: 36, textAlign: 'center', flexShrink: 0 }
+            : {
+                minWidth: 44,
+                height: 44,
+                borderRadius: 999,
+                backgroundColor: theme.colors.accent,
+                color: theme.colors.onAccent,
+                fontSize: 22,
+                fontWeight: 900,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }
+        }
+      >
+        {n}
+      </div>
+      {!editorial || step.icon ? <IconBox name={step.icon} size={52} /> : null}
+      <div style={{ minWidth: 0 }}>
+        <div style={editorial ? { fontFamily: theme.fonts.display, fontSize: 34, fontWeight: 600 } : { fontSize: 26, fontWeight: 800 }}>{step.title}</div>
+        {step.body ? <div style={{ fontSize: 18, lineHeight: 1.5, color: theme.colors.textSecondary, marginTop: 2 }}>{step.body}</div> : null}
+      </div>
+    </div>
+  );
+};
 
 /**
  * 横並びのステップカードと矢印。矢印には step-N の間を埋める形で
@@ -15,6 +54,8 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
   const ctx = useSceneContext();
   // editorial (paper): 丸いラベルではなく明朝の番号、アイコンは指定があるときだけ、文字は大きめ
   const editorial = theme.chrome === 'editorial';
+  // 縦の動画 (ショート): ステップを上から下へ積み、矢印は下向きにする。カードは横長 (番号・アイコンが左、文字が右)
+  const vertical = useVertical();
   // 矢印に reveal 指定がなく、矢印の先のステップが reveal されるなら、そのステップと一緒に伸ばす
   // (矢印だけが先に出て宙に浮くのを防ぐ)
   const arrowAt = (i: number): number => {
@@ -28,19 +69,34 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
 
   return (
     <ContentArea bottom={260}>
-      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: vertical ? 'column' : 'row', alignItems: vertical ? 'stretch' : 'center', width: '100%' }}>
         {content.steps.map((step, i) => (
           <Fragment key={step.id}>
             {i > 0 ? (
-              <div style={{ flexShrink: 0, width: 76, display: 'flex', justifyContent: 'center' }}>
-                <DrawArrow
-                  at={arrowAt(i)}
-                  color={theme.colors.textFaint}
-                  flowColor={theme.colors.accent}
-                />
+              <div
+                style={
+                  vertical
+                    ? { flexShrink: 0, height: 46, display: 'flex', justifyContent: 'center', alignItems: 'center' }
+                    : { flexShrink: 0, width: 76, display: 'flex', justifyContent: 'center' }
+                }
+              >
+                {vertical ? (
+                  <div style={{ transform: 'rotate(90deg)', width: 56, height: 36 }}>
+                    <DrawArrow at={arrowAt(i)} width={56} color={theme.colors.textFaint} flowColor={theme.colors.accent} />
+                  </div>
+                ) : (
+                  <DrawArrow
+                    at={arrowAt(i)}
+                    color={theme.colors.textFaint}
+                    flowColor={theme.colors.accent}
+                  />
+                )}
               </div>
             ) : null}
-            <Reveal id={step.id} order={i * 2} preset="pop" style={{ flex: 1, minWidth: 0 }}>
+            <Reveal id={step.id} order={i * 2} preset="pop" style={{ flex: vertical ? undefined : 1, minWidth: 0 }}>
+              {vertical ? (
+                <ShortsStep step={step} n={i + 1} />
+              ) : (
               <div
                 style={{
                   ...theme.card,
@@ -109,6 +165,7 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
                   </div>
                 ) : null}
               </div>
+              )}
             </Reveal>
           </Fragment>
         ))}

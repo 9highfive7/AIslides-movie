@@ -7,6 +7,9 @@
  *   4. 3D・図解の描画  Remotion で場面ごとの静止画 → 全フレームを描く
  *   5. 書き出し   MP4 にまとめ、サムネイルと YouTube 用ファイルを作る
  *
+ * 形式 (options.format) が縦 (vertical) のときは、YouTube ショート (1080×1920) として作る:
+ * 台本はフックから始まる短い構成で書かせ、Remotion の Shorts で描き、カバー (ShortsCover) と #Shorts 付きの投稿用ファイルを作る。
+ *
  * Remotion は public/script.json などを読み込んで動画を組み立てるので、
  * 生成中だけ public/ を書き換え、組み立て (bundle) が終わったらすぐ元に戻す。同時に動く生成は1つだけ。
  */
@@ -19,11 +22,11 @@ import { openBrowser, renderMedia, renderStill, selectComposition } from '@remot
 import { scriptSchema, timelineSchema, type ScriptConfig } from '../src/schemas';
 import { stripMarkup } from '../shared/markup';
 import { loadVoicevoxConfig, voicevoxCredit } from '../scripts/lib/voicevox';
-import { reviseScript, validateScript, writeScript, type Audience, type WriterOptions } from '../scripts/lib/script-writer';
+import { SHORTS_MAX_SEC, reviseScript, validateScript, writeScript, type Audience, type WriterOptions } from '../scripts/lib/script-writer';
 import { fillImages } from '../scripts/lib/images';
 import { buildChapters, buildDescription, buildSrt, buildTags, buildUploadSheet, titleCandidates } from '../scripts/lib/youtube';
 import { YOUTUBE_RENDER, fitThumbnail, normalizeLoudness } from '../scripts/lib/finish';
-import { ROOT, loadProject, saveProject, versionDir, type Look, type Project, type ProjectOptions } from './store';
+import { ROOT, loadProject, saveProject, versionDir, type Look, type Project, type ProjectOptions, type VideoFormat } from './store';
 
 const PUBLIC = path.join(ROOT, 'public');
 
@@ -90,8 +93,33 @@ export const sceneLabel = (scene: ScriptConfig['scenes'][number]): string => {
 /** キッズは小学生向けのやさしい言葉 + 3D オブジェクト中心、それ以外は大人向けの解説で書く */
 const audienceOf = (look: Look): Audience => (look === 'kids' ? 'kids' : 'general');
 
-/** AIイラストのときだけ、画像生成 AI の絵を重ねる場面 (layered) を使わせる */
-const writerOptionsOf = (look: Look): WriterOptions => ({ layered: look === 'illust' });
+/** 動画の形式 (この項目ができる前のプロジェクトは横) */
+const formatOf = (options: ProjectOptions): VideoFormat => options.format ?? 'landscape';
+
+/**
+ * 台本の書き方。AIイラストのときだけ、画像生成 AI の絵を重ねる場面 (layered) を使わせる。
+ * 縦の動画 (ショート) は、目安の尺に合わせてフックから始まる短い台本にする
+ */
+const writerOptionsOf = (options: ProjectOptions): WriterOptions => ({
+  layered: options.look === 'illust',
+  ...(formatOf(options) === 'vertical' ? { vertical: true, targetSec: Math.min(SHORTS_MAX_SEC, options.durationSec) } : null),
+});
+
+/** Remotion の動画と、サムネイル (縦の動画ではショートのカバー) の名前 */
+const compositionsOf = (format: VideoFormat) =>
+  format === 'vertical' ? { video: 'Shorts', thumbnail: 'ShortsCover' } : { video: 'Slideshow', thumbnail: 'Thumbnail' };
+
+/**
+ * 形式を台本の meta に書く。縦の動画 (ショート) では、右下のキャラクター・進行バー・登録のポップアップを使わない
+ * (ショートのアプリの UI と重なる。描くときにも出さないが、台本にも残さない)
+ */
+const applyFormat = (script: ScriptConfig, options: ProjectOptions): ScriptConfig => {
+  if (formatOf(options) !== 'vertical') {
+    return script.meta.format === 'landscape' ? script : scriptSchema.parse({ ...script, meta: { ...script.meta, format: 'landscape' } });
+  }
+  const { subscribePopup: _popup, ...meta } = script.meta;
+  return scriptSchema.parse({ ...script, meta: { ...meta, format: 'vertical', avatar: false, progressBar: false } });
+};
 
 /** BGM を置く場所 (public/ からの相対パス)。ここに置いた音楽ファイルをスタジオで選べる */
 const BGM_DIR = 'bgm';
@@ -135,6 +163,9 @@ const buildMaterial = (topic: string, settings: string, options: ProjectOptions)
     '-----',
     `## 動画のテーマ\n${topic}`,
     settings.trim() ? `## 細かい設定\n${settings}` : '',
+    formatOf(options) === 'vertical'
+      ? `## 動画の形式\n縦 9:16 の YouTube ショート (1080x1920)。${SHORTS_MAX_SEC}秒を超えないこと。1セリフ目で結論や意外な事実を言い切り、スマホで流し見されても最後まで見たくなる構成にする。`
+      : '',
     `## 目安の尺\n約${options.durationSec}秒 (ナレーションは全体で約${Math.round(options.durationSec * 6)}字。1秒あたり約6字)`,
     options.look === 'paper'
       ? '## 見た目\n図解ドキュメンタリー風 (紙・紺×朱×墨・明朝)。題材に合う 3D の場面 (scene3d) があれば使い、なければ statement / stats / share / bars / flow などの図解で見せる。title / outro シーンは使わない。'
@@ -260,8 +291,11 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
   if (request.kind === 'create') {
     const material = buildMaterial(request.topic, request.settings, request.options);
     script = applyBgm(
-      applyLook(
-        await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look), writerOptionsOf(request.options.look)),
+      applyFormat(
+        applyLook(
+          await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look), writerOptionsOf(request.options)),
+          request.options,
+        ),
         request.options,
       ),
       request.options,
@@ -269,7 +303,7 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
   } else if (request.kind === 'import') {
     const checked = validateScript(request.script);
     if (!checked.data) throw new Error(`台本の形式が不正です:\n${checked.problems.join('\n')}`);
-    script = applyBgm(checked.data, request.options);
+    script = applyBgm(applyFormat(checked.data, request.options), request.options);
   } else {
     // 直前の版から順にさかのぼり、台本がある版を元にする (途中で失敗した版は飛ばす)
     const base = [...project.versions]
@@ -284,8 +318,9 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
       request.sceneId,
       (m) => (step('script').detail = m),
       audienceOf(project.options.look),
-      writerOptionsOf(project.options.look),
+      writerOptionsOf(project.options),
     );
+    script = applyFormat(script, project.options);
   }
   fs.writeFileSync(path.join(outDir, 'script.json'), JSON.stringify(script, null, 2) + '\n');
   project.title = script.meta.title ?? project.title;
@@ -338,7 +373,13 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
     // 3. 字幕のタイミング (タイムラインは音声と同時にできている)
     const timeline = timelineSchema.parse(JSON.parse(fs.readFileSync(path.join(outDir, 'timeline.json'), 'utf8')));
     vInfo.durationSec = Math.round((timeline.totalFrames / timeline.fps) * 10) / 10;
-    enter('timing', '字幕のタイミングを合わせています', `${vInfo.durationSec}秒`);
+    const format = formatOf(project.options);
+    const tooLong = format === 'vertical' && vInfo.durationSec > SHORTS_MAX_SEC;
+    enter(
+      'timing',
+      '字幕のタイミングを合わせています',
+      `${vInfo.durationSec}秒${tooLong ? ` — ${SHORTS_MAX_SEC / 60}分を超えたので、YouTube ではショートになりません` : ''}`,
+    );
     progress('timing', 1);
 
     // 4. 3D・図解の描画
@@ -354,7 +395,8 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
 
     browser.current = await openBrowser('chrome', { browserExecutable, chromiumOptions: chromium() });
     const common = { serveUrl, browserExecutable, chromiumOptions: chromium(), puppeteerInstance: browser.current, logLevel: 'error' as const };
-    const composition = await selectComposition({ ...common, id: 'Slideshow' });
+    const ids = compositionsOf(format);
+    const composition = await selectComposition({ ...common, id: ids.video });
 
     // 場面ごとの静止画 (できた場面から先に見られるように)
     job.stage = '場面の下絵を描いています';
@@ -400,12 +442,13 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
 
     // 5. 書き出し: サムネイルと YouTube 用ファイル
     step('export').detail = 'サムネイル・概要欄';
-    const thumb = await selectComposition({ ...common, id: 'Thumbnail' });
+    const thumb = await selectComposition({ ...common, id: ids.thumbnail });
     await renderStill({ ...common, composition: thumb, output: path.join(outDir, 'thumbnail.png') });
     await fitThumbnail(path.join(outDir, 'thumbnail.png'));
     const yt = path.join(outDir, 'youtube');
     fs.mkdirSync(yt, { recursive: true });
-    const { chapters } = buildChapters(script, timeline);
+    // ショートにはチャプター (目次) がない
+    const { chapters } = format === 'vertical' ? { chapters: [] } : buildChapters(script, timeline);
     // 声を使ったときは、利用規約で求められるクレジット (VOICEVOX:キャラクター名) を概要欄に入れる
     const credits = mock
       ? []

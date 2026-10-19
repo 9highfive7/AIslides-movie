@@ -5,6 +5,7 @@ import { useTheme, type Theme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 const cellStyle = (theme: Theme, tone: 'normal' | 'good' | 'bad'): React.CSSProperties => {
   if (tone === 'good') {
@@ -22,7 +23,9 @@ export const TableLayout: React.FC<{ content: ContentOf<'table'> }> = ({ content
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { introAt } = useSceneContext();
-  const columns = `minmax(240px, 1.1fr) repeat(${content.headers.length}, minmax(0, 1.4fr))`;
+  const vertical = useVertical();
+  // 縦の動画は幅が狭いので、行の名前の列を細くする
+  const columns = `minmax(${vertical ? 120 : 240}px, 1.1fr) repeat(${content.headers.length}, minmax(0, 1.4fr))`;
 
   const headerCell = (key: React.Key, i: number, label: string, bg: string) => {
     const p = springFrom(frame, introAt + 4 + i * 3, fps, SPRINGS.snappy);
@@ -48,7 +51,7 @@ export const TableLayout: React.FC<{ content: ContentOf<'table'> }> = ({ content
 
   return (
     <ContentArea style={{ flexDirection: 'column' }}>
-      <div style={{ width: 1420 }}>
+      <div style={{ width: vertical ? '100%' : 1420 }}>
         <div style={{ display: 'grid', gridTemplateColumns: columns, gap: 10 }}>
           {headerCell('corner', 0, '', theme.colors.ink)}
           {content.headers.map((h, i) =>

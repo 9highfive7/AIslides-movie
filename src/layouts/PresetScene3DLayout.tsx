@@ -10,6 +10,7 @@ import { PhoneChipModel } from '../three/PhoneChipModel';
 import { CHIP_CENTER, FOV, LID_OPEN_DEG, cameraAt, projectToScreen } from '../three/phoneChip';
 import { CameraRig, ObjectScene, TitleOverlay } from '../three/ObjectScene';
 import type { Scene3DPresetContent } from '../schemas';
+import { canvasFrame, useStage } from '../stage';
 
 /** 寄りのバネ。ゆっくり滑らかに (約1.5秒) */
 const DOLLY = { damping: 200, mass: 3, stiffness: 60 };
@@ -26,7 +27,11 @@ export const PresetScene3DLayout: React.FC<{ content: Scene3DPresetContent }> = 
 const PhoneChipScene: React.FC<{ content: Scene3DPresetContent }> = ({ content }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps } = useVideoConfig();
+  const stage = useStage();
+  const { width, height } = stage;
+  const k = stage.textScale;
+  const canvas = canvasFrame(stage, FOV);
   const ctx = useSceneContext();
   const { ts } = ctx;
 
@@ -54,12 +59,12 @@ const PhoneChipScene: React.FC<{ content: Scene3DPresetContent }> = ({ content }
   return (
     <AbsoluteFill>
       <ThreeCanvas
-        width={width}
-        height={height}
+        width={canvas.width}
+        height={canvas.height}
         flat
         gl={{ antialias: true, alpha: true }}
-        camera={{ fov: FOV, near: 0.1, far: 200, position: shot.position.toArray() }}
-        style={{ position: 'absolute', inset: 0 }}
+        camera={{ fov: canvas.fov, near: 0.1, far: 200, position: shot.position.toArray() }}
+        style={canvas.style ?? { position: 'absolute', inset: 0 }}
       >
         <CameraRig shot={shot} />
         <ambientLight intensity={1.6} />
@@ -81,7 +86,7 @@ const PhoneChipScene: React.FC<{ content: Scene3DPresetContent }> = ({ content }
             <circle cx={chipOnScreen.x} cy={chipOnScreen.y} r={6 * Math.min(1, lineP * 3)} fill={theme.colors.ink} />
           </svg>
           <Reveal id="label" order={2} preset="fadeUp" focusRing={false} style={{ position: 'absolute', left: labelBox.x, top: labelBox.y }}>
-            <div style={{ ...theme.card, padding: '12px 22px', textAlign: 'center' }}>
+            <div style={{ ...theme.card, padding: '12px 22px', textAlign: 'center', ...(k === 1 ? null : { transform: `scale(${k})`, transformOrigin: '0 0' }) }}>
               <div style={{ fontFamily: theme.fonts.display, fontSize: 32, fontWeight: 700 }}>{content.label.title}</div>
               {content.label.sub ? (
                 <div style={{ fontSize: 17, color: theme.colors.textSecondary, marginTop: 2 }}>{content.label.sub}</div>
@@ -93,7 +98,9 @@ const PhoneChipScene: React.FC<{ content: Scene3DPresetContent }> = ({ content }
 
       {content.stat ? (
         <Reveal id="stat" order={3} preset="pop" focusRing={false} style={{ position: 'absolute', right: 70, top: 110 }}>
-          <div style={{ ...theme.card, padding: '18px 30px', minWidth: 300, textAlign: 'center' }}>
+          <div
+            style={{ ...theme.card, padding: '18px 30px', minWidth: 300, textAlign: 'center', ...(k === 1 ? null : { transform: `scale(${k})`, transformOrigin: '100% 0' }) }}
+          >
             {content.stat.kicker ? (
               <div style={{ fontSize: 18, fontWeight: 700, color: theme.colors.textSecondary }}>{content.stat.kicker}</div>
             ) : null}

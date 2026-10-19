@@ -4,12 +4,17 @@ import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { Callout, StatOverlay, TitleOverlay } from '../three/ObjectScene';
 import type { LayeredContent } from '../schemas';
+import { SHORTS, useStage } from '../stage';
 
 type LayeredObject = LayeredContent['objects'][number];
 type CameraMode = LayeredContent['camera'];
 
-const W = 1920;
-const H = 1080;
+/** 画面の大きさ (横の動画は 1920×1080、縦の動画は 1080×1920) と向き */
+interface Frame {
+  W: number;
+  H: number;
+  vertical: boolean;
+}
 
 /** 層ごとの奥行き (手前ほど大きく動く)。視差で立体的に見せる */
 const DEPTH = { background: 0.25, objects: 0.6, foreground: 1.4 } as const;
@@ -34,8 +39,21 @@ const BACKGROUND_PLACEHOLDER_PLACE = {
   left: { inset: 'auto', top: 110, left: 60 },
 } as const;
 
+/** 縦の動画の背景の仮の枠 (見出しの下・右のボタンにかからない位置) */
+const BACKGROUND_PLACEHOLDER_PLACE_SHORTS = {
+  right: { inset: 'auto', top: SHORTS.content.top, right: SHORTS.safe.right },
+  left: { inset: 'auto', top: SHORTS.content.top, left: SHORTS.safe.left },
+} as const;
+
 /** 注釈の箱を置ける下限 (これより下は字幕の領域) */
 const CALLOUT_MAX_TOP = 760;
+/** 縦の動画で注釈の箱を置ける範囲 (見出しの下〜字幕の上) と、箱の中心を寄せる左右の範囲 */
+const SHORTS_CALLOUT = {
+  minTop: SHORTS.content.top,
+  maxTop: SHORTS.height - SHORTS.content.bottom - 100,
+  minX: SHORTS.safe.left + 200,
+  maxX: SHORTS.width - SHORTS.safe.right - 200,
+} as const;
 
 const resolveSrc = (src: string): string => (/^https?:\/\//.test(src) ? src : staticFile(src));
 
@@ -159,9 +177,14 @@ interface Rect {
   h: number;
 }
 
-const rectOf = (obj: LayeredObject, aspect: number): Rect => {
-  const h = obj.height * H;
-  const w = h * aspect;
+const rectOf = (obj: LayeredObject, aspect: number, { W, H, vertical }: Frame): Rect => {
+  let h = obj.height * H;
+  let w = h * aspect;
+  // 縦の動画は幅が狭いので、横長の物が画面からはみ出さないよう、幅の 9 割までに縮める
+  if (vertical && w > W * 0.9) {
+    w = W * 0.9;
+    h = w / aspect;
+  }
   return { left: obj.x * W - w / 2, top: obj.y * H - h, w, h };
 };
 
@@ -414,8 +437,20 @@ const ObjectView: React.FC<{ obj: LayeredObject; rect: Rect; order: number; tone
  * 注釈の線の起点と箱の位置を、物の位置から決める。
  * 左寄りの物は左下へ・右寄りの物は右下へ・中央の物は横へ箱を出す (下が字幕にかかるときも横へ)。
  */
-const calloutPlace = (rect: Rect, nth: number) => {
+const calloutPlace = (rect: Rect, nth: number, { W, vertical }: Frame, hasStat = false) => {
   const cx = rect.left + rect.w / 2;
+  if (vertical) {
+    // 縦の動画は横に余白がないので、物の下 (字幕にかかるときは上) の中央に箱を出す
+    const x = Math.min(SHORTS_CALLOUT.maxX, Math.max(SHORTS_CALLOUT.minX, cx));
+    const below = rect.top + rect.h + 30 + nth * 130;
+    if (below <= SHORTS_CALLOUT.maxTop) {
+      return { anchor: { x: cx, y: rect.top + rect.h * 0.85 }, box: { x, y: below, align: 'center' as const } };
+    }
+    // 上に出すときは、右上の数字カード (stat) の下にする (zoom で層ごと上へ寄るぶんも空ける)
+    const minTop = SHORTS_CALLOUT.minTop + (hasStat ? 300 : 0);
+    const above = Math.max(minTop + nth * 130, rect.top - 130 - nth * 130);
+    return { anchor: { x: cx, y: rect.top + rect.h * 0.2 }, box: { x, y: above, align: 'center' as const } };
+  }
   const bottom = rect.top + rect.h;
   const below = bottom + 40 + nth * 120;
   if (cx < W * 0.4 && below <= CALLOUT_MAX_TOP) {
@@ -439,6 +474,8 @@ const calloutPlace = (rect: Rect, nth: number) => {
 export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }) => {
   const frame = useCurrentFrame();
   const ctx = useSceneContext();
+  const stage = useStage();
+  const view: Frame = { W: stage.width, H: stage.height, vertical: stage.vertical };
   const aspects = useAspects(content.objects.map((obj) => (obj.src ? resolveSrc(obj.src) : null)));
   const tone = useBackgroundTone(content.background.src ? resolveSrc(content.background.src) : null);
   const d = interpolate(frame, [ctx.ts.startFrame, ctx.ts.startFrame + ctx.ts.durationFrames], [0, 1], {
@@ -448,7 +485,8 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
   const bgMotion = layerMotion(content.camera, DEPTH.background, d);
   const objMotion = layerMotion(content.camera, DEPTH.objects, d);
   const fgMotion = layerMotion(content.camera, DEPTH.foreground, d);
-  const rects = aspects ? content.objects.map((obj, i) => rectOf(obj, aspects[i])) : null;
+  const rects = aspects ? content.objects.map((obj, i) => rectOf(obj, aspects[i], view)) : null;
+  const placeholderPlace = view.vertical ? BACKGROUND_PLACEHOLDER_PLACE_SHORTS : BACKGROUND_PLACEHOLDER_PLACE;
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
@@ -463,7 +501,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
             <PendingImage
               prompt={content.background.prompt}
               label="背景の絵（仮）"
-              style={{ ...BACKGROUND_PLACEHOLDER_PLACE[content.stat ? 'left' : 'right'], width: 440, height: 'auto', alignItems: 'flex-start', textAlign: 'left' }}
+              style={{ ...placeholderPlace[content.stat ? 'left' : 'right'], width: 440, height: 'auto', alignItems: 'flex-start', textAlign: 'left' }}
             />
           </AbsoluteFill>
         )}
@@ -480,7 +518,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
               return null;
             }
             const nth = content.callouts.slice(0, i).filter((c) => c.target === callout.target).length;
-            const place = calloutPlace(rects[target], nth);
+            const place = calloutPlace(rects[target], nth, view, Boolean(content.stat));
             return <Callout key={callout.id} callout={callout} anchor={place.anchor} box={place.box} at={ctx.appearAt(callout.id, 2 + i)} />;
           })}
         </AbsoluteFill>
@@ -496,7 +534,13 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
       ) : null}
 
       {content.title ? <TitleOverlay text={content.title} at={ctx.appearAt('title', 1)} /> : null}
-      {content.stat ? <StatOverlay stat={content.stat} at={ctx.appearAt('stat', 3)} place={{ align: 'right', x: 1850, y: 110 }} /> : null}
+      {content.stat ? (
+        <StatOverlay
+          stat={content.stat}
+          at={ctx.appearAt('stat', 3)}
+          place={view.vertical ? { align: 'right', x: view.W - SHORTS.safe.right, y: SHORTS.content.top } : { align: 'right', x: 1850, y: 110 }}
+        />
+      ) : null}
     </AbsoluteFill>
   );
 };

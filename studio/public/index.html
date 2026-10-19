@@ -35,11 +35,18 @@
         <button type="button" data-value="clean">クリーン</button>
         <button type="button" data-value="dark">ダーク</button>
       </div>
+      <div class="chips" data-group="format">
+        <button type="button" data-value="landscape" class="on">横 16:9</button>
+        <button type="button" data-value="vertical" title="YouTube ショート（1080×1920）。冒頭で結論を言い切る短い台本にし、字幕・見出しはショートの画面のボタンにかからない位置に出します">縦 9:16 ショート</button>
+      </div>
+      <!-- data-formats: その長さを選べる形式 (ショートは3分まで) -->
       <div class="chips" data-group="durationSec">
-        <button type="button" data-value="60">約60秒</button>
-        <button type="button" data-value="90" class="on">約90秒</button>
-        <button type="button" data-value="180">約3分</button>
-        <button type="button" data-value="300">約5分</button>
+        <button type="button" data-value="30" data-formats="vertical" hidden>約30秒</button>
+        <button type="button" data-value="45" data-formats="vertical" hidden>約45秒</button>
+        <button type="button" data-value="60" data-formats="landscape vertical">約60秒</button>
+        <button type="button" data-value="90" data-formats="landscape vertical" class="on">約90秒</button>
+        <button type="button" data-value="180" data-formats="landscape vertical">約3分</button>
+        <button type="button" data-value="300" data-formats="landscape">約5分</button>
       </div>
       <div class="voice-row">
         <span>声</span>
@@ -108,6 +115,7 @@
         <label><span class="no">4</span>保存</label>
         <a class="btn primary save-main" id="dl-video">⬇ 動画を保存（MP4）</a>
         <a class="btn ghost" id="dl-thumb">サムネイル（PNG）</a>
+        <p class="shorts-note" id="shorts-note" hidden>ショート：タイトル・説明に #Shorts を入れてあります。縦 1080×1920・3分以内なら、YouTube で自動的にショートになります。</p>
         <div class="yt-copy">
           <span>YouTube に貼る</span>
           <button type="button" data-copy="title">タイトル</button>

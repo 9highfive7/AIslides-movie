@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Img, staticFile } from 'remotion';
+import { AbsoluteFill, Img, staticFile, useVideoConfig } from 'remotion';
 import { parseMarkup } from '../shared/markup';
 import { script } from './data';
 import { ThreeCanvas } from '@remotion/three';
@@ -35,18 +35,27 @@ const THUMB_SPOTS: Array<[number, number, number]> = [
   [-5.6, -2.3, 0.35],
   [-3.6, -2.75, -0.2],
 ];
+/** ショートのカバー (縦) では、文字の上と下に置く */
+const COVER_SPOTS: Array<[number, number, number]> = [
+  [1.3, 4.6, -0.3],
+  [-1.5, -4.4, 0.35],
+  [1.4, -5.0, -0.2],
+];
 
 /** style: "3d" のとき、タイトルシーンの objects (なければ既定の形) をサムネイルに浮かべる */
 const ThumbnailToys: React.FC = () => {
   const titleScene = script.scenes.find((scene) => scene.layout === 'title');
   const objects = titleScene && titleScene.layout === 'title' ? titleScene.content.objects : undefined;
-  const shapes = (objects && objects.length > 0 ? objects : DEFAULT_FLOATING.title).slice(0, THUMB_SPOTS.length);
+  const { width, height } = useVideoConfig();
+  const cover = height > width;
+  const spots = cover ? COVER_SPOTS : THUMB_SPOTS;
+  const shapes = (objects && objects.length > 0 ? objects : DEFAULT_FLOATING.title).slice(0, spots.length);
   return (
     <AbsoluteFill>
-      <ThreeCanvas width={1280} height={720} flat gl={{ antialias: true }} camera={{ fov: 30, position: [0, 0, 14] }}>
+      <ThreeCanvas width={width} height={height} flat gl={{ antialias: true }} camera={{ fov: cover ? 52 : 30, position: [0, 0, 14] }}>
         <ToyLights />
         {shapes.map((shape, i) => {
-          const [x, y, tilt] = THUMB_SPOTS[i];
+          const [x, y, tilt] = spots[i];
           return (
             <group key={i} position={[x, y, 0]} rotation={[0.15, tilt, tilt * 0.4]} scale={i === 0 ? 1.1 : 0.9}>
               <group position={[0, -0.8, 0]}>
@@ -63,6 +72,8 @@ const ThumbnailToys: React.FC = () => {
 /**
  * YouTube サムネイル (1280×720)。npm run thumbnail で out/thumbnail.png に書き出す。
  * 太い縁取り文字 + **強調** の色替えで、小さく表示されても読める。
+ * ショートのカバー (ShortsCover・縦 1080×1920) も同じ部品で描く。文字はショートの一覧で切り抜かれても
+ * 読めるよう、画面の中央 (上下の UI にかからない高さ) にまとめる
  */
 export const Thumbnail: React.FC = () => {
   const theme = resolveTheme(script.meta);
@@ -75,8 +86,12 @@ export const Thumbnail: React.FC = () => {
   // キャラクター画像があれば右下に大きく置き、文字はその分左に寄せる
   const avatar = script.meta.avatar;
   const character = avatar && avatar.type === 'image' ? avatar.open : null;
-  const textWidth = character ? 820 : 1100;
-  const fontSize = Math.min(150, Math.floor(textWidth / longest), Math.floor(480 / lines.length));
+  const { width, height } = useVideoConfig();
+  const cover = height > width;
+  const textWidth = cover ? 900 : character ? 820 : 1100;
+  const fontSize = cover
+    ? Math.min(170, Math.floor(textWidth / longest), Math.floor(760 / lines.length))
+    : Math.min(150, Math.floor(textWidth / longest), Math.floor(480 / lines.length));
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -95,7 +110,7 @@ export const Thumbnail: React.FC = () => {
             position: 'absolute',
             left: -100,
             right: -100,
-            bottom: 70,
+            bottom: cover ? 470 : 70,
             height: 26,
             backgroundColor: theme.colors.onDarkAccent,
             transform: 'rotate(-2.5deg)',
@@ -105,13 +120,13 @@ export const Thumbnail: React.FC = () => {
           <div
             style={{
               position: 'absolute',
-              top: 44,
-              left: 50,
+              top: cover ? 330 : 44,
+              left: cover ? 70 : 50,
               padding: '10px 28px',
               borderRadius: 12,
               backgroundColor: theme.colors.warning,
               color: '#FFFFFF',
-              fontSize: 40,
+              fontSize: cover ? 52 : 40,
               fontWeight: 900,
               transform: 'rotate(-4deg)',
               boxShadow: '0 8px 20px rgba(0,0,0,0.35)',
@@ -120,7 +135,7 @@ export const Thumbnail: React.FC = () => {
             {thumb.badge}
           </div>
         ) : null}
-        {character ? (
+        {character && !cover ? (
           <Img
             src={staticFile(character)}
             style={{
@@ -138,7 +153,7 @@ export const Thumbnail: React.FC = () => {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: character ? '60px 400px 110px 50px' : '60px 70px 110px',
+            padding: cover ? '420px 90px 520px' : character ? '60px 400px 110px 50px' : '60px 70px 110px',
           }}
         >
           {lines.map((line, i) => (
@@ -170,7 +185,7 @@ export const Thumbnail: React.FC = () => {
                 borderRadius: 12,
                 backgroundColor: 'rgba(0,0,0,0.55)',
                 color: '#FFFFFF',
-                fontSize: 40,
+                fontSize: cover ? 50 : 40,
                 fontWeight: 800,
                 textAlign: 'center',
               }}

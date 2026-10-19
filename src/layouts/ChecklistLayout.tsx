@@ -6,6 +6,7 @@ import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 const CheckMark: React.FC<{ at: number }> = ({ at }) => {
   const theme = useTheme();
@@ -42,14 +43,17 @@ export const ChecklistLayout: React.FC<{ content: ContentOf<'checklist'> }> = ({
   const ctx = useSceneContext();
   // スマホでも読める大きさにする。4つ並ぶときは字幕にかからないよう少し詰める
   const compact = content.items.length >= 4;
+  const vertical = useVertical();
 
   return (
     <ContentArea>
-      <div style={{ width: 1280, display: 'flex', flexDirection: 'column', gap: compact ? 16 : 26 }}>
+      <div style={{ width: vertical ? '100%' : 1280, display: 'flex', flexDirection: 'column', gap: compact ? 16 : vertical ? 20 : 26 }}>
         {content.items.map((item, i) => (
           <Reveal key={item.id} id={item.id} order={i} preset="slideLeft">
-            <div style={{ ...theme.card, padding: compact ? '18px 32px' : '28px 36px', display: 'flex', alignItems: 'center', gap: 28 }}>
-              <div style={{ fontSize: 38, fontWeight: 900, color: theme.colors.accent, width: 68, flexShrink: 0 }}>
+            <div
+              style={{ ...theme.card, padding: compact ? (vertical ? '16px 22px' : '18px 32px') : vertical ? '22px 24px' : '28px 36px', display: 'flex', alignItems: 'center', gap: vertical ? 18 : 28 }}
+            >
+              <div style={{ fontSize: vertical ? 32 : 38, fontWeight: 900, color: theme.colors.accent, width: vertical ? 52 : 68, flexShrink: 0 }}>
                 {String(i + 1).padStart(2, '0')}
               </div>
               <CheckMark at={ctx.appearAt(item.id, i)} />

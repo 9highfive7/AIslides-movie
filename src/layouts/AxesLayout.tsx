@@ -5,6 +5,7 @@ import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 /**
  * 空の直角座標系の図解。2軸の関係をナレーションで語る導入カットに使う。
@@ -20,12 +21,14 @@ export const AxesLayout: React.FC<{ content: ContentOf<'axes'> }> = ({ content }
   const xP = springFrom(frame, at + 6, fps, SPRINGS.smooth);
   const gridP = springFrom(frame, at + 12, fps, SPRINGS.smooth);
   const labelO = interpolate(frame, [at + 16, at + 26], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const vertical = useVertical();
   const yLen = 360;
   const xLen = 810;
 
   return (
     <ContentArea style={{ flexDirection: 'column' }}>
-      <svg width={980} height={440} viewBox="0 0 980 440">
+      {/* 縦の動画では、図を領域の幅に合わせて縮める */}
+      <svg width={vertical ? '100%' : 980} height={vertical ? undefined : 440} viewBox="0 0 980 440">
         {[110, 200, 290].map((y) => (
           <line key={y} x1={90} y1={y} x2={90 + 800 * gridP} y2={y} stroke={theme.colors.line} strokeWidth={1.5} />
         ))}

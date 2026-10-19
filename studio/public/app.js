@@ -31,14 +31,33 @@ const media = (v, file) => `/media/${state.project.id}/${v}/${file}`;
 
 const chosen = (group) => document.querySelector(`.chips[data-group="${group}"] button.on`)?.dataset.value;
 
+/** ボタンの選択を値で切り替える (その値のボタンがないとき・隠れているときはそのまま) */
+const choose = (group, value) => {
+  const buttons = [...document.querySelectorAll(`.chips[data-group="${group}"] button`)];
+  if (value == null || !buttons.some((b) => b.dataset.value === String(value) && !b.hidden)) return;
+  buttons.forEach((b) => b.classList.toggle('on', b.dataset.value === String(value)));
+};
+
 document.querySelectorAll('.chips').forEach((chips) => {
   chips.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
     chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
+    if (chips.dataset.group === 'format') applyFormatChoice();
     renderImageState();
   });
 });
+
+/** 形式 (横 / 縦ショート) に合わせて、選べる長さを切り替える。ショートは3分まで */
+const applyFormatChoice = () => {
+  const format = chosen('format');
+  const buttons = [...document.querySelectorAll('.chips[data-group="durationSec"] button')];
+  for (const b of buttons) b.hidden = !b.dataset.formats.split(' ').includes(format);
+  if (buttons.find((b) => b.classList.contains('on'))?.hidden) {
+    const fallback = format === 'vertical' ? '45' : '90';
+    buttons.forEach((b) => b.classList.toggle('on', b.dataset.value === fallback));
+  }
+};
 
 /** AIイラストを選んだときだけ、画像生成 AI の準備状況を出す */
 const renderImageState = () => {
@@ -55,6 +74,7 @@ const formValues = () => ({
   topic: $('topic').value.trim(),
   settings: $('settings').value,
   look: chosen('look'),
+  format: chosen('format'),
   durationSec: Number(chosen('durationSec')),
   speaker: Number($('speaker').value),
   bgm: $('bgm').value || undefined,
@@ -101,6 +121,11 @@ const openProject = async (id) => {
   const p = state.project;
   $('topic').value = p.topic === '(台本から作成)' ? '' : p.topic;
   $('settings').value = p.settings || '';
+  // 開いた動画の見た目・形式・長さを、入力欄にも反映する (縦の動画を開いたまま次を作っても縦になるように)
+  choose('look', p.options?.look);
+  choose('format', p.options?.format ?? 'landscape');
+  applyFormatChoice();
+  choose('durationSec', p.options?.durationSec);
   const done = [...p.versions].reverse().find((v) => v.status === 'done');
   state.version = done ? done.n : p.versions.at(-1)?.n ?? null;
   state.sceneId = null;
@@ -192,6 +217,10 @@ const renderPreview = () => {
   const overlay = $('overlay');
   const tag = $('tag');
   $('video-title').textContent = p ? p.title || p.topic : '動画を作ると、ここで見られます';
+  // 縦の動画 (ショート) は、プレビューと場面の一覧を縦長にする
+  const vertical = p?.options?.format === 'vertical';
+  $('screen').classList.toggle('vertical', vertical);
+  $('scenes').classList.toggle('vertical', vertical);
 
   // 版の切り替え
   $('versions').innerHTML = (p?.versions || [])
@@ -276,6 +305,9 @@ const renderActions = () => {
 
   const hasVideo = Boolean(v?.hasVideo) && !(isBusy && p.job.version === v.n);
   $('save-card').classList.toggle('disabled-card', !hasVideo);
+  const vertical = p?.options?.format === 'vertical';
+  $('dl-thumb').textContent = vertical ? 'ショートのカバー（PNG・縦）' : 'サムネイル（PNG）';
+  $('shorts-note').hidden = !vertical;
   const links = {
     'dl-video': 'video.mp4',
     'dl-thumb': 'thumbnail.png',
@@ -393,7 +425,8 @@ const refreshList = async () => {
   $('project-list').innerHTML = list.length
     ? list
         .map((p) => {
-          const thumb = p.thumbVersion ? `<img src="/media/${p.id}/${p.thumbVersion}/thumbnail.png" alt="">` : '<div class="ph"></div>';
+          const shape = p.format === 'vertical' ? ' class="vertical"' : '';
+          const thumb = p.thumbVersion ? `<img${shape} src="/media/${p.id}/${p.thumbVersion}/thumbnail.png" alt="">` : `<div class="ph${p.format === 'vertical' ? ' vertical' : ''}"></div>`;
           const status = { done: '完成', running: '生成中', queued: '順番待ち', error: 'エラー' }[p.status] || '';
           return `<button type="button" class="pj" data-id="${p.id}">${thumb}<div><b>${escapeHtml(p.title)}</b><small>${new Date(p.createdAt).toLocaleString('ja-JP')} ・ v${p.version} ${status}</small></div></button>`;
         })
@@ -444,6 +477,7 @@ const showStatus = async () => {
 };
 
 showStatus();
+applyFormatChoice();
 refreshList();
 const fromHash = /p=([a-z0-9-]+)/.exec(location.hash);
 if (fromHash) openProject(fromHash[1]).catch(() => render());

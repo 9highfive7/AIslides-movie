@@ -23,7 +23,7 @@ interface ImageSlot {
 }
 
 interface ScriptLike {
-  meta?: { imageStyle?: string };
+  meta?: { imageStyle?: string; format?: string };
   scenes: { id: string; layout: string; content: unknown }[];
 }
 
@@ -37,6 +37,8 @@ interface Task {
   slots: ImageSlot[];
   /** 何の絵か (エラーの表示用) */
   where: string;
+  /** 縦の動画 (ショート) の絵 (背景・手前を 9:16 で描く) */
+  vertical: boolean;
 }
 
 export interface ImageReport {
@@ -73,12 +75,14 @@ const ensureFinished = async (task: Task, publicDir: string): Promise<void> => {
 /** 台本から、絵を作る欄を集める (同じ指示の欄はまとめる) */
 const collectTasks = (script: ScriptLike): Task[] => {
   const style = script.meta?.imageStyle;
+  // 縦の動画は背景・手前を縦長に描く (指示の文が変わるので、横の動画の絵とは別のファイルになる)
+  const vertical = script.meta?.format === 'vertical';
   const tasks = new Map<string, Task>();
   const add = (kind: ImageKind, slot: ImageSlot | undefined, where: string) => {
     if (!slot?.prompt) return;
-    const prompt = buildImagePrompt(kind, slot.prompt, style);
+    const prompt = buildImagePrompt(kind, slot.prompt, style, vertical);
     const file = fileFor(kind, prompt);
-    const task = tasks.get(file) ?? { kind, prompt, file, slots: [], where };
+    const task = tasks.get(file) ?? { kind, prompt, file, slots: [], where, vertical };
     task.slots.push(slot);
     tasks.set(file, task);
   };
@@ -126,7 +130,7 @@ export const fillImages = async (
       while (next < todo.length) {
         const task = todo[next++];
         try {
-          const image = await generateImage(provider, task.kind, task.prompt);
+          const image = await generateImage(provider, task.kind, task.prompt, task.vertical);
           fs.writeFileSync(path.join(publicDir, task.file), image.data);
           report.generated++;
         } catch (error) {

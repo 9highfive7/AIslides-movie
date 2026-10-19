@@ -13,6 +13,8 @@
     "render": "remotion render Slideshow out/video.mp4 && tsx scripts/finish-video.ts out/video.mp4",
     "finish": "tsx scripts/finish-video.ts",
     "thumbnail": "remotion still Thumbnail out/thumbnail.png",
+    "render:shorts": "remotion render Shorts out/shorts.mp4 && tsx scripts/finish-video.ts out/shorts.mp4",
+    "cover:shorts": "remotion still ShortsCover out/shorts-cover.png",
     "youtube": "tsx scripts/generate-youtube.ts",
     "build:youtube": "npm run render && npm run thumbnail && npm run youtube",
     "typecheck": "tsc -p tsconfig.json --noEmit",

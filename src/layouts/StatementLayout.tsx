@@ -6,6 +6,8 @@ import { KineticText } from '../components/KineticText';
 import { PAGE, useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
+import { SHORTS_AREA, useVertical } from '../stage';
+import { ShortsArea } from './common';
 
 /**
  * 一文を大きく見せる「キメ」のレイアウト。
@@ -25,7 +27,53 @@ export const StatementLayout: React.FC<{
   const stagger = editorial ? 1.1 : 1.6;
   const chars = [...content.text.replace(/\*\*|\n/g, '')].length;
   const ruleP = springFrom(frame, textAt + chars * stagger + 6, fps, SPRINGS.smooth);
+  const vertical = useVertical();
+  // 縦の動画では、台本の改行 (横の画面向け) のまま、いちばん長い行が1行に収まる大きさにする
+  const longest = Math.max(1, ...content.text.split('\n').map((line) => [...line.replace(/\*\*/g, '')].length));
+  const shortsFontSize = Math.max(44, Math.min(editorial ? 68 : 76, Math.floor((SHORTS_AREA.width - 20) / (longest * (editorial ? 1.04 : 1)))));
 
+  const body = (
+    <>
+      {content.icon ? (
+        <Reveal id={null} order={0} preset="pop">
+          <IconBox name={content.icon} size={110} />
+        </Reveal>
+      ) : null}
+      <KineticText
+        text={content.text}
+        at={textAt}
+        stagger={stagger}
+        rise={editorial ? 0.3 : 0.7}
+        markerColor={theme.colors.highlight}
+        markerInk={theme.colors.highlightInk}
+        style={{
+          fontFamily: theme.fonts.display,
+          fontSize: vertical ? shortsFontSize : editorial ? 68 : 76,
+          fontWeight: editorial ? 600 : 900,
+          lineHeight: editorial ? 1.6 : 1.35,
+          letterSpacing: editorial ? '0.04em' : undefined,
+          textAlign: 'center',
+          color: theme.colors.ink,
+        }}
+      />
+      {editorial ? (
+        // 文の下に細い罫線を引く (図解ドキュメンタリー風)
+        <div style={{ width: (vertical ? 360 : 640) * ruleP, height: 2, backgroundColor: theme.colors.ink, marginTop: -6 }} />
+      ) : null}
+      {content.sub ? (
+        <Reveal id="sub" order={3} preset="fadeUp">
+          <div style={{ fontSize: 30, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 1.6 }}>
+            {content.sub}
+          </div>
+        </Reveal>
+      ) : null}
+    </>
+  );
+
+  // 縦の動画 (ショート): 見出しの下〜字幕の上に、拡大して置く
+  if (vertical) {
+    return <ShortsArea style={{ flexDirection: 'column', gap: 28 }}>{body}</ShortsArea>;
+  }
   return (
     <div
       style={{
@@ -41,39 +89,7 @@ export const StatementLayout: React.FC<{
         gap: 34,
       }}
     >
-      {content.icon ? (
-        <Reveal id={null} order={0} preset="pop">
-          <IconBox name={content.icon} size={110} />
-        </Reveal>
-      ) : null}
-      <KineticText
-        text={content.text}
-        at={textAt}
-        stagger={stagger}
-        rise={editorial ? 0.3 : 0.7}
-        markerColor={theme.colors.highlight}
-        markerInk={theme.colors.highlightInk}
-        style={{
-          fontFamily: theme.fonts.display,
-          fontSize: editorial ? 68 : 76,
-          fontWeight: editorial ? 600 : 900,
-          lineHeight: editorial ? 1.6 : 1.35,
-          letterSpacing: editorial ? '0.04em' : undefined,
-          textAlign: 'center',
-          color: theme.colors.ink,
-        }}
-      />
-      {editorial ? (
-        // 文の下に細い罫線を引く (図解ドキュメンタリー風)
-        <div style={{ width: 640 * ruleP, height: 2, backgroundColor: theme.colors.ink, marginTop: -6 }} />
-      ) : null}
-      {content.sub ? (
-        <Reveal id="sub" order={3} preset="fadeUp">
-          <div style={{ fontSize: 30, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 1.6 }}>
-            {content.sub}
-          </div>
-        </Reveal>
-      ) : null}
+      {body}
     </div>
   );
 };

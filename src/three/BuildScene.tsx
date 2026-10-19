@@ -30,6 +30,7 @@ import { Bolt, Fridge, House, VendingMachine } from './objects';
 import { Billboard, C, Lights, Outlined, ShadowDisc, canvasTexture, useFontsReady, useOrbTextures } from './parts';
 import { ASPECT, lerpShot, withDrift, type Shot } from './camera';
 import { CameraRig, Callout, StatOverlay, TitleOverlay } from './ObjectScene';
+import { canvasFrame, useStage } from '../stage';
 
 /**
  * scene3d の「組み立て (parts)」形式。台本に書いた部品 (基本形・作り込んだ物)・流れ・注釈から、
@@ -315,9 +316,8 @@ const fitShot = (points: Vector3[], view: Content['camera']['view'], rect: Rect)
 type Box = { x: number; y: number; align: 'left' | 'right' };
 
 /** 指す点が画面の左半分なら左端、右半分なら右端に箱を置き、上下に重ならないよう並べる */
-const placeBoxes = (anchors: { x: number; y: number }[], yMin: number): Box[] => {
+const placeBoxes = (anchors: { x: number; y: number }[], yMin: number, GAP = 130): Box[] => {
   const boxes: Box[] = anchors.map((a) => ({ x: a.x < 960 ? 110 : 1810, y: 0, align: a.x < 960 ? 'left' : 'right' }));
-  const GAP = 130;
   const Y_MAX = 800;
   for (const side of ['left', 'right'] as const) {
     const idx = anchors.map((_, i) => i).filter((i) => boxes[i].align === side);
@@ -585,6 +585,7 @@ const FlowView: React.FC<{ flow: Flow; at: number; unit: number; orbs: Orbs }> =
 /** 部品の名札 (部品の上に浮かぶ明朝の札) */
 const PartLabel: React.FC<{ text: string; x: number; y: number; opacity: number }> = ({ text, x, y, opacity }) => {
   const theme = useTheme();
+  const k = useStage().textScale;
   if (opacity <= 0.01) {
     return null;
   }
@@ -594,7 +595,8 @@ const PartLabel: React.FC<{ text: string; x: number; y: number; opacity: number 
         position: 'absolute',
         left: x,
         top: y,
-        transform: `translate(-50%, -100%) translateY(${(1 - opacity) * 10}px)`,
+        transform: `translate(-50%, -100%) translateY(${(1 - opacity) * 10}px)${k === 1 ? '' : ` scale(${k})`}`,
+        transformOrigin: k === 1 ? undefined : '50% 100%',
         opacity,
         fontFamily: theme.fonts.display,
         fontSize: 26,
@@ -613,9 +615,13 @@ const PartLabel: React.FC<{ text: string; x: number; y: number; opacity: number 
 
 export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps } = useVideoConfig();
+  const stage = useStage();
   const ctx = useSceneContext();
   const orbs = useOrbTextures();
+  // 縦の動画の帯の中では、title は見出しの位置に出すので、部品を上に詰めてよい。注釈の箱は文字が大きいぶん間を空ける
+  const titleInFrame = Boolean(content.title) && !stage.vertical;
+  const k = stage.textScale;
 
   // 部品の大きさ・並べ方・カメラ・注釈の箱は台本だけで決まるので、最初に1回だけ計算する
   const layout = useMemo(() => {
@@ -637,7 +643,7 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
     const main = fitShot(points, view, {
       x0: hasCallouts ? 500 : 260,
       x1: hasCallouts ? 1420 : 1660,
-      y0: content.title ? 250 : 150,
+      y0: titleInFrame ? 250 : 150,
       y1: 860,
     });
     // 寄る先: 部品だけで画面を埋めず、まわりも少し見える大きさ (部品の約2倍の範囲) に収める
@@ -647,7 +653,7 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
           const corners = cornersOf(zoomPart.part, zoomPart.dims, zoomPart.copies[0]);
           const center = new Box3().setFromPoints(corners).getCenter(new Vector3());
           const around = corners.map((c) => c.clone().sub(center).multiplyScalar(2).add(center));
-          return fitShot(around, view, { x0: hasCallouts ? 500 : 320, x1: hasCallouts ? 1420 : 1600, y0: content.title ? 250 : 180, y1: 860 });
+          return fitShot(around, view, { x0: hasCallouts ? 500 : 320, x1: hasCallouts ? 1420 : 1600, y0: titleInFrame ? 250 : 180, y1: 860 });
         })()
       : null;
 
@@ -663,10 +669,11 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
     const project = makeProjector(main);
     const boxes = placeBoxes(
       anchors.map((a) => project(a)),
-      content.stat ? 330 : 200,
+      content.stat ? 330 + 110 * (k - 1) : 200,
+      130 * k,
     );
     return { parts, unit, main, zoom, anchors, boxes };
-  }, [content]);
+  }, [content, titleInFrame, k]);
 
   const drift = interpolate(frame, [ctx.ts.startFrame, ctx.ts.startFrame + ctx.ts.durationFrames], [0, 1], {
     extrapolateLeft: 'clamp',
@@ -680,16 +687,17 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
 
   const partAt = (i: number) => ctx.appearAt(content.parts[i].id, i);
   const nParts = content.parts.length;
+  const canvas = canvasFrame(stage, FOV);
 
   return (
     <AbsoluteFill>
       <ThreeCanvas
-        width={width}
-        height={height}
+        width={canvas.width}
+        height={canvas.height}
         flat
         gl={{ antialias: true, alpha: true }}
-        camera={{ fov: FOV, near: 0.1, far: 2000, position: cameraShot.position.toArray() }}
-        style={{ position: 'absolute', inset: 0 }}
+        camera={{ fov: canvas.fov, near: 0.1, far: 2000, position: cameraShot.position.toArray() }}
+        style={canvas.style ?? { position: 'absolute', inset: 0 }}
       >
         <CameraRig shot={cameraShot} />
         <Lights />

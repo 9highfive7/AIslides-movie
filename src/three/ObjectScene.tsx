@@ -11,6 +11,7 @@ import { SPRINGS, springFrom } from '../animation/presets';
 import type { Scene3DPresetContent } from '../schemas';
 import { Lights, useOrbTextures } from './parts';
 import { projectToScreen, withDrift, type Shot } from './camera';
+import { canvasFrame, useStage } from '../stage';
 import { PRESETS, type ObjectPreset, type Timing } from './presets';
 
 type Content = Scene3DPresetContent;
@@ -32,7 +33,9 @@ export const CameraRig: React.FC<{ shot: Shot }> = ({ shot }) => {
 export const TitleOverlay: React.FC<{ text: string; at: number }> = ({ text, at }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
-  if (frame < at) {
+  // 縦の動画 (ショート) では、この一文は見出しの位置に出す (Slideshow の ShortsHeading)
+  const { vertical } = useStage();
+  if (frame < at || vertical) {
     return null;
   }
   // 下地は文字と一緒にふわっと出す (文字より先に空の下地だけが見えないように)
@@ -70,16 +73,18 @@ export const StatOverlay: React.FC<{
 }> = ({ stat, at, place }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
+  const stage = useStage();
+  const k = stage.textScale;
   const style: React.CSSProperties =
-    place.align === 'left' ? { position: 'absolute', left: place.x, top: place.y } : { position: 'absolute', right: 1920 - place.x, top: place.y };
+    place.align === 'left' ? { position: 'absolute', left: place.x, top: place.y } : { position: 'absolute', right: stage.width - place.x, top: place.y };
   return (
     <Reveal id="stat" order={3} preset="pop" focusRing={false} style={style}>
-      <div style={{ ...theme.card, padding: '18px 30px', minWidth: 300, textAlign: 'center' }}>
-        {stat.kicker ? <div style={{ fontSize: 24, fontWeight: 700, color: theme.colors.textSecondary }}>{stat.kicker}</div> : null}
-        <div style={{ fontFamily: theme.fonts.display, fontSize: 76, fontWeight: 600, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ ...theme.card, padding: `${18 * k}px ${30 * k}px`, minWidth: 300 * k, textAlign: 'center' }}>
+        {stat.kicker ? <div style={{ fontSize: 24 * k, fontWeight: 700, color: theme.colors.textSecondary }}>{stat.kicker}</div> : null}
+        <div style={{ fontFamily: theme.fonts.display, fontSize: 76 * k, fontWeight: 600, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
           <CountUp value={stat.value} frame={frame} at={at} durationFrames={36} />
         </div>
-        {stat.note ? <div style={{ fontSize: 18, color: theme.colors.textSecondary }}>{stat.note}</div> : null}
+        {stat.note ? <div style={{ fontSize: 18 * k, color: theme.colors.textSecondary }}>{stat.note}</div> : null}
       </div>
     </Reveal>
   );
@@ -91,12 +96,15 @@ export const StatOverlay: React.FC<{
 export const Callout: React.FC<{
   callout: Content['callouts'][number];
   anchor: { x: number; y: number };
-  box: { x: number; y: number; align: 'left' | 'right' };
+  /** 箱の位置。align: left は x が箱の左端・right は右端・center は中央 (縦の動画で、物の上下に出すとき) */
+  box: { x: number; y: number; align: 'left' | 'right' | 'center' };
   at: number;
 }> = ({ callout, anchor, box, at }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const stage = useStage();
+  const k = stage.textScale;
   const lineP = springFrom(frame, at, fps, SPRINGS.smooth);
   const boxP = springFrom(frame, at + 6, fps, SPRINGS.snappy);
   if (frame < at) {
@@ -110,10 +118,12 @@ export const Callout: React.FC<{
         : callout.tone === 'muted'
           ? '#8C857A'
           : theme.colors.ink;
-  const attach = { x: box.x, y: box.y + 44 };
+  const attach = { x: box.x, y: box.y + 44 * k };
+  // 文字を大きくしたとき (縦の動画の 3D の帯) は、画面の端で折り返す (箱が画面の外へはみ出さないように)
+  const wrap = k === 1 ? 'nowrap' : 'normal';
   return (
     <>
-      <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+      <svg width={stage.width} height={stage.height} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
         <line
           x1={anchor.x}
           y1={anchor.y}
@@ -122,23 +132,23 @@ export const Callout: React.FC<{
           stroke={theme.colors.ink}
           strokeWidth={2}
         />
-        <circle cx={anchor.x} cy={anchor.y} r={6 * Math.min(1, lineP * 3)} fill={theme.colors.ink} />
+        <circle cx={anchor.x} cy={anchor.y} r={6 * Math.sqrt(k) * Math.min(1, lineP * 3)} fill={theme.colors.ink} />
       </svg>
       <div
         style={{
           position: 'absolute',
           top: box.y,
-          ...(box.align === 'left' ? { left: box.x } : { right: 1920 - box.x }),
+          ...(box.align === 'left' ? { left: box.x } : box.align === 'right' ? { right: stage.width - box.x } : { left: box.x }),
           ...theme.card,
           borderColor: color,
-          padding: '12px 22px 14px',
+          padding: `${12 * k}px ${22 * k}px ${14 * k}px`,
           opacity: interpolate(boxP, [0, 0.6], [0, 1], { extrapolateRight: 'clamp' }),
-          transform: `translateY(${(1 - boxP) * 14}px)`,
+          transform: `${box.align === 'center' ? 'translateX(-50%) ' : ''}translateY(${(1 - boxP) * 14}px)`,
         }}
       >
-        <div style={{ fontFamily: theme.fonts.display, fontSize: 38, fontWeight: 700, color, whiteSpace: 'nowrap' }}>{callout.title}</div>
+        <div style={{ fontFamily: theme.fonts.display, fontSize: 38 * k, fontWeight: 700, color, whiteSpace: wrap }}>{callout.title}</div>
         {callout.sub ? (
-          <div style={{ fontSize: 22, color: theme.colors.textSecondary, marginTop: 2, whiteSpace: 'nowrap' }}>{callout.sub}</div>
+          <div style={{ fontSize: 22 * k, color: theme.colors.textSecondary, marginTop: 2, whiteSpace: wrap }}>{callout.sub}</div>
         ) : null}
       </div>
     </>
@@ -151,7 +161,8 @@ export const Callout: React.FC<{
  */
 export const ObjectScene: React.FC<{ content: Content; preset: ObjectPreset }> = ({ content, preset }) => {
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps } = useVideoConfig();
+  const stage = useStage();
   const ctx = useSceneContext();
   const spec = PRESETS[preset];
   const orbs = useOrbTextures();
@@ -182,16 +193,17 @@ export const ObjectScene: React.FC<{ content: Content; preset: ObjectPreset }> =
   });
   const cameraShot = withDrift(spec.shot(timing), drift, 0.1);
   const slots = spec.slots(timing);
+  const canvas = canvasFrame(stage, spec.fov);
 
   return (
     <AbsoluteFill>
       <ThreeCanvas
-        width={width}
-        height={height}
+        width={canvas.width}
+        height={canvas.height}
         flat
         gl={{ antialias: true, alpha: true }}
-        camera={{ fov: spec.fov, near: 0.1, far: 400, position: cameraShot.position.toArray() }}
-        style={{ position: 'absolute', inset: 0 }}
+        camera={{ fov: canvas.fov, near: 0.1, far: 400, position: cameraShot.position.toArray() }}
+        style={canvas.style ?? { position: 'absolute', inset: 0 }}
       >
         <CameraRig shot={cameraShot} />
         <Lights />

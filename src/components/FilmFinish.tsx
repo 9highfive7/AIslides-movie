@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { script } from '../data';
 import { useTheme } from '../themes';
 
@@ -12,6 +12,7 @@ import { useTheme } from '../themes';
  */
 export const FilmFinish: React.FC = () => {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
   const theme = useTheme();
   // 粒子は紙・絵の質感に合う editorial (paper) だけ既定でかける。くっきりした配色のテーマは周辺減光だけ
   const grain = script.meta.finish.grain ?? theme.chrome === 'editorial';
@@ -27,7 +28,7 @@ export const FilmFinish: React.FC = () => {
         />
       ) : null}
       {grain ? (
-        <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0, mixBlendMode: 'overlay', opacity: 0.22 }}>
+        <svg width={width} height={height} style={{ position: 'absolute', inset: 0, mixBlendMode: 'overlay', opacity: 0.22 }}>
           <filter id="film-grain" x="0" y="0" width="100%" height="100%">
             {/* 2フレームに1回模様を変える (毎フレームだと粗く見える) */}
             <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves={2} seed={Math.floor(frame / 2) % 97} stitchTiles="stitch" />

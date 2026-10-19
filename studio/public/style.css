@@ -115,3 +115,11 @@ textarea:disabled { background: #F4F0E8; color: var(--faint); }
 .pj img, .pj .ph { width: 120px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; background: #E9E1CF; flex-shrink: 0; }
 .pj b { display: block; font-size: 14px; line-height: 1.5; }
 .pj small { color: var(--faint); font-size: 12px; }
+
+/* 縦の動画 (ショート) */
+.chips button[hidden] { display: none; }
+.screen.vertical { aspect-ratio: 9 / 16; width: auto; height: min(72vh, 760px); max-width: 100%; margin: 0 auto; }
+.scenes.vertical { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.scenes.vertical .sc img, .scenes.vertical .sc .ph { aspect-ratio: 9 / 16; }
+.pj img.vertical, .pj .ph.vertical { width: 54px; aspect-ratio: 9 / 16; }
+.shorts-note { font-size: 12px; color: var(--sub); line-height: 1.6; margin: 0; }

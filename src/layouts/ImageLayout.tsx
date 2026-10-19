@@ -3,7 +3,8 @@ import { Img, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import { Reveal } from '../components/Reveal';
 import { PAGE, useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
-import type { ContentOf } from './common';
+import { ShortsArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 /**
  * 画像を大きく見せるレイアウト。画像はシーンの間ゆっくりズーム＆パンする (ケン・バーンズ効果)。
@@ -18,28 +19,17 @@ export const ImageLayout: React.FC<{ content: ContentOf<'image'>; hasHeading: bo
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
+  const vertical = useVertical();
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: PAGE.paddingX,
-        right: PAGE.paddingX,
-        top: hasHeading ? PAGE.contentTop - 30 : 80,
-        bottom: 210,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 20,
-      }}
-    >
+  const body = (
+    <>
       <Reveal id="image" order={0} preset="zoom" style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', justifyContent: 'center' }}>
         <div
           style={{
             ...theme.card,
             height: '100%',
-            aspectRatio: '16 / 9',
+            // 縦の動画では、画面の幅に合う 4:5 の枠に切り抜く
+            aspectRatio: vertical ? '4 / 5' : '16 / 9',
             maxWidth: '100%',
             overflow: 'hidden',
             padding: 0,
@@ -62,6 +52,28 @@ export const ImageLayout: React.FC<{ content: ContentOf<'image'>; hasHeading: bo
           <div style={{ fontSize: 20, color: theme.colors.textSecondary }}>{content.caption}</div>
         </Reveal>
       ) : null}
+    </>
+  );
+
+  if (vertical) {
+    return <ShortsArea style={{ flexDirection: 'column', gap: 16 }}>{body}</ShortsArea>;
+  }
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: PAGE.paddingX,
+        right: PAGE.paddingX,
+        top: hasHeading ? PAGE.contentTop - 30 : 80,
+        bottom: 210,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+      }}
+    >
+      {body}
     </div>
   );
 };

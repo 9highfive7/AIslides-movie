@@ -2,6 +2,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { PAGE, useTheme } from '../themes';
 import { SPRINGS, springFrom } from '../animation/presets';
+import { SHORTS, useVertical } from '../stage';
 
 /**
  * コンテンツシーンの補助装飾。
@@ -18,6 +19,11 @@ export const SceneChrome: React.FC<{ chapter?: string; badge?: string; at: numbe
   const chapterP = springFrom(frame, at + 8, fps, SPRINGS.snappy);
   const badgeP = springFrom(frame, at + 14, fps, SPRINGS.bouncy);
   const fade = (p: number) => interpolate(p, [0, 0.5], [0, 1], { extrapolateRight: 'clamp' });
+  // 縦の動画 (ショート): 章タグは出さず (左下は字幕・タイトルの場所)、バッジは上の UI のすぐ下の右に出す
+  const vertical = useVertical();
+  if (vertical) {
+    chapter = undefined;
+  }
 
   return (
     <>
@@ -45,8 +51,8 @@ export const SceneChrome: React.FC<{ chapter?: string; badge?: string; at: numbe
         <div
           style={{
             position: 'absolute',
-            right: PAGE.paddingX,
-            top: 92,
+            right: vertical ? SHORTS.safe.right : PAGE.paddingX,
+            top: vertical ? SHORTS.safe.top : 92,
             borderRadius: 999,
             padding: '10px 24px',
             fontSize: 19,

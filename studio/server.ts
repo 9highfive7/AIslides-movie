@@ -12,7 +12,7 @@ import path from 'node:path';
 import { scriptProvider } from '../scripts/lib/script-writer';
 import { resolveImageProvider } from '../scripts/lib/image-gen';
 import { busy, enqueue, jobOf, listBgm, sceneLabel, voiceStatus } from './pipeline';
-import { listProjects, loadProject, newProjectId, safeProjectFile, saveProject, versionDir, type Look, type Project } from './store';
+import { listProjects, loadProject, newProjectId, safeProjectFile, saveProject, versionDir, type Look, type Project, type VideoFormat } from './store';
 import { scriptSchema } from '../src/schemas';
 
 const PORT = Number(process.env.STUDIO_PORT ?? 4300);
@@ -77,9 +77,19 @@ const sendFile = (req: http.IncomingMessage, res: http.ServerResponse, file: str
 
 const LOOKS: Look[] = ['paper', 'zukai3d', 'illust', 'kids', 'pop', 'clean', 'dark'];
 
+/** 選べる尺 [秒]。縦の動画 (ショート) は3分まで */
+const DURATIONS: Record<VideoFormat, number[]> = { landscape: [60, 90, 180, 300], vertical: [30, 45, 60, 90, 180] };
+
+const parseFormat = (value: unknown): VideoFormat => (value === 'vertical' ? 'vertical' : 'landscape');
+
 const parseOptions = (body: Record<string, unknown>) => ({
   look: LOOKS.includes(body.look as Look) ? (body.look as Look) : 'paper',
-  durationSec: [60, 90, 180, 300].includes(Number(body.durationSec)) ? Number(body.durationSec) : 90,
+  format: parseFormat(body.format),
+  durationSec: DURATIONS[parseFormat(body.format)].includes(Number(body.durationSec))
+    ? Number(body.durationSec)
+    : parseFormat(body.format) === 'vertical'
+      ? 45
+      : 90,
   speaker: Number.isInteger(Number(body.speaker)) ? Number(body.speaker) : 3,
   ...(typeof body.bgm === 'string' && listBgm().includes(body.bgm) ? { bgm: body.bgm } : null),
 });
@@ -142,7 +152,7 @@ const handle = async (req: http.IncomingMessage, res: http.ServerResponse): Prom
           listProjects().map((p) => {
             const last = p.versions.at(-1);
             const done = [...p.versions].reverse().find((v) => v.status === 'done');
-            return { id: p.id, title: p.title ?? p.topic, topic: p.topic, createdAt: p.createdAt, status: last?.status, version: last?.n, thumbVersion: done?.n ?? null };
+            return { id: p.id, title: p.title ?? p.topic, topic: p.topic, createdAt: p.createdAt, status: last?.status, version: last?.n, thumbVersion: done?.n ?? null, format: p.options.format ?? 'landscape' };
           }),
         );
         return;

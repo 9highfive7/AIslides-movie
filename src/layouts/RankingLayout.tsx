@@ -7,6 +7,7 @@ import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 const MEDAL: Record<number, string> = { 1: '#E8A800', 2: '#9AA5B1', 3: '#C0773A' };
 
@@ -23,10 +24,11 @@ export const RankingLayout: React.FC<{ content: ContentOf<'ranking'> }> = ({ con
     .map((item, i) => ({ ...item, rank: item.rank ?? i + 1 }))
     .sort((a, b) => a.rank - b.rank);
   const compact = items.length >= 5;
+  const vertical = useVertical();
 
   return (
     <ContentArea>
-      <div style={{ width: 1240, display: 'flex', flexDirection: 'column', gap: compact ? 14 : 20 }}>
+      <div style={{ width: vertical ? '100%' : 1240, display: 'flex', flexDirection: 'column', gap: compact ? 14 : 20 }}>
         {items.map((item, i) => {
           const order = (items.length - 1 - i) * 2; // 下位から順に
           const at = ctx.appearAt(item.id, order);

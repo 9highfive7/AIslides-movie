@@ -608,6 +608,11 @@ const OTTER_FACE = { x: 0.47, y: 0.29, size: 0.74 };
 export const metaSchema = z.object({
   /** 動画タイトル (サムネイル・概要欄の既定値に使う) */
   title: z.string().optional(),
+  /**
+   * 画面の向き。landscape: 横 1920×1080 (ふつうの動画) / vertical: 縦 1080×1920 (YouTube ショート。
+   * Remotion の Shorts で書き出す。見出し・字幕はショートの UI に隠れない位置に置く)
+   */
+  format: z.enum(['landscape', 'vertical']).default('landscape'),
   /** 配色テーマ */
   theme: themeNameSchema.default('kids'),
   /**

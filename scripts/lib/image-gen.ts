@@ -45,9 +45,24 @@ const RULES: Record<ImageKind, string> = {
     'No text, no letters, no logos, no watermark.',
 };
 
-/** 実際に画像生成 AI へ送るプロンプト (キャッシュのキーにも使う) */
-export const buildImagePrompt = (kind: ImageKind, prompt: string, style: string | undefined): string =>
-  [prompt.trim(), style?.trim() ? `Art style: ${style.trim()}` : '', RULES[kind]].filter(Boolean).join('\n');
+/** 縦の動画 (ショート) の背景・手前の決まりごと。物の絵は横の動画と同じ (正方形で描いて切り抜く) */
+const VERTICAL_RULES: Record<Exclude<ImageKind, 'object'>, string> = {
+  background:
+    'Tall vertical 9:16 background scene for a smartphone short video. No people, no text, no letters, no numbers, no logos, no signs with writing, no watermark. ' +
+    'Leave the middle and lower middle fairly open so objects can be placed in front of it.',
+  foreground:
+    'Foreground decoration for a tall vertical 9:16 video frame, only along the bottom-left and bottom-right edges; the rest of the frame is plain solid pure white (#FFFFFF). ' +
+    'No text, no letters, no logos, no watermark.',
+};
+
+const rulesFor = (kind: ImageKind, vertical: boolean): string => (vertical && kind !== 'object' ? VERTICAL_RULES[kind] : RULES[kind]);
+
+/** 絵の縦横比 (Gemini の aspectRatio)。物は正方形、背景・手前は動画の向きに合わせる */
+const aspectOf = (kind: ImageKind, vertical: boolean): '1:1' | '16:9' | '9:16' => (kind === 'object' ? '1:1' : vertical ? '9:16' : '16:9');
+
+/** 実際に画像生成 AI へ送るプロンプト (キャッシュのキーにも使う)。vertical: 縦の動画 (ショート) の絵 */
+export const buildImagePrompt = (kind: ImageKind, prompt: string, style: string | undefined, vertical = false): string =>
+  [prompt.trim(), style?.trim() ? `Art style: ${style.trim()}` : '', rulesFor(kind, vertical)].filter(Boolean).join('\n');
 
 const fail = (p: ImageProvider, status: number | string, body: string): Error =>
   new Error(
@@ -56,7 +71,7 @@ const fail = (p: ImageProvider, status: number | string, body: string): Error =>
   );
 
 /** Gemini: generateContent で画像を受け取る */
-const callGemini = async (p: ImageProvider, kind: ImageKind, prompt: string): Promise<Buffer> => {
+const callGemini = async (p: ImageProvider, kind: ImageKind, prompt: string, vertical: boolean): Promise<Buffer> => {
   const base = (process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
   const res = await fetch(`${base}/v1beta/models/${encodeURIComponent(p.model)}:generateContent`, {
     method: 'POST',
@@ -65,7 +80,7 @@ const callGemini = async (p: ImageProvider, kind: ImageKind, prompt: string): Pr
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         responseModalities: ['IMAGE'],
-        imageConfig: { aspectRatio: kind === 'object' ? '1:1' : '16:9' },
+        imageConfig: { aspectRatio: aspectOf(kind, vertical) },
       },
     }),
     signal: AbortSignal.timeout(180000),
@@ -91,7 +106,7 @@ const callGemini = async (p: ImageProvider, kind: ImageKind, prompt: string): Pr
 };
 
 /** OpenAI: Images API (gpt-image) */
-const callOpenAi = async (p: ImageProvider, kind: ImageKind, prompt: string): Promise<Buffer> => {
+const callOpenAi = async (p: ImageProvider, kind: ImageKind, prompt: string, vertical: boolean): Promise<Buffer> => {
   const base = (process.env.OPENAI_IMAGE_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
   const res = await fetch(`${base}/images/generations`, {
     method: 'POST',
@@ -99,7 +114,7 @@ const callOpenAi = async (p: ImageProvider, kind: ImageKind, prompt: string): Pr
     body: JSON.stringify({
       model: p.model,
       prompt,
-      size: kind === 'object' ? '1024x1024' : '1536x1024',
+      size: { '1:1': '1024x1024', '16:9': '1536x1024', '9:16': '1024x1536' }[aspectOf(kind, vertical)],
       quality: process.env.IMAGE_QUALITY ?? 'medium',
       n: 1,
     }),
@@ -279,20 +294,24 @@ const trimTransparent = async (png: Buffer): Promise<Buffer> => {
 /**
  * 1枚作って、動画で使える形に整える。
  *   background: 1920x1080 の JPEG / foreground: 背景を消した 1920x1080 の PNG / object: 背景を消して余白を詰めた PNG
+ *   (vertical: 縦の動画 (ショート) では、背景・手前を 1080x1920 にする)
  * 戻り値はファイルの中身と拡張子。
  */
 export const generateImage = async (
   provider: ImageProvider,
   kind: ImageKind,
   prompt: string,
+  vertical = false,
 ): Promise<{ data: Buffer; ext: 'jpg' | 'png' }> => {
-  const raw = provider.provider === 'gemini' ? await callGemini(provider, kind, prompt) : await callOpenAi(provider, kind, prompt);
+  const raw =
+    provider.provider === 'gemini' ? await callGemini(provider, kind, prompt, vertical) : await callOpenAi(provider, kind, prompt, vertical);
+  const [w, h] = vertical ? [1080, 1920] : [1920, 1080];
   if (kind === 'background') {
-    return { data: await sharp(raw).resize(1920, 1080, { fit: 'cover' }).jpeg({ quality: 88 }).toBuffer(), ext: 'jpg' };
+    return { data: await sharp(raw).resize(w, h, { fit: 'cover' }).jpeg({ quality: 88 }).toBuffer(), ext: 'jpg' };
   }
   const cut = await removeBackground(raw);
   if (kind === 'foreground') {
-    return { data: await sharp(cut).resize(1920, 1080, { fit: 'cover' }).png().toBuffer(), ext: 'png' };
+    return { data: await sharp(cut).resize(w, h, { fit: 'cover' }).png().toBuffer(), ext: 'png' };
   }
   const trimmed = await trimTransparent(cut);
   return { data: await sharp(trimmed).resize({ height: 1200, withoutEnlargement: true }).png().toBuffer(), ext: 'png' };

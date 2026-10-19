@@ -5,6 +5,7 @@ import { useTheme } from '../themes';
 import { useSceneContext } from '../context/SceneContext';
 import { SPRINGS, springFrom } from '../animation/presets';
 import { ContentArea, type ContentOf } from './common';
+import { useVertical } from '../stage';
 
 /**
  * 1本の帯を区切って割合を見せる「シェア」のグラフ (帯グラフ)。
@@ -18,6 +19,9 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
   const ctx = useSceneContext();
   const total = content.segments.reduce((sum, seg) => sum + seg.value, 0);
   const frameAt = ctx.appearAt(null, 0);
+  // 縦の動画では帯を領域の幅いっぱいにする
+  const vertical = useVertical();
+  const barWidth = vertical ? '100%' : 1300;
 
   const colorOf = (tone: ContentOf<'share'>['segments'][number]['tone']): string =>
     tone === 'warning' ? theme.colors.warning : tone === 'accent' ? theme.colors.accent : theme.colors.textFaint;
@@ -32,7 +36,7 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
             fontSize: 44,
             fontWeight: 600,
             letterSpacing: '0.06em',
-            marginBottom: 56,
+            marginBottom: vertical ? 32 : 56,
           }}
         >
           {content.title}
@@ -41,8 +45,9 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
       <div
         style={{
           alignSelf: 'center',
-          width: 1300,
-          height: 150,
+          width: barWidth,
+          height: vertical ? 170 : 150,
+          boxSizing: vertical ? 'border-box' : undefined,
           border: `2px solid ${theme.colors.ink}`,
           backgroundColor: theme.colors.track,
           padding: 6,
@@ -64,7 +69,7 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
                 color: '#FFFFFF',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
-                padding: '0 20px',
+                padding: vertical ? '0 12px' : '0 20px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -72,7 +77,7 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
                 borderLeft: i > 0 && grow > 0.01 ? `3px solid ${theme.colors.track}` : undefined,
               }}
             >
-              <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.1, opacity: textP }}>{seg.display}</div>
+              <div style={{ fontSize: vertical ? 40 : 46, fontWeight: 900, lineHeight: 1.1, opacity: textP }}>{seg.display}</div>
               {seg.label ? (
                 <div style={{ fontSize: 20, fontWeight: 700, marginTop: 6, opacity: textP }}>{seg.label}</div>
               ) : null}
@@ -81,7 +86,7 @@ export const ShareLayout: React.FC<{ content: ContentOf<'share'>; hasHeading: bo
         })}
       </div>
       {content.source ? (
-        <Reveal id="source" order={content.segments.length + 1} style={{ alignSelf: 'center', width: 1300, marginTop: 18 }}>
+        <Reveal id="source" order={content.segments.length + 1} style={{ alignSelf: 'center', width: barWidth, marginTop: 18 }}>
           <div style={{ fontSize: 16, color: theme.colors.textSecondary }}>※ {content.source}</div>
         </Reveal>
       ) : null}

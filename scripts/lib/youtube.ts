@@ -1,6 +1,9 @@
 import { stripMarkup } from '../../shared/markup';
 import type { Scene, ScriptConfig, Timeline } from '../../src/schemas';
 
+/** YouTube ショートの上限 [秒] (縦か正方形の動画は3分まで) */
+export const SHORTS_MAX_SEC = 180;
+
 export interface Chapter {
   startSec: number;
   label: string;
@@ -113,20 +116,33 @@ export interface DescriptionExtras {
 /** ハッシュタグの形にそろえる (# を付け、空白を取る) */
 const hashtag = (tag: string): string => `#${tag.replace(/^#+/, '').replace(/\s+/g, '')}`;
 
+/** 縦の動画 (YouTube ショート) の台本か */
+export const isShorts = (script: ScriptConfig): boolean => script.meta.format === 'vertical';
+
+/** ショートの目印のハッシュタグ (YouTube はショートを縦の形と長さで見分けるが、付けておくと検索・おすすめで見つかりやすい) */
+const SHORTS_TAG = '#Shorts';
+
+/** 台本のハッシュタグ。ショートでは先頭を #Shorts にする (重ならないように) */
+const hashtagsOf = (script: ScriptConfig): string[] => {
+  const tags = (script.meta.youtube?.hashtags ?? []).map(hashtag).filter((t) => t.length > 1);
+  if (!isShorts(script)) return tags;
+  return [SHORTS_TAG, ...tags.filter((t) => t.toLowerCase() !== SHORTS_TAG.toLowerCase())];
+};
+
 /**
  * 概要欄。動画の説明 → 目次 (チャプター) → 出典 → クレジット → ハッシュタグ の順。
- * 台本に meta.youtube がなければ、タイトル・目次・クレジットだけにする
+ * 台本に meta.youtube がなければ、タイトル・目次・クレジットだけにする。
+ * ショート (縦の動画) には目次 (チャプター) がないので書かず、ハッシュタグの先頭を #Shorts にする
  */
 export const buildDescription = (script: ScriptConfig, chapters: Chapter[], extras: DescriptionExtras = {}): string => {
   const yt = script.meta.youtube;
   const sources = yt?.sources ?? [];
   const credits = extras.credits ?? [];
-  const tags = (yt?.hashtags ?? []).map(hashtag).filter((t) => t.length > 1);
+  const tags = hashtagsOf(script);
+  const toc = isShorts(script) ? [] : ['', '■ 目次', ...chapters.map((c) => `${formatTimestamp(c.startSec)} ${c.label}`)];
   return [
     yt?.summary ? yt.summary.trim() : videoTitle(script),
-    '',
-    '■ 目次',
-    ...chapters.map((c) => `${formatTimestamp(c.startSec)} ${c.label}`),
+    ...toc,
     ...(sources.length > 0 ? ['', '■ 出典・参考', ...sources.map((src) => `・${src.label}${src.url ? ` ${src.url}` : ''}`)] : []),
     ...(credits.length > 0 ? ['', '■ クレジット', ...credits] : []),
     ...(tags.length > 0 ? ['', tags.slice(0, 15).join(' ')] : []),
@@ -137,11 +153,11 @@ export const buildDescription = (script: ScriptConfig, chapters: Chapter[], extr
 /** YouTube のタグ欄の上限 (カンマ区切りの合計文字数) */
 const TAGS_MAX_CHARS = 500;
 
-/** タグ欄に貼る文字列 (カンマ区切り。重複を除き、上限を超える分は落とす) */
+/** タグ欄に貼る文字列 (カンマ区切り。重複を除き、上限を超える分は落とす)。ショートでは先頭に Shorts を足す */
 export const buildTags = (script: ScriptConfig): string => {
   const out: string[] = [];
   let length = 0;
-  for (const raw of script.meta.youtube?.tags ?? []) {
+  for (const raw of [...(isShorts(script) ? ['Shorts'] : []), ...(script.meta.youtube?.tags ?? [])]) {
     const tag = raw.replace(/[<>,]/g, '').trim();
     if (!tag || out.includes(tag)) continue;
     const add = (out.length > 0 ? 1 : 0) + tag.length;
@@ -152,25 +168,47 @@ export const buildTags = (script: ScriptConfig): string => {
   return out.join(',');
 };
 
-/** タイトルの候補 (YouTube の上限は100字)。台本のタイトルを先頭に、候補を後ろに並べる */
-export const titleCandidates = (script: ScriptConfig): string[] =>
-  [...new Set([videoTitle(script), ...(script.meta.youtube?.titles ?? [])].map((t) => t.trim()).filter(Boolean))].map((t) =>
-    [...t].slice(0, 100).join(''),
-  );
+/** YouTube のタイトルの上限 [字] */
+const TITLE_MAX = 100;
+
+/**
+ * タイトルの候補 (YouTube の上限は100字)。台本のタイトルを先頭に、候補を後ろに並べる。
+ * ショートでは末尾に #Shorts を付ける (付けても100字に収まるように、本文の方を削る)
+ */
+export const titleCandidates = (script: ScriptConfig): string[] => {
+  const suffix = isShorts(script) ? ` ${SHORTS_TAG}` : '';
+  return [...new Set([videoTitle(script), ...(script.meta.youtube?.titles ?? [])].map((t) => t.trim()).filter(Boolean))].map((t) => {
+    const body = suffix && t.toLowerCase().includes(SHORTS_TAG.toLowerCase()) ? t : `${[...t].slice(0, TITLE_MAX - suffix.length).join('')}${suffix}`;
+    return [...body].slice(0, TITLE_MAX).join('');
+  });
+};
 
 /** 投稿シート。YouTube Studio の入力欄の順に、貼る内容と投稿前に確かめることをまとめる */
 export const buildUploadSheet = (script: ScriptConfig, extras: { durationSec: number; mockAudio: boolean; mockImages: boolean }): string => {
   const tags = buildTags(script);
   const warn = (cond: boolean, text: string) => (cond ? [`  ⚠ ${text}`] : []);
+  const shorts = isShorts(script);
   return [
-    '==== YouTube 投稿シート ====',
+    shorts ? '==== YouTube 投稿シート (ショート) ====' : '==== YouTube 投稿シート ====',
     '',
     '【タイトル】(どれか1つを選ぶ。100字まで)',
     ...titleCandidates(script).map((t, i) => `  ${i + 1}. ${t}`),
     '',
-    '【説明】description.txt の中身をそのまま貼る (目次の時刻がチャプターになります)',
+    shorts
+      ? '【説明】description.txt の中身をそのまま貼る (ショートには目次 (チャプター) がないので、目次は入れていません)'
+      : '【説明】description.txt の中身をそのまま貼る (目次の時刻がチャプターになります)',
     '',
-    '【サムネイル】thumbnail.png (1280×720)',
+    ...(shorts
+      ? [
+          '【カバー】thumbnail.png (縦 1080×1920)',
+          '  ショートのカバーは、投稿の画面で動画の中の1コマを選ぶか、アプリで画像を指定します',
+          '  (画像を指定できないときは、1コマ目に近い場面を選ぶ。冒頭の画面で何の動画かわかるようにしてあります)',
+          '',
+          '【ショートとして公開されるか】',
+          '  ・縦 1080×1920 で、3分以内の動画は自動でショートになります (タイトル・説明の #Shorts は目印)',
+          '  ・著作権の申し立て (Content ID) がある音楽を使った1分を超えるショートは、ブロックされることがあります',
+        ]
+      : ['【サムネイル】thumbnail.png (1280×720)']),
     '',
     '【タグ】(「もっと見る」→「タグ」に貼る)',
     `  ${tags || '(なし)'}`,
@@ -185,6 +223,10 @@ export const buildUploadSheet = (script: ScriptConfig, extras: { durationSec: nu
     '',
     '【投稿前の確認】',
     `  ・長さ ${formatTimestamp(extras.durationSec)}`,
+    ...warn(shorts && extras.durationSec > SHORTS_MAX_SEC, `${SHORTS_MAX_SEC / 60}分を超えているので、ショートではなくふつうの動画になります。台本を短くしてください`),
+    ...(shorts && extras.durationSec > 60 && extras.durationSec <= SHORTS_MAX_SEC
+      ? ['  ・1分を超えるショートです。最後まで見られる割合が下がりやすいので、短くできないか確かめる']
+      : []),
     ...warn(extras.mockAudio, 'ナレーションが無音の仮音声です。VOICEVOX を起動して作り直してください'),
     ...warn(extras.mockImages, '絵がまだない場面 (仮の枠) があります'),
     '  ・数字と出典が正しいか (AI はもっともらしく間違えることがあります)',

@@ -3,6 +3,7 @@ import { interpolate, useCurrentFrame } from 'remotion';
 import { script, timeline } from '../data';
 import { SUBTITLE_FADE_FRAMES, useTheme } from '../themes';
 import { RichText } from './RichText';
+import { SHORTS, useVertical } from '../stage';
 
 /**
  * 字幕レイヤー。各セリフの開始フレームで前の字幕と短く交差しながら切り替わる。
@@ -13,11 +14,21 @@ import { RichText } from './RichText';
 export const SubtitleLayer: React.FC<{ rightInset: number }> = ({ rightInset }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
+  const vertical = useVertical();
   const { subtitle } = script.meta;
   if (!subtitle.enabled) {
     return null;
   }
   const style = subtitle.style === 'auto' ? theme.subtitleStyle : subtitle.style;
+  // 縦の動画 (ショート) では、下のタイトル・説明と右のボタンにかからない位置に、大きめに出す
+  const place: React.CSSProperties = vertical
+    ? { left: SHORTS.safe.left, right: SHORTS.safe.right, bottom: SHORTS.safe.bottom }
+    : { left: 0, right: rightInset, bottom: style === 'outline' ? 70 : 88 };
+  const maxWidth = vertical
+    ? SHORTS.width - SHORTS.safe.left - SHORTS.safe.right
+    : style === 'outline'
+      ? 1560 - rightInset
+      : 1600 - rightInset;
 
   return (
     <>
@@ -52,9 +63,7 @@ export const SubtitleLayer: React.FC<{ rightInset: number }> = ({ rightInset }) 
               key={`${ts.id}-${line.index}`}
               style={{
                 position: 'absolute',
-                left: 0,
-                right: rightInset,
-                bottom: style === 'outline' ? 70 : 88,
+                ...place,
                 display: 'flex',
                 justifyContent: 'center',
                 opacity,
@@ -65,9 +74,9 @@ export const SubtitleLayer: React.FC<{ rightInset: number }> = ({ rightInset }) 
               {style === 'outline' ? (
                 <div
                   style={{
-                    maxWidth: 1560 - rightInset,
+                    maxWidth,
                     color: '#FFFFFF',
-                    fontSize: 44,
+                    fontSize: vertical ? 54 : 44,
                     fontWeight: 800,
                     lineHeight: 1.4,
                     letterSpacing: '0.02em',
@@ -83,13 +92,13 @@ export const SubtitleLayer: React.FC<{ rightInset: number }> = ({ rightInset }) 
               ) : (
                 <div
                   style={{
-                    maxWidth: 1600 - rightInset,
+                    maxWidth,
                     backgroundColor: theme.colors.subtitleBg,
                     color: '#FFFFFF',
-                    fontSize: theme.chrome === 'editorial' ? 38 : 34,
+                    fontSize: vertical ? 44 : theme.chrome === 'editorial' ? 38 : 34,
                     fontWeight: theme.chrome === 'editorial' ? 700 : 500,
                     lineHeight: 1.55,
-                    padding: '14px 36px',
+                    padding: vertical ? '14px 28px' : '14px 36px',
                     borderRadius: theme.radius,
                     textAlign: 'center',
                     border: `1px solid ${theme.colors.onDarkLine}`,

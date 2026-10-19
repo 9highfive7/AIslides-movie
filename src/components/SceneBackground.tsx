@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { shade, useTheme } from '../themes';
 
 /**
@@ -97,9 +97,19 @@ const PaperBackground: React.FC = () => {
   );
 };
 
+/**
+ * 飾りの位置は 1920×1080 で決めてあるので、縦の動画 (ショート) では画面の大きさに合わせて伸ばす
+ * (横の動画・サムネイルはそのまま)
+ */
+const useBackdropScale = () => {
+  const { width, height } = useVideoConfig();
+  return height > width ? { sx: width / 1920, sy: height / 1080, width, height } : { sx: 1, sy: 1, width: 1920, height: 1080 };
+};
+
 /** 濃い背景用: 回転するリングと漂う点 */
 const DarkShapes: React.FC<{ t: number; seed: number }> = ({ t, seed }) => {
   const theme = useTheme();
+  const { sx, sy, width, height } = useBackdropScale();
   const rings = [
     { x: 1560, y: 230, r: 300, w: 2, speed: 0.08 },
     { x: 1560, y: 230, r: 210, w: 28, speed: -0.05 },
@@ -109,8 +119,8 @@ const DarkShapes: React.FC<{ t: number; seed: number }> = ({ t, seed }) => {
     const rx = ((Math.sin(i * 12.9898 + seed) * 43758.5453) % 1 + 1) % 1;
     const ry = ((Math.sin(i * 78.233 + seed) * 12345.6789) % 1 + 1) % 1;
     return {
-      x: rx * 1920,
-      y: ((ry * 1080 - t * (0.3 + rx * 0.5)) % 1140 + 1140) % 1140 - 30,
+      x: rx * width,
+      y: ((ry * height - t * (0.3 + rx * 0.5)) % (height + 60) + (height + 60)) % (height + 60) - 30,
       r: 3 + rx * 5,
     };
   });
@@ -122,8 +132,8 @@ const DarkShapes: React.FC<{ t: number; seed: number }> = ({ t, seed }) => {
           key={i}
           style={{
             position: 'absolute',
-            left: ring.x - ring.r,
-            top: ring.y - ring.r,
+            left: ring.x * sx - ring.r,
+            top: ring.y * sy - ring.r,
             width: ring.r * 2,
             height: ring.r * 2,
             borderRadius: '50%',
@@ -162,6 +172,7 @@ const TOYS: Array<{ kind: 'cube' | 'ball'; x: number; y: number; size: number }>
 /** 立体の背景: 空のグラデーション + 奥へ続く床のグリッド + ふわふわ回る積み木とボール */
 const Background3D: React.FC<{ t: number; seed: number; floor: boolean; toys: boolean }> = ({ t, seed, floor, toys }) => {
   const theme = useTheme();
+  const { sx, sy } = useBackdropScale();
   const grid = 120;
   return (
     <AbsoluteFill
@@ -193,8 +204,8 @@ const Background3D: React.FC<{ t: number; seed: number; floor: boolean; toys: bo
       ) : null}
       {(toys ? TOYS : []).map((toy, i) => {
         const color = theme.toys[(i + seed) % theme.toys.length];
-        const x = toy.x + Math.sin(t / 90 + i * 2.1 + seed) * 14;
-        const y = toy.y + Math.cos(t / 70 + i * 1.3 + seed) * 18;
+        const x = toy.x * sx + Math.sin(t / 90 + i * 2.1 + seed) * 14;
+        const y = toy.y * sy + Math.cos(t / 70 + i * 1.3 + seed) * 18;
         return (
           <div key={i} style={{ position: 'absolute', left: x - toy.size / 2, top: y - toy.size / 2, perspective: 700 }}>
             {toy.kind === 'cube' ? (

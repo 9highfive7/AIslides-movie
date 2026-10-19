@@ -2,6 +2,7 @@ import React from 'react';
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { useTheme } from '../themes';
 import { SPRINGS, springFrom } from '../animation/presets';
+import { SHORTS, useVertical } from '../stage';
 
 /**
  * editorial なテーマ (paper) の飾り。
@@ -10,6 +11,7 @@ import { SPRINGS, springFrom } from '../animation/presets';
  */
 export const RunningHead: React.FC<{ label?: string; title?: string }> = ({ label, title }) => {
   const theme = useTheme();
+  const vertical = useVertical();
   if (!label && !title) {
     return null;
   }
@@ -17,13 +19,17 @@ export const RunningHead: React.FC<{ label?: string; title?: string }> = ({ labe
     <div
       style={{
         position: 'absolute',
-        left: 40,
-        top: 34,
+        // 縦の動画 (ショート) では、上の UI (タブ・検索) の下に出す
+        left: vertical ? SHORTS.safe.left : 40,
+        top: vertical ? SHORTS.safe.top : 34,
+        maxWidth: vertical ? SHORTS.width - SHORTS.safe.left - SHORTS.safe.right : undefined,
+        whiteSpace: vertical ? 'nowrap' : undefined,
+        overflow: vertical ? 'hidden' : undefined,
         display: 'flex',
         gap: 14,
         alignItems: 'baseline',
         fontFamily: theme.fonts.display,
-        fontSize: 19,
+        fontSize: vertical ? 24 : 19,
         fontWeight: 700,
         color: theme.colors.ink,
         // 3D の場面など、背景が紙でないときも読めるように紙色の下地を敷く

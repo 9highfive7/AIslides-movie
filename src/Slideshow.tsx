@@ -18,7 +18,9 @@ import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
 import { FloatingToys } from './components/FloatingToys';
 import { FilmFinish } from './components/FilmFinish';
+import { ShortsHeading } from './components/ShortsChrome';
 import { SceneLayoutView } from './layouts';
+import { useVertical } from './stage';
 import { isObjectsScene3D, type Scene, type TimelineScene, type TransitionType } from './schemas';
 
 const H = TRANSITION_HALF_FRAMES;
@@ -36,6 +38,7 @@ const SceneView: React.FC<{
 }> = ({ scene, ts, index, inType, outType }) => {
   const frame = useCurrentFrame();
   const theme = useTheme();
+  const vertical = useVertical();
   const ctx = useMemo(() => buildSceneContext(scene, ts, script.meta), [scene, ts]);
 
   const start = ts.startFrame;
@@ -64,6 +67,8 @@ const SceneView: React.FC<{
   const isStage = isScene3d && isObjectsScene3D(scene.content);
   // scene3d / layered は上部中央に自前の title を出すので、title があるときは見出しを重ねない
   const ownTitle = ownCamera && 'title' in scene.content && Boolean(scene.content.title);
+  // 縦の動画では、scene3d / layered の title も見出しの位置に出す (上部は UI に隠れるので)
+  const shortsHeading = ownTitle && 'title' in scene.content && scene.content.title ? scene.content.title : scene.heading;
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
@@ -85,7 +90,20 @@ const SceneView: React.FC<{
         <Camera enabled={meta.camera === 'subtle' && !dark && !ownCamera} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
           <SceneLayoutView scene={scene} />
         </Camera>
-        {editorial ? (
+        {vertical ? (
+          <>
+            {!dark && shortsHeading ? (
+              <ShortsHeading
+                text={shortsHeading}
+                label={editorial ? undefined : scene.label}
+                at={ownTitle ? ctx.appearAt('title', 1) : ctx.introAt}
+                backdrop={ownCamera}
+              />
+            ) : null}
+            {editorial ? <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} /> : null}
+            {!dark ? <SceneChrome badge={scene.badge} at={ctx.introAt} /> : null}
+          </>
+        ) : editorial ? (
           <>
             {!dark && !ownTitle && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} backdrop={scene.layout === 'layered'} /> : null}
             <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} />
@@ -108,6 +126,9 @@ export const Slideshow: React.FC = () => {
   const theme = resolveTheme(script.meta);
   ensureFonts(theme.fonts);
   const avatar = script.meta.avatar;
+  // 縦の動画 (ショート) は、右下のキャラクター・登録のポップアップ・進行バーを出さない
+  // (どれもショートのアプリの UI (右のボタン・登録ボタン・再生バー) と重なる)
+  const vertical = useVertical();
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -131,11 +152,15 @@ export const Slideshow: React.FC = () => {
         {/* 仕上げ (粒子・周辺減光) はシーンの絵だけにかけ、字幕・登録ボタンにはかけない */}
         <FilmFinish />
         <AudioLayer />
-        <SubscribePopup />
-        <Avatar />
+        {vertical ? null : (
+          <>
+            <SubscribePopup />
+            <Avatar />
+          </>
+        )}
         {/* 字幕はシーンのトランジションとは独立したレイヤー */}
-        <SubtitleLayer rightInset={avatarRightInset(avatar)} />
-        <ProgressBar />
+        <SubtitleLayer rightInset={vertical ? 0 : avatarRightInset(avatar)} />
+        {vertical ? null : <ProgressBar />}
       </AbsoluteFill>
     </ThemeContext.Provider>
   );
