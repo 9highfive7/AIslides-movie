@@ -7,6 +7,7 @@
     "audio": "tsx scripts/generate-audio.ts",
     "audio:mock": "tsx scripts/generate-audio.ts --mock",
     "script": "tsx scripts/generate-script.ts",
+    "images": "tsx scripts/generate-images.ts",
     "sfx": "tsx scripts/generate-sfx.ts",
     "dev": "remotion studio",
     "render": "remotion render Slideshow out/video.mp4",
@@ -27,6 +28,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "remotion": "4.0.533",
+    "sharp": "^0.35.5",
     "three": "0.186.1",
     "zod": "4.5.4"
   },

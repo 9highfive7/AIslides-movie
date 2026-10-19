@@ -1,6 +1,7 @@
 /**
  * 動画を1本 (1つの版) 作る流れ:
  *   1. 台本      AI に書かせる (修正のときは前の版の台本を直させる)
+ *   1'. 素材の画像  layered の絵を画像生成 AI で作る (同じ指示の絵は使い回す。使えなければ仮の枠)
  *   2. ナレーション  VOICEVOX で音声を作る (起動していなければ無音の仮音声)
  *   3. 字幕のタイミング  音声の長さからタイムラインを計算する (2 と同時に終わる)
  *   4. 3D・図解の描画  Remotion で場面ごとの静止画 → 全フレームを描く
@@ -18,13 +19,14 @@ import { openBrowser, renderMedia, renderStill, selectComposition } from '@remot
 import { scriptSchema, timelineSchema, type ScriptConfig } from '../src/schemas';
 import { stripMarkup } from '../shared/markup';
 import { loadVoicevoxConfig } from '../scripts/lib/voicevox';
-import { reviseScript, validateScript, writeScript, type Audience } from '../scripts/lib/script-writer';
+import { reviseScript, validateScript, writeScript, type Audience, type WriterOptions } from '../scripts/lib/script-writer';
+import { fillImages } from '../scripts/lib/images';
 import { buildChapters, buildDescription, buildSrt } from '../scripts/lib/youtube';
 import { ROOT, loadProject, saveProject, versionDir, type Look, type Project, type ProjectOptions } from './store';
 
 const PUBLIC = path.join(ROOT, 'public');
 
-export type StepKey = 'script' | 'voice' | 'timing' | 'draw' | 'export';
+export type StepKey = 'script' | 'images' | 'voice' | 'timing' | 'draw' | 'export';
 
 export interface Step {
   key: StepKey;
@@ -55,6 +57,7 @@ export type JobRequest =
 
 const newSteps = (): Step[] => [
   { key: 'script', label: '台本とリサーチ', state: 'wait', detail: '' },
+  { key: 'images', label: '素材の画像（AI）', state: 'wait', detail: '' },
   { key: 'voice', label: 'ナレーション', state: 'wait', detail: '' },
   { key: 'timing', label: '字幕のタイミング', state: 'wait', detail: '' },
   { key: 'draw', label: '3D・図解の描画', state: 'wait', detail: '' },
@@ -64,9 +67,10 @@ const newSteps = (): Step[] => [
 /** 全体の進み具合のうち、各工程が占める範囲 [%] */
 const RANGE: Record<StepKey, [number, number]> = {
   script: [0, 10],
-  voice: [10, 20],
-  timing: [20, 21],
-  draw: [21, 90],
+  images: [10, 22],
+  voice: [22, 30],
+  timing: [30, 31],
+  draw: [31, 90],
   export: [90, 100],
 };
 
@@ -85,9 +89,12 @@ export const sceneLabel = (scene: ScriptConfig['scenes'][number]): string => {
 /** キッズは小学生向けのやさしい言葉 + 3D オブジェクト中心、それ以外は大人向けの解説で書く */
 const audienceOf = (look: Look): Audience => (look === 'kids' ? 'kids' : 'general');
 
-/** 見た目の選択を台本の meta に反映する (新規作成のときだけ)。3D図解は paper テーマで描く */
+/** AIイラストのときだけ、画像生成 AI の絵を重ねる場面 (layered) を使わせる */
+const writerOptionsOf = (look: Look): WriterOptions => ({ layered: look === 'illust' });
+
+/** 見た目の選択を台本の meta に反映する (新規作成のときだけ)。3D図解・AIイラストは paper テーマで描く */
 const applyLook = (script: ScriptConfig, options: ProjectOptions): ScriptConfig => {
-  const editorial = options.look === 'paper' || options.look === 'zukai3d';
+  const editorial = options.look === 'paper' || options.look === 'zukai3d' || options.look === 'illust';
   const meta = { ...script.meta, theme: editorial ? 'paper' : options.look };
   if (editorial) {
     Object.assign(meta, {
@@ -117,6 +124,9 @@ const buildMaterial = (topic: string, settings: string, options: ProjectOptions)
       : '',
     options.look === 'zukai3d'
       ? '## 見た目\n図解ドキュメンタリー風 (紙・紺×朱×墨・明朝) の 3D 図解。自販機の透視図のように、題材の物そのもの (機械・建物・道具・体・地形など) を scene3d の「組み立て (parts)」形式で作り込んで見せる。内容のシーンの半分以上を parts 形式の scene3d にし、外箱を ghost で透かして中の部品を見せる・目に見えない流れ (熱・電気・水・データ・お金) を flows で流す・callouts で部位を指して説明する・数の多さは repeat で並べる。説明の順に部品や流れを reveal し、組み立てていくように見せる。題材に合う preset があればそれも使ってよい。それ以外のシーンは statement / stats / share / bars / flow などの図解で見せる。title / outro シーンは使わない。'
+      : '',
+    options.look === 'illust'
+      ? '## 見た目\n図解ドキュメンタリー風 (紙・紺×朱×墨・明朝) で、画像生成 AI が描く絵を重ねる場面 (layered) を中心に見せる。内容のシーンの半分以上を layered にし、題材の舞台 (背景) と物 (主役の物・くらべる物) を絵で見せる。meta.imageStyle に動画全体の絵柄を必ず書く。同じ物・同じ舞台は prompt を同じにして絵をそろえる。数字・割合・手順・仕組みは statement / stats / share / bars / flow などの図解で見せる。title / outro シーンは使わない。'
       : '',
     '数字には必ず出典を付け、不確かな数字は「約」「およそ」を付けるか使わない。',
     '-----',
@@ -232,7 +242,10 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
   let script: ScriptConfig;
   if (request.kind === 'create') {
     const material = buildMaterial(request.topic, request.settings, request.options);
-    script = applyLook(await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look)), request.options);
+    script = applyLook(
+      await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look), writerOptionsOf(request.options.look)),
+      request.options,
+    );
   } else if (request.kind === 'import') {
     const checked = validateScript(request.script);
     if (!checked.data) throw new Error(`台本の形式が不正です:\n${checked.problems.join('\n')}`);
@@ -251,6 +264,7 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
       request.sceneId,
       (m) => (step('script').detail = m),
       audienceOf(project.options.look),
+      writerOptionsOf(project.options.look),
     );
   }
   fs.writeFileSync(path.join(outDir, 'script.json'), JSON.stringify(script, null, 2) + '\n');
@@ -259,6 +273,31 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
   job.scenes = script.scenes.map((s) => ({ id: s.id, label: sceneLabel(s), ready: false }));
   step('script').detail = `${script.scenes.length}場面 / ${script.scenes.reduce((n, s) => n + s.lines.length, 0)}セリフ`;
   progress('script', 1);
+
+  // 1'. 素材の画像 (layered の prompt から絵を作り、台本の src を埋める)
+  enter('images', '素材の画像を作っています');
+  const images = await fillImages(script, PUBLIC, (done, total, message) => {
+    step('images').detail = `${done} / ${total} 枚${message ? ` — ${message}` : ''}`;
+    progress('images', total > 0 ? done / total : 1);
+  });
+  if (images.total === 0) {
+    step('images').detail = '使っていません';
+  } else {
+    step('images').detail =
+      `${images.total}枚 (作成 ${images.generated} / 使い回し ${images.reused}` +
+      `${images.missing > 0 ? ` / 仮の枠 ${images.missing}` : ''})` +
+      (images.provider ? '' : ' — 画像生成 AI 未設定');
+    vInfo.mockImages = images.missing > 0;
+    for (const error of images.errors) console.error(`[studio] 画像: ${error}`);
+    if (images.errors.length > 0) step('images').detail += ` — ${images.errors.length}枚失敗: ${images.errors[0].slice(0, 120)}`;
+    // サムネイルの背景に、最初の layered の背景を使う (指定がなければ)
+    const firstBackground = script.scenes.flatMap((s) => (s.layout === 'layered' && s.content.background.src ? [s.content.background.src] : []))[0];
+    if (firstBackground && script.meta.thumbnail && !script.meta.thumbnail.image) {
+      script.meta.thumbnail.image = firstBackground;
+    }
+    fs.writeFileSync(path.join(outDir, 'script.json'), JSON.stringify(script, null, 2) + '\n');
+  }
+  progress('images', 1);
 
   const restorePublic = backupPublic();
   let serveUrl: string | null = null;
