@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { TRANSITION_HALF_FRAMES } from '../shared/timing';
 import { isDarkLayout, script, sceneOf, timeline, transitionOf } from './data';
-import { FONT_FAMILY, ThemeContext, resolveTheme } from './themes';
+import { ThemeContext, resolveTheme, useTheme, uses3dStyle } from './themes';
 import { ensureFonts } from './fonts';
 import { buildSceneContext, SceneProvider } from './context/SceneContext';
 import { transitionIn, transitionOut } from './animation/transitions';
 import { HeadingChrome } from './components/HeadingChrome';
+import { EditorialHeading, RunningHead } from './components/EditorialChrome';
 import { SceneChrome } from './components/SceneChrome';
 import { SceneBackground } from './components/SceneBackground';
 import { Camera } from './components/Camera';
@@ -17,7 +18,7 @@ import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
 import { FloatingToys } from './components/FloatingToys';
 import { SceneLayoutView } from './layouts';
-import type { Scene, TimelineScene, TransitionType } from './schemas';
+import { isPresetScene3D, type Scene, type TimelineScene, type TransitionType } from './schemas';
 
 const H = TRANSITION_HALF_FRAMES;
 
@@ -33,6 +34,7 @@ const SceneView: React.FC<{
   outType: TransitionType | null;
 }> = ({ scene, ts, index, inType, outType }) => {
   const frame = useCurrentFrame();
+  const theme = useTheme();
   const ctx = useMemo(() => buildSceneContext(scene, ts, script.meta), [scene, ts]);
 
   const start = ts.startFrame;
@@ -51,16 +53,19 @@ const SceneView: React.FC<{
   }
 
   const dark = isDarkLayout(scene.layout);
+  const editorial = theme.chrome === 'editorial';
   const { meta } = script;
-  const is3d = meta.style === '3d';
-  // scene3d は three.js の舞台とカメラを自前で持つ
-  const isStage = scene.layout === 'scene3d';
+  const is3d = uses3dStyle(meta);
+  // scene3d は three.js のカメラを自前で持つので、画面全体のズームはかけない。
+  // objects で並べる形は舞台 (床) の背景も自前で描く
+  const isScene3d = scene.layout === 'scene3d';
+  const isStage = isScene3d && !isPresetScene3D(scene.content);
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
       <SceneProvider value={ctx}>
         <SceneBackground
-          variant={dark ? 'dark' : 'light'}
+          variant={dark && !editorial ? 'dark' : 'light'}
           animated={meta.animatedBackground}
           seed={index}
           mode={isStage ? 'stage' : is3d ? '3d' : 'flat'}
@@ -73,26 +78,36 @@ const SceneView: React.FC<{
             at={ctx.introAt}
           />
         ) : null}
-        <Camera enabled={meta.camera === 'subtle' && !dark && !isStage} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
+        <Camera enabled={meta.camera === 'subtle' && !dark && !isScene3d} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
           <SceneLayoutView scene={scene} />
         </Camera>
-        {!dark && (scene.heading || scene.label) ? (
-          <HeadingChrome heading={scene.heading ?? ''} label={scene.label} at={ctx.introAt} />
-        ) : null}
-        {!dark ? <SceneChrome chapter={scene.chapter} badge={scene.badge} at={ctx.introAt} /> : null}
+        {editorial ? (
+          <>
+            {!dark && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} /> : null}
+            <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} />
+            <SceneChrome badge={scene.badge} at={ctx.introAt} />
+          </>
+        ) : (
+          <>
+            {!dark && (scene.heading || scene.label) ? (
+              <HeadingChrome heading={scene.heading ?? ''} label={scene.label} at={ctx.introAt} />
+            ) : null}
+            {!dark ? <SceneChrome chapter={scene.chapter} badge={scene.badge} at={ctx.introAt} /> : null}
+          </>
+        )}
       </SceneProvider>
     </AbsoluteFill>
   );
 };
 
 export const Slideshow: React.FC = () => {
-  ensureFonts();
   const theme = resolveTheme(script.meta);
+  ensureFonts(theme.fonts);
   const avatar = script.meta.avatar;
 
   return (
     <ThemeContext.Provider value={theme}>
-      <AbsoluteFill style={{ backgroundColor: theme.colors.bg, fontFamily: FONT_FAMILY, color: theme.colors.ink }}>
+      <AbsoluteFill style={{ backgroundColor: theme.colors.bg, fontFamily: theme.fonts.body, color: theme.colors.ink }}>
         {timeline.scenes.map((ts, i) => {
           const scene = sceneOf(ts.id);
           const next = timeline.scenes[i + 1];

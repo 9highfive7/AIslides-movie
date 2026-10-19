@@ -7,18 +7,21 @@ export interface VoicevoxConfig {
   speedScale: number;
 }
 
-/** voicevox.config.json を読む。存在しない場合はデフォルト値を使う */
+/** voicevox.config.json を読む。存在しない場合はデフォルト値を使う。VOICEVOX_SPEAKER / VOICEVOX_SPEED / VOICEVOX_ENDPOINT で上書きできる */
 export const loadVoicevoxConfig = (configPath: string): VoicevoxConfig => {
   const defaults: VoicevoxConfig = {
     endpoint: 'http://localhost:50021',
     speakerId: 3,
     speedScale: 1.0,
   };
-  if (!fs.existsSync(configPath)) {
-    return defaults;
-  }
-  const raw = JSON.parse(fs.readFileSync(configPath, 'utf8')) as Partial<VoicevoxConfig>;
-  return { ...defaults, ...raw, ...(raw.endpoint ? { endpoint: raw.endpoint } : {}) };
+  const raw = fs.existsSync(configPath) ? (JSON.parse(fs.readFileSync(configPath, 'utf8')) as Partial<VoicevoxConfig>) : {};
+  // 環境変数での上書き (動画生成アプリが動画ごとに声を選ぶのに使う)
+  const env: Partial<VoicevoxConfig> = {
+    ...(process.env.VOICEVOX_SPEAKER ? { speakerId: Number(process.env.VOICEVOX_SPEAKER) } : null),
+    ...(process.env.VOICEVOX_SPEED ? { speedScale: Number(process.env.VOICEVOX_SPEED) } : null),
+    ...(process.env.VOICEVOX_ENDPOINT ? { endpoint: process.env.VOICEVOX_ENDPOINT } : null),
+  };
+  return { ...defaults, ...raw, ...env };
 };
 
 /** エンジンが起動していなければ、起動方法を案内して例外を投げる */

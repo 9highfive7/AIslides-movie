@@ -96,6 +96,59 @@ const object3dSchema = z.object({
 /** タイトル・章扉のまわりに浮かべる 3D オブジェクトの形キー (style: "3d" のとき) */
 const floatingObjectsSchema = z.array(z.string()).max(6).optional();
 
+/** scene3d: 3D オブジェクトを舞台に並べる */
+const scene3dObjectsSchema = z.object({
+  /**
+   * 並べ方。row: 横に並べる / flow: 矢印でつなぐ (arrow-1, arrow-2, ...) /
+   * cycle: 輪にして矢印で一周させる (arrow-1 〜 arrow-N)
+   */
+  arrangement: z.enum(['row', 'flow', 'cycle']).default('row'),
+  objects: z.array(object3dSchema).min(1).max(6),
+  caption: z.string().optional(),
+});
+
+/** scene3d: 作り込んだ 3D の場面 (スマホのチップ・自販機など) を preset で選ぶ */
+const scene3dPresetSchema = z.object({
+  /**
+   * 3D の場面の種類 (three.js で描画)。要素IDは src/elements.ts の SCENE3D_ELEMENT_IDS を参照。
+   *   phoneChip:      スマホの箱が開き、基板の上のチップへカメラが寄っていく
+   *   vendingCount:   自販機が1台 → 引くと同じ自販機がずらっと並んでいる (台数の多さ)
+   *   vendingHotCold: 自販機の左右に「冷たさ」と「熱」の玉が飛んでくる
+   *   vendingCutaway: 自販機の扉が開き、冷媒の管の中を「熱」が運ばれていく (ヒートポンプ)
+   *   heatReuse:      冷蔵庫は熱を外へ捨てる / 自販機は温める側へ回す (比較)
+   *   vendingEnergy:  自販機 → 稲妻 → 家。カレンダーがめくれて「何か月分」かを見せる
+   */
+  preset: z.enum(['phoneChip', 'vendingCount', 'vendingHotCold', 'vendingCutaway', 'heatReuse', 'vendingEnergy']),
+  /** 画面上部中央の明朝の一文 (reveal "title"。**強調** は朱色) */
+  title: z.string().optional(),
+  /** 引き出し線で指す注釈 (phoneChip 用。reveal "label" で出る) */
+  label: z.object({ title: z.string(), sub: z.string().optional() }).optional(),
+  /** 数字カード (reveal "stat" で出る) */
+  stat: z
+    .object({
+      kicker: z.string().optional(),
+      value: z.string(),
+      note: z.string().optional(),
+    })
+    .optional(),
+  /**
+   * 3D の物を引き出し線で指す注釈。場面ごとに決まった位置 (スロット) に順番に入る。
+   * 例: vendingCutaway は 吸熱 / 圧縮 / 放熱 / 膨張 の4か所
+   */
+  callouts: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        sub: z.string().optional(),
+        /** accent: 紺 / warning: 朱 / muted: 灰 / normal: 墨 */
+        tone: z.enum(['normal', 'accent', 'warning', 'muted']).default('normal'),
+      }),
+    )
+    .max(4)
+    .default([]),
+});
+
 const compareItemSchema = z.object({
   id: z.string(),
   icon: iconSchema.optional(),
@@ -180,9 +233,42 @@ const sceneSchema = z.discriminatedUnion('layout', [
             value: z.string(),
             label: z.string(),
             body: z.string().optional(),
+            /** 数字の上の小見出し (例: "1つ目") */
+            kicker: z.string().optional(),
+            /** カード下端の出典・注記 (例: "ASMLの公表価格を円に換算") */
+            note: z.string().optional(),
+            /** warning: 朱色で目立たせる (paper テーマでは枠も朱色になる) */
+            tone: z.enum(['normal', 'warning']).default('normal'),
+            /** カード右下に付ける丸い印 (例: "日本") */
+            stamp: z.string().optional(),
           }),
         )
         .min(2),
+    }),
+  }),
+  z.object({
+    ...sceneBaseSchema,
+    layout: z.literal('share'),
+    content: z.object({
+      /** グラフの上に出す題 (例: "世界の半導体シェア（1988年）") */
+      title: z.string().optional(),
+      /** 1本の帯を区切って割合を見せる。value の合計で幅を割る */
+      segments: z
+        .array(
+          z.object({
+            id: z.string(),
+            /** 帯の中に大きく出す値 (例: "約5割") */
+            display: z.string(),
+            /** 値の下の小さな説明 (例: "日本製") */
+            label: z.string().optional(),
+            value: z.number().positive(),
+            tone: z.enum(['warning', 'accent', 'muted']).default('accent'),
+          }),
+        )
+        .min(1)
+        .max(5),
+      /** 帯の下の出典・注記 */
+      source: z.string().optional(),
     }),
   }),
   z.object({
@@ -233,6 +319,8 @@ const sceneSchema = z.discriminatedUnion('layout', [
     layout: z.literal('bars'),
     content: z.object({
       caption: z.string().optional(),
+      /** 棒の全幅にあたる値 (例: 割合なら 100)。省略時は items の最大値 */
+      max: z.number().positive().optional(),
       items: z
         .array(
           z.object({
@@ -312,15 +400,8 @@ const sceneSchema = z.discriminatedUnion('layout', [
   z.object({
     ...sceneBaseSchema,
     layout: z.literal('scene3d'),
-    content: z.object({
-      /**
-       * 並べ方。row: 横に並べる / flow: 矢印でつなぐ (arrow-1, arrow-2, ...) /
-       * cycle: 輪にして矢印で一周させる (arrow-1 〜 arrow-N)
-       */
-      arrangement: z.enum(['row', 'flow', 'cycle']).default('row'),
-      objects: z.array(object3dSchema).min(1).max(6),
-      caption: z.string().optional(),
-    }),
+    /** objects で物を並べる形 (scene3dObjectsSchema) か、preset で作り込んだ場面を選ぶ形 (scene3dPresetSchema) */
+    content: z.union([scene3dObjectsSchema, scene3dPresetSchema]),
   }),
   z.object({
     ...sceneBaseSchema,
@@ -336,7 +417,7 @@ const sceneSchema = z.discriminatedUnion('layout', [
   }),
 ]);
 
-export const themeNameSchema = z.enum(['kids', 'clean', 'pop', 'dark']);
+export const themeNameSchema = z.enum(['kids', 'clean', 'pop', 'dark', 'paper']);
 
 /** 同梱のカワウソ画像 (578×720) で、顔を丸く切り出す位置 (画像の幅を 1 とした割合) */
 const OTTER_FACE = { x: 0.47, y: 0.29, size: 0.74 };
@@ -348,9 +429,20 @@ export const metaSchema = z.object({
   theme: themeNameSchema.default('kids'),
   /**
    * 見た目の方式。3d: カードに厚み・立体的な出現・3D のカメラ・背景の床と浮かぶ図形・
-   * タイトルや章扉に 3D オブジェクト (scene3d レイアウトは常に 3D) / flat: 従来の平面デザイン
+   * タイトルや章扉に 3D オブジェクト (scene3d レイアウトは常に 3D) / flat: 従来の平面デザイン。
+   * editorial なテーマ (paper) は常に flat で描く
    */
   style: z.enum(['3d', 'flat']).default('3d'),
+  /**
+   * 画面左上の柱 (editorial なテーマ = paper で表示)。例: label "図解 No.01" / title "半導体の回路を焼く機械"。
+   * シーンに chapter があれば title の代わりにそれを出す
+   */
+  header: z
+    .object({
+      label: z.string().optional(),
+      title: z.string().optional(),
+    })
+    .optional(),
   /** 既定のシーントランジション */
   transition: transitionSchema.default('slide'),
   /** 既定の出現アニメーション */
@@ -485,6 +577,12 @@ export type RevealPreset = z.infer<typeof revealPresetSchema>;
 export type TransitionType = z.infer<typeof transitionSchema>;
 export type SfxName = z.infer<typeof sfxNameSchema>;
 export type ThemeName = z.infer<typeof themeNameSchema>;
+export type Scene3DObjectsContent = z.infer<typeof scene3dObjectsSchema>;
+export type Scene3DPresetContent = z.infer<typeof scene3dPresetSchema>;
+
+/** scene3d の content が preset で場面を選ぶ形か */
+export const isPresetScene3D = (content: Scene3DObjectsContent | Scene3DPresetContent): content is Scene3DPresetContent =>
+  'preset' in content;
 export type TimelineLineFromScript = z.infer<typeof narrationLineSchema>;
 
 export type Timeline = z.infer<typeof timelineSchema>;

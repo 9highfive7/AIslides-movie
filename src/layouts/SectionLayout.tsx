@@ -12,6 +12,92 @@ import type { ContentOf } from './common';
  */
 export const SectionLayout: React.FC<{ content: ContentOf<'section'> }> = ({ content }) => {
   const theme = useTheme();
+  if (theme.chrome === 'editorial') {
+    return <EditorialSection content={content} />;
+  }
+  return <StandardSection content={content} />;
+};
+
+/**
+ * editorial (paper) の章扉。紙の上に、朱色の小さな章番号 (例: "1つ目") → 明朝の章題 → 下線。
+ * 派手に動かさず、静かにふわっと出す。
+ */
+const EditorialSection: React.FC<{ content: ContentOf<'section'> }> = ({ content }) => {
+  const theme = useTheme();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const { introAt } = useSceneContext();
+  const { number, title, subtitle } = content;
+
+  const numP = springFrom(frame, introAt + 2, fps, SPRINGS.smooth);
+  const titleAt = introAt + 10;
+  const titleChars = [...title.replace(/\*\*|\n/g, '')].length;
+  const lineP = springFrom(frame, titleAt + titleChars * 1.2 + 4, fps, SPRINGS.smooth);
+  const subP = springFrom(frame, titleAt + titleChars * 1.2 + 10, fps, SPRINGS.smooth);
+
+  return (
+    <AbsoluteFill
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 160px 120px',
+        fontFamily: theme.fonts.display,
+      }}
+    >
+      {number ? (
+        <div
+          style={{
+            fontSize: 40,
+            fontWeight: 700,
+            color: theme.colors.warning,
+            letterSpacing: '0.08em',
+            marginBottom: 22,
+            opacity: numP,
+            transform: `translateY(${(1 - numP) * 14}px)`,
+          }}
+        >
+          {number}
+        </div>
+      ) : null}
+      <KineticText
+        text={title}
+        at={titleAt}
+        stagger={1.2}
+        rise={0.3}
+        markerColor={theme.colors.darkHighlight}
+        markerInk={theme.colors.darkHighlightInk}
+        style={{ fontSize: 66, fontWeight: 600, letterSpacing: '0.04em', color: theme.colors.ink, textAlign: 'center' }}
+      />
+      <div
+        style={{
+          width: 400 * lineP,
+          height: 2,
+          backgroundColor: theme.colors.ink,
+          margin: '34px 0 28px',
+        }}
+      />
+      {subtitle ? (
+        <div
+          style={{
+            fontFamily: theme.fonts.body,
+            fontSize: 26,
+            color: theme.colors.textSecondary,
+            textAlign: 'center',
+            opacity: subP,
+          }}
+        >
+          {subtitle}
+        </div>
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
+/** 標準の章扉 (濃い背景) */
+const StandardSection: React.FC<{ content: ContentOf<'section'> }> = ({ content }) => {
+  const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { introAt, ts } = useSceneContext();

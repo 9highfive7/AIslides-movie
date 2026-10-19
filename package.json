@@ -13,11 +13,15 @@
     "thumbnail": "remotion still Thumbnail out/thumbnail.png",
     "youtube": "tsx scripts/generate-youtube.ts",
     "build:youtube": "npm run render && npm run thumbnail && npm run youtube",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "studio": "tsx studio/server.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@react-three/fiber": "8.18.0",
+    "@remotion/bundler": "4.0.533",
     "@remotion/cli": "4.0.533",
+    "@remotion/renderer": "4.0.533",
     "@remotion/three": "4.0.533",
     "lucide-react": "^1.52.0",
     "react": "18.3.1",

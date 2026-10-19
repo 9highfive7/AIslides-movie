@@ -13,6 +13,18 @@ import { ContentArea, type ContentOf } from './common';
 export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }) => {
   const theme = useTheme();
   const ctx = useSceneContext();
+  // editorial (paper): 丸いラベルではなく明朝の番号、アイコンは指定があるときだけ、文字は大きめ
+  const editorial = theme.chrome === 'editorial';
+  // 矢印に reveal 指定がなく、矢印の先のステップが reveal されるなら、そのステップと一緒に伸ばす
+  // (矢印だけが先に出て宙に浮くのを防ぐ)
+  const arrowAt = (i: number): number => {
+    const id = `arrow-${i}`;
+    const target = content.steps[i].id;
+    if (!ctx.isRevealed(id) && ctx.isRevealed(target)) {
+      return ctx.appearAt(target, i * 2);
+    }
+    return ctx.appearAt(id, i * 2 - 1);
+  };
 
   return (
     <ContentArea bottom={260}>
@@ -22,7 +34,7 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
             {i > 0 ? (
               <div style={{ flexShrink: 0, width: 76, display: 'flex', justifyContent: 'center' }}>
                 <DrawArrow
-                  at={ctx.appearAt(`arrow-${i}`, i * 2 - 1)}
+                  at={arrowAt(i)}
                   color={theme.colors.textFaint}
                   flowColor={theme.colors.accent}
                 />
@@ -33,7 +45,8 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
                 style={{
                   ...theme.card,
                   position: 'relative',
-                  padding: '38px 22px 30px',
+                  padding: editorial ? '28px 24px 34px' : '38px 22px 30px',
+                  minHeight: editorial ? 300 : undefined,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -41,28 +54,59 @@ export const FlowLayout: React.FC<{ content: ContentOf<'flow'> }> = ({ content }
                   gap: 16,
                 }}
               >
+                {editorial ? (
+                  <div
+                    style={{
+                      fontFamily: theme.fonts.display,
+                      fontSize: 22,
+                      fontWeight: 600,
+                      color: theme.colors.textSecondary,
+                      paddingBottom: 6,
+                      borderBottom: `1px solid ${theme.colors.line}`,
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -18,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      padding: '4px 16px',
+                      borderRadius: 999,
+                      backgroundColor: theme.colors.accent,
+                      color: theme.colors.onAccent,
+                      fontSize: 15,
+                      fontWeight: 800,
+                      letterSpacing: '0.12em',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    STEP {i + 1}
+                  </div>
+                )}
+                {!editorial || step.icon ? <IconBox name={step.icon} size={64} /> : null}
                 <div
-                  style={{
-                    position: 'absolute',
-                    top: -18,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    padding: '4px 16px',
-                    borderRadius: 999,
-                    backgroundColor: theme.colors.accent,
-                    color: theme.colors.onAccent,
-                    fontSize: 15,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    whiteSpace: 'nowrap',
-                  }}
+                  style={
+                    editorial
+                      ? { fontFamily: theme.fonts.display, fontSize: 44, fontWeight: 600, marginTop: 8 }
+                      : { fontSize: 23, fontWeight: 800 }
+                  }
                 >
-                  STEP {i + 1}
+                  {step.title}
                 </div>
-                <IconBox name={step.icon} size={64} />
-                <div style={{ fontSize: 23, fontWeight: 800 }}>{step.title}</div>
                 {step.body ? (
-                  <div style={{ fontSize: 16, lineHeight: 1.65, color: theme.colors.textSecondary }}>{step.body}</div>
+                  <div
+                    style={{
+                      fontSize: editorial ? 21 : 16,
+                      lineHeight: 1.65,
+                      color: theme.colors.textSecondary,
+                    }}
+                  >
+                    {step.body}
+                  </div>
                 ) : null}
               </div>
             </Reveal>
