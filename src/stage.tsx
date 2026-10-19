@@ -23,6 +23,15 @@ export const SHORTS = {
   bandExtend: 2,
   /** 3D の帯の中の文字 (注釈・名札・数字) の拡大率。帯は縮めて置くので、文字だけ大きくする */
   bandText: 1.6,
+  /**
+   * 縦の画面に合わせて組み直す 3D の場面 (組み立て・並べる形) の、物と注釈を置く範囲 [px]。
+   * 見出しの下〜字幕の上。注釈の箱は物の上と下に並べ、物はその間に収まるようカメラを寄せる
+   */
+  scene3d: { left: 64, right: 918, top: 500, bottom: 1330 },
+  /** 縦の画面で組み直した 3D の場面の、文字 (注釈・名札・数字) の拡大率 */
+  scene3dText: 1.35,
+  /** 縦の画面で組み直した 3D の場面の、縦の画角 [度] (横の画角が横の動画の約半分になる。遠近感をそろえる) */
+  scene3dFov: 46,
 } as const;
 
 /** 図解を置く範囲の大きさ (拡大する前の大きさ。中の部品はこの大きさで並べる) */
@@ -35,7 +44,8 @@ export const SHORTS_AREA = {
  * レイアウトが描く画面の大きさと向き。
  *   width / height: 座標の基準 (横の動画は 1920×1080。縦の動画では、3D の帯の中だけ 1920×1080 のまま)
  *   vertical: 縦の動画 (ショート) を作っている
- *   band: 縦の動画の中に、16:9 の帯として縮めて置いている (3D の場面)
+ *   band: 縦の動画の中に、16:9 の帯として縮めて置いている (3D の作り込んだ場面 preset・並べる形 objects)。
+ *         縦の動画で band でない 3D の場面は、縦の画面に合わせてカメラと注釈を組み直す (isPortrait3D)
  *   extend: 3D を帯の上下に描き足す倍率 (帯の中だけ。それ以外は 1)
  *   textScale: 注釈などの文字の拡大率
  */
@@ -87,6 +97,21 @@ export const StageBand: React.FC<{ children: React.ReactNode }> = ({ children })
     </div>
   );
 };
+
+/**
+ * 縦の動画の 3D の場面を、縦の画面 (1080×1920) のまま描く。カメラ・注釈の位置は各レイアウトが縦の画面に合わせて決める
+ * (組み立て (parts)。作り込んだ場面 (preset)・並べる形 (objects) は StageBand で帯にする)。
+ */
+export const StagePortrait: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <StageContext.Provider
+    value={{ width: SHORTS.width, height: SHORTS.height, vertical: true, band: false, extend: 1, textScale: SHORTS.scene3dText }}
+  >
+    {children}
+  </StageContext.Provider>
+);
+
+/** 3D の場面を縦の画面に合わせて組み直して描くか (縦の動画で、帯に縮めていない) */
+export const isPortrait3D = (stage: Stage): boolean => stage.vertical && !stage.band;
 
 const DEG = Math.PI / 180;
 

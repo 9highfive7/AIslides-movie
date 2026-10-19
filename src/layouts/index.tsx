@@ -18,7 +18,8 @@ import { RankingLayout } from './RankingLayout';
 import { ShareLayout } from './ShareLayout';
 import { Scene3DLayout } from './Scene3DLayout';
 import { LayeredLayout } from './LayeredLayout';
-import { StageBand, useVertical } from '../stage';
+import { StageBand, StagePortrait, useVertical } from '../stage';
+import { isBuildScene3D } from '../schemas';
 
 /** レイアウト種別 → 描画コンポーネント */
 export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
@@ -58,13 +59,18 @@ export const SceneLayoutView: React.FC<{ scene: Scene }> = ({ scene }) => {
     case 'share':
       return <ShareLayout content={scene.content} hasHeading={hasHeading} />;
     case 'scene3d':
-      // 縦の動画では、16:9 で組んだ 3D の場面を画面の幅いっぱいの帯にして置く (上下にも 3D を描き足す)
-      return vertical ? (
+      // 縦の動画では、組み立て (parts) は縦の画面に合わせてカメラと注釈を組み直す。
+      // 作り込んだ場面 (preset)・並べる形 (objects) はカメラ・注釈の位置が 16:9 で決めてあるので、画面の幅いっぱいの帯にして置く (上下にも 3D を描き足す)
+      return !vertical ? (
+        <Scene3DLayout content={scene.content} />
+      ) : isBuildScene3D(scene.content) ? (
+        <StagePortrait>
+          <Scene3DLayout content={scene.content} />
+        </StagePortrait>
+      ) : (
         <StageBand>
           <Scene3DLayout content={scene.content} />
         </StageBand>
-      ) : (
-        <Scene3DLayout content={scene.content} />
       );
     case 'layered':
       return <LayeredLayout content={scene.content} />;

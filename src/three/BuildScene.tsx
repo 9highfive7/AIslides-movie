@@ -11,7 +11,6 @@ import {
   Euler,
   ExtrudeGeometry,
   LineCurve3,
-  PerspectiveCamera,
   Quaternion,
   Shape,
   SphereGeometry,
@@ -28,9 +27,10 @@ import { BUILD_PROPS, isBuildBasicShape, isBuildProp, resolveBuildColor, type Bu
 import { ShapeModel } from './models';
 import { Bolt, Fridge, House, VendingMachine } from './objects';
 import { Billboard, C, Lights, Outlined, ShadowDisc, canvasTexture, useFontsReady, useOrbTextures } from './parts';
-import { ASPECT, lerpShot, withDrift, type Shot } from './camera';
+import { fitShotToRect, lerpShot, makeProjector, withDrift, type Lens, type Rect, type Shot } from './camera';
+import { PORTRAIT_LENS, planPortrait, statHeight, type PortraitBox } from './portrait';
 import { CameraRig, Callout, StatOverlay, TitleOverlay } from './ObjectScene';
-import { canvasFrame, useStage } from '../stage';
+import { SHORTS, canvasFrame, isPortrait3D, useStage } from '../stage';
 
 /**
  * scene3d の「組み立て (parts)」形式。台本に書いた部品 (基本形・作り込んだ物)・流れ・注釈から、
@@ -252,64 +252,12 @@ const VIEW_DIR: Record<Content['camera']['view'], V3> = {
   low: [0.3, 0.06, 1],
 };
 
-interface Rect {
-  x0: number;
-  x1: number;
-  y0: number;
-  y1: number;
-}
-
-const makeProjector = (s: Shot) => {
-  const camera = new PerspectiveCamera(FOV, ASPECT, 0.1, 2000);
-  camera.position.copy(s.position);
-  camera.lookAt(s.target);
-  camera.updateMatrixWorld();
-  return (p: Vector3) => {
-    const v = p.clone().project(camera);
-    return { x: ((v.x + 1) / 2) * 1920, y: ((1 - v.y) / 2) * 1080, z: v.z };
-  };
-};
-
-const shotAt = (target: Vector3, dir: Vector3, dist: number): Shot => ({
-  position: target.clone().addScaledVector(dir, dist),
-  target: target.clone(),
-});
+/** 横の動画のレンズ (1920×1080) */
+const LANDSCAPE: Lens = { fov: FOV, w: 1920, h: 1080 };
 
 /** points がすべて画面の rect に収まる、いちばん近いカメラ位置 (向きは view で固定) */
-const fitShot = (points: Vector3[], view: Content['camera']['view'], rect: Rect): Shot => {
-  const dir = new Vector3(...VIEW_DIR[view]).normalize();
-  const target = new Box3().setFromPoints(points).getCenter(new Vector3());
-  const forward = dir.clone().negate();
-  const right = forward.clone().cross(new Vector3(0, 1, 0)).normalize();
-  const up = right.clone().cross(forward).normalize();
-  let dist = 10;
-  for (let pass = 0; pass < 3; pass++) {
-    let lo = 0.2;
-    let hi = 3000;
-    for (let k = 0; k < 40; k++) {
-      const mid = Math.sqrt(lo * hi);
-      const project = makeProjector(shotAt(target, dir, mid));
-      const fits = points.every((p) => {
-        const s = project(p);
-        return s.z > -1 && s.z < 1 && s.x >= rect.x0 && s.x <= rect.x1 && s.y >= rect.y0 && s.y <= rect.y1;
-      });
-      if (fits) {
-        hi = mid;
-      } else {
-        lo = mid;
-      }
-    }
-    dist = hi;
-    // 写った範囲の中心が rect の中心に来るよう、注視点を画面の上下左右にずらしてから測り直す
-    const project = makeProjector(shotAt(target, dir, dist));
-    const screen = points.map(project);
-    const dx = (Math.min(...screen.map((s) => s.x)) + Math.max(...screen.map((s) => s.x))) / 2 - (rect.x0 + rect.x1) / 2;
-    const dy = (Math.min(...screen.map((s) => s.y)) + Math.max(...screen.map((s) => s.y))) / 2 - (rect.y0 + rect.y1) / 2;
-    const perPx = (2 * dist * Math.tan((FOV * DEG) / 2)) / 1080;
-    target.addScaledVector(right, dx * perPx).addScaledVector(up, -dy * perPx);
-  }
-  return shotAt(target, dir, dist);
-};
+const fitShot = (points: Vector3[], view: Content['camera']['view'], rect: Rect, lens: Lens = LANDSCAPE): Shot =>
+  fitShotToRect(points, new Vector3(...VIEW_DIR[view]).normalize(), lens, rect);
 
 /* ---------- 注釈の箱の位置 ---------- */
 
@@ -339,8 +287,8 @@ const placeBoxes = (anchors: { x: number; y: number }[], yMin: number, GAP = 130
 };
 
 /** 画面上の点が画面の内側にあるほど 1、外へ 60px 出ると 0 */
-const onScreen = (p: { x: number; y: number }): number => {
-  const out = Math.max(-p.x, p.x - 1920, -p.y, p.y - 1080);
+const onScreen = (p: { x: number; y: number }, lens: Lens = LANDSCAPE): number => {
+  const out = Math.max(-p.x, p.x - lens.w, -p.y, p.y - lens.h);
   return clamp01(1 - out / 60);
 };
 
@@ -619,9 +567,12 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
   const stage = useStage();
   const ctx = useSceneContext();
   const orbs = useOrbTextures();
-  // 縦の動画の帯の中では、title は見出しの位置に出すので、部品を上に詰めてよい。注釈の箱は文字が大きいぶん間を空ける
+  // 縦の動画では、title は見出しの位置に出すので、部品を上に詰めてよい。注釈の箱は文字が大きいぶん間を空ける
   const titleInFrame = Boolean(content.title) && !stage.vertical;
   const k = stage.textScale;
+  // 縦の動画では、縦の画面のまま描いてカメラと注釈を組み直す (横の動画は 1920×1080)
+  const portrait = isPortrait3D(stage);
+  const lens = portrait ? PORTRAIT_LENS : LANDSCAPE;
 
   // 部品の大きさ・並べ方・カメラ・注釈の箱は台本だけで決まるので、最初に1回だけ計算する
   const layout = useMemo(() => {
@@ -640,23 +591,6 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
 
     const hasCallouts = content.callouts.length > 0;
     const view = content.camera.view;
-    const main = fitShot(points, view, {
-      x0: hasCallouts ? 500 : 260,
-      x1: hasCallouts ? 1420 : 1660,
-      y0: titleInFrame ? 250 : 150,
-      y1: 860,
-    });
-    // 寄る先: 部品だけで画面を埋めず、まわりも少し見える大きさ (部品の約2倍の範囲) に収める
-    const zoomPart = parts.find(({ part }) => part.id === content.camera.zoomTo);
-    const zoom = zoomPart
-      ? (() => {
-          const corners = cornersOf(zoomPart.part, zoomPart.dims, zoomPart.copies[0]);
-          const center = new Box3().setFromPoints(corners).getCenter(new Vector3());
-          const around = corners.map((c) => c.clone().sub(center).multiplyScalar(2).add(center));
-          return fitShot(around, view, { x0: hasCallouts ? 500 : 320, x1: hasCallouts ? 1420 : 1600, y0: titleInFrame ? 250 : 180, y1: 860 });
-        })()
-      : null;
-
     // 注釈が指す点: 部品なら 6 割の高さの中心、流れなら道のりの真ん中
     const anchors = content.callouts.map((c) => {
       const hit = parts.find(({ part }) => part.id === c.target);
@@ -666,14 +600,41 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
       const poly = polys.get(c.target);
       return poly ? pointAt(poly, 0.5) : box.getCenter(new Vector3());
     });
-    const project = makeProjector(main);
-    const boxes = placeBoxes(
+    const zoomPart = parts.find(({ part }) => part.id === content.camera.zoomTo);
+    // 寄る先: 部品だけで画面を埋めず、まわりも少し見える大きさ (部品の約2倍の範囲) に収める
+    const zoomAround = zoomPart
+      ? (() => {
+          const corners = cornersOf(zoomPart.part, zoomPart.dims, zoomPart.copies[0]);
+          const center = new Box3().setFromPoints(corners).getCenter(new Vector3());
+          return corners.map((c) => c.clone().sub(center).multiplyScalar(2).add(center));
+        })()
+      : null;
+
+    if (portrait) {
+      // 縦の画面: 注釈の箱を物の上下に並べ、残った範囲に物を収める。数字カードは範囲の右上に置く
+      const reserveTop = content.stat ? statHeight(content.stat, k) + 24 : 0;
+      const plan = planPortrait(points, new Vector3(...VIEW_DIR[view]).normalize(), anchors, content.callouts, k, reserveTop);
+      const zoom = zoomAround ? fitShot(zoomAround, view, plan.rect, lens) : null;
+      return { parts, unit, main: plan.shot, zoom, anchors, boxes: plan.boxes as Array<PortraitBox | Box> };
+    }
+
+    const main = fitShot(points, view, {
+      x0: hasCallouts ? 500 : 260,
+      x1: hasCallouts ? 1420 : 1660,
+      y0: titleInFrame ? 250 : 150,
+      y1: 860,
+    });
+    const zoom = zoomAround
+      ? fitShot(zoomAround, view, { x0: hasCallouts ? 500 : 320, x1: hasCallouts ? 1420 : 1600, y0: titleInFrame ? 250 : 180, y1: 860 })
+      : null;
+    const project = makeProjector(main, LANDSCAPE);
+    const boxes: Array<PortraitBox | Box> = placeBoxes(
       anchors.map((a) => project(a)),
       content.stat ? 330 + 110 * (k - 1) : 200,
       130 * k,
     );
     return { parts, unit, main, zoom, anchors, boxes };
-  }, [content, titleInFrame, k]);
+  }, [content, titleInFrame, k, portrait, lens]);
 
   const drift = interpolate(frame, [ctx.ts.startFrame, ctx.ts.startFrame + ctx.ts.durationFrames], [0, 1], {
     extrapolateLeft: 'clamp',
@@ -683,11 +644,11 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
   const zoomP = zoomAt === null || !layout.zoom ? 0 : springFrom(frame, zoomAt, fps, DOLLY);
   const base = layout.zoom ? lerpShot(layout.main, layout.zoom, zoomP) : layout.main;
   const cameraShot = withDrift(base, drift, 0.1);
-  const project = makeProjector(cameraShot);
+  const project = makeProjector(cameraShot, lens);
 
   const partAt = (i: number) => ctx.appearAt(content.parts[i].id, i);
   const nParts = content.parts.length;
-  const canvas = canvasFrame(stage, FOV);
+  const canvas = portrait ? { width: lens.w, height: lens.h, fov: lens.fov, style: undefined } : canvasFrame(stage, FOV);
 
   return (
     <AbsoluteFill>
@@ -717,7 +678,7 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
         const shown = interpolate(frame, [partAt(i) + 6, partAt(i) + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
         // 寄ったら、寄った先以外の名札は消す (大きく写った物と重なるので)
         const zoomFade = part.id === content.camera.zoomTo ? 1 : 1 - zoomP;
-        const opacity = shown * zoomFade * (1 - ctx.focusOf(part.id, frame).dim * 0.5) * onScreen(top);
+        const opacity = shown * zoomFade * (1 - ctx.focusOf(part.id, frame).dim * 0.5) * onScreen(top, lens);
         return <PartLabel key={part.id} text={part.label} x={top.x} y={top.y} opacity={opacity} />;
       })}
       {content.callouts.map((callout, i) => {
@@ -725,7 +686,7 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
         const at = ctx.appearAt(callout.id, nParts + content.flows.length + i);
         const anchor = project(layout.anchors[i]);
         // 寄って指す先が画面の外へ出たら、注釈も消す
-        const opacity = onScreen(anchor);
+        const opacity = onScreen(anchor, lens);
         return opacity <= 0.01 ? null : (
           <AbsoluteFill key={callout.id} style={{ opacity }}>
             <Callout callout={callout} anchor={anchor} box={layout.boxes[i]} at={at} />
@@ -733,7 +694,7 @@ export const BuildScene: React.FC<{ content: Content }> = ({ content }) => {
         );
       })}
       {content.title ? <TitleOverlay text={content.title} at={ctx.appearAt('title', 1)} /> : null}
-      {content.stat ? <StatOverlay stat={content.stat} at={ctx.appearAt('stat', 3)} place={{ align: 'right', x: 1850, y: 110 }} /> : null}
+      {content.stat ? <StatOverlay stat={content.stat} at={ctx.appearAt('stat', 3)} place={portrait ? { align: 'right', x: SHORTS.scene3d.right, y: SHORTS.scene3d.top } : { align: 'right', x: 1850, y: 110 }} /> : null}
     </AbsoluteFill>
   );
 };

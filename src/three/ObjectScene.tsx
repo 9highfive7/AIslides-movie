@@ -11,7 +11,7 @@ import { SPRINGS, springFrom } from '../animation/presets';
 import type { Scene3DPresetContent } from '../schemas';
 import { Lights, useOrbTextures } from './parts';
 import { projectToScreen, withDrift, type Shot } from './camera';
-import { canvasFrame, useStage } from '../stage';
+import { SHORTS, canvasFrame, useStage } from '../stage';
 import { PRESETS, type ObjectPreset, type Timing } from './presets';
 
 type Content = Scene3DPresetContent;
@@ -96,8 +96,11 @@ export const StatOverlay: React.FC<{
 export const Callout: React.FC<{
   callout: Content['callouts'][number];
   anchor: { x: number; y: number };
-  /** 箱の位置。align: left は x が箱の左端・right は右端・center は中央 (縦の動画で、物の上下に出すとき) */
-  box: { x: number; y: number; align: 'left' | 'right' | 'center' };
+  /**
+   * 箱の位置。align: left は x が箱の左端・right は右端・center は中央 (縦の動画で、物の上下に出すとき)。
+   * from: 'bottom' は y が箱の下端 (物の上に置く箱)。ほかは y が箱の上端
+   */
+  box: { x: number; y: number; align: 'left' | 'right' | 'center'; from?: 'top' | 'bottom' };
   at: number;
 }> = ({ callout, anchor, box, at }) => {
   const theme = useTheme();
@@ -118,8 +121,10 @@ export const Callout: React.FC<{
         : callout.tone === 'muted'
           ? '#8C857A'
           : theme.colors.ink;
-  const attach = { x: box.x, y: box.y + 44 * k };
-  // 文字を大きくしたとき (縦の動画の 3D の帯) は、画面の端で折り返す (箱が画面の外へはみ出さないように)
+  const fromBottom = box.from === 'bottom';
+  // 線は箱の縁まで伸ばす (縦の画面の上下の箱は、物に近い側の縁の真ん中)
+  const attach = box.from ? { x: box.x, y: box.y + (fromBottom ? -2 : 2) } : { x: box.x, y: box.y + 44 * k };
+  // 文字を大きくしたとき (縦の動画の 3D) は、画面の端で折り返す (箱が画面の外へはみ出さないように)
   const wrap = k === 1 ? 'nowrap' : 'normal';
   return (
     <>
@@ -130,7 +135,7 @@ export const Callout: React.FC<{
           x2={anchor.x + (attach.x - anchor.x) * lineP}
           y2={anchor.y + (attach.y - anchor.y) * lineP}
           stroke={theme.colors.ink}
-          strokeWidth={2}
+          strokeWidth={2 * (box.from ? Math.sqrt(k) : 1)}
         />
         <circle cx={anchor.x} cy={anchor.y} r={6 * Math.sqrt(k) * Math.min(1, lineP * 3)} fill={theme.colors.ink} />
       </svg>
@@ -143,7 +148,8 @@ export const Callout: React.FC<{
           borderColor: color,
           padding: `${12 * k}px ${22 * k}px ${14 * k}px`,
           opacity: interpolate(boxP, [0, 0.6], [0, 1], { extrapolateRight: 'clamp' }),
-          transform: `${box.align === 'center' ? 'translateX(-50%) ' : ''}translateY(${(1 - boxP) * 14}px)`,
+          transform: `${box.align === 'center' ? 'translateX(-50%) ' : ''}${fromBottom ? 'translateY(-100%) ' : ''}translateY(${(1 - boxP) * 14 * (fromBottom ? -1 : 1)}px)`,
+          ...(box.from ? { maxWidth: SHORTS.scene3d.right - SHORTS.scene3d.left, width: 'max-content', textAlign: 'center' as const } : null),
         }}
       >
         <div style={{ fontFamily: theme.fonts.display, fontSize: 38 * k, fontWeight: 700, color, whiteSpace: wrap }}>{callout.title}</div>
