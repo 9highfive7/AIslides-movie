@@ -85,7 +85,7 @@ npm run studio                        # → http://localhost:4300 をブラウ�
 |---|---|
 | 台本を書く AI | `ANTHROPIC_API_KEY`（Claude。既定モデル `claude-opus-5-5`、`CLAUDE_MODEL` で変更可）。`ant auth login` 済みならキーなしでも動きます。OpenAI 互換 API を使うときは `OPENAI_API_KEY`（`SCRIPT_PROVIDER=openai` で明示も可） |
 | ナレーション | VOICEVOX Engine を起動しておく（下記）。起動していなければ無音の仮音声で作ります（画面に表示） |
-| 絵を描く AI（AIイラストのとき） | `GEMINI_API_KEY`（Gemini。既定モデル `gemini-2.5-flash-image`）か `OPENAI_API_KEY`（OpenAI。既定モデル `gpt-image-1`）。両方あれば Gemini（`IMAGE_PROVIDER=openai` で切り替え）。モデルは `IMAGE_MODEL` で変更可。キーがなければ絵の場所に仮の枠を出して作ります（画面に表示） |
+| 絵を描く AI（AIイラストのとき） | `GEMINI_API_KEY`（Gemini。既定モデル `gemini-3.1-flash-lite-image`）。OpenAI で描くときだけ `IMAGE_PROVIDER=openai` と `OPENAI_API_KEY`（既定モデル `gpt-image-1.5`）。台本用に `OPENAI_API_KEY` があっても、画像は勝手に OpenAI になりません。モデルは `IMAGE_MODEL` で変更可。キーがなければ絵の場所に仮の枠を出して作ります（画面に表示） |
 | 3D の描画 | Linux ではソフトウェア描画（`STUDIO_GL=swangle`）が既定。Mac / Windows は GPU を使います |
 
 - ポートは `STUDIO_PORT`（既定 4300）。このPCからだけ開けます（127.0.0.1 で待ち受け）
@@ -308,7 +308,7 @@ Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物�
 ```
 
 ```bash
-export GEMINI_API_KEY=...        # または OPENAI_API_KEY=...
+export GEMINI_API_KEY=...        # OpenAI で描くなら IMAGE_PROVIDER=openai と OPENAI_API_KEY=...
 npm run images                   # → public/generated/ に絵を作り、script.json の src を書き込む
 npm run audio && npm run render
 ```

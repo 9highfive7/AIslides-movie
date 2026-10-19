@@ -47,7 +47,7 @@ const renderImageState = () => {
   if (!images) return;
   $('image-state').textContent = images.ready
     ? `● 画像生成 ${images.provider === 'gemini' ? 'Gemini' : 'OpenAI'}（${images.model}）`
-    : '● 画像生成 AI 未設定（仮の枠の絵で作ります。GEMINI_API_KEY か OPENAI_API_KEY を設定）';
+    : '● 画像生成 AI 未設定（仮の枠の絵で作ります。GEMINI_API_KEY を設定）';
   $('image-state').className = `voice-state ${images.ready ? 'ok' : 'ng'}`;
 };
 

@@ -1,10 +1,11 @@
 /**
  * 画像生成 AI (layered の素材) を呼び出す。Gemini と OpenAI (gpt-image) に対応。
  *
- * どれを使うか (IMAGE_PROVIDER で明示も可: gemini / openai):
- *   GEMINI_API_KEY (または GOOGLE_API_KEY) があれば Gemini (既定 gemini-2.5-flash-image)
- *   なければ OPENAI_API_KEY があれば OpenAI (既定 gpt-image-1)
- *   どちらもなければ使えない (layered の絵は仮の枠になる)
+ * どれを使うか:
+ *   ふだんは Gemini (GEMINI_API_KEY または GOOGLE_API_KEY。既定 gemini-3.1-flash-lite-image)。
+ *   キーがなければ使えない (layered の絵は仮の枠になる)。OPENAI_API_KEY があっても OpenAI には切り替えない
+ *   (OPENAI_API_KEY は台本を書く AI にも使うので、画像まで勝手に OpenAI にならないように)
+ *   IMAGE_PROVIDER=openai のときだけ OpenAI (OPENAI_API_KEY。既定 gpt-image-1.5)
  * モデルは IMAGE_MODEL で変えられる (新しいモデルが出たらここで切り替える)。
  *
  * 物の絵は背景を透明にしたいが、透明な背景を出せるかはモデルや時期によって違う。
@@ -22,17 +23,12 @@ export interface ImageProvider {
 
 /** 使える画像生成 AI。キーがなければ null */
 export const resolveImageProvider = (): ImageProvider | null => {
-  const forced = process.env.IMAGE_PROVIDER;
+  if (process.env.IMAGE_PROVIDER === 'openai') {
+    const openaiKey = process.env.OPENAI_API_KEY ?? '';
+    return openaiKey ? { provider: 'openai', model: process.env.IMAGE_MODEL ?? 'gpt-image-1.5', apiKey: openaiKey } : null;
+  }
   const geminiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? '';
-  const openaiKey = process.env.OPENAI_API_KEY ?? '';
-  const useGemini = forced === 'gemini' || (forced !== 'openai' && Boolean(geminiKey));
-  if (useGemini && geminiKey) {
-    return { provider: 'gemini', model: process.env.IMAGE_MODEL ?? 'gemini-2.5-flash-image', apiKey: geminiKey };
-  }
-  if (!useGemini && openaiKey) {
-    return { provider: 'openai', model: process.env.IMAGE_MODEL ?? 'gpt-image-1', apiKey: openaiKey };
-  }
-  return null;
+  return geminiKey ? { provider: 'gemini', model: process.env.IMAGE_MODEL ?? 'gemini-3.1-flash-lite-image', apiKey: geminiKey } : null;
 };
 
 /** 画像の種類ごとに、プロンプトの後ろに足す決まりごと */
