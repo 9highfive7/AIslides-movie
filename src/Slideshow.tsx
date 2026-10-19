@@ -12,7 +12,7 @@ import { SceneBackground } from './components/SceneBackground';
 import { Camera } from './components/Camera';
 import { SubtitleLayer } from './components/SubtitleLayer';
 import { AudioLayer } from './components/AudioLayer';
-import { Avatar } from './components/Avatar';
+import { Avatar, avatarRightInset } from './components/Avatar';
 import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
 import { FloatingToys } from './components/FloatingToys';
@@ -113,7 +113,7 @@ export const Slideshow: React.FC = () => {
         <SubscribePopup />
         <Avatar />
         {/* 字幕はシーンのトランジションとは独立したレイヤー */}
-        <SubtitleLayer rightInset={avatar ? avatar.size * 0.85 + 40 : 0} />
+        <SubtitleLayer rightInset={avatarRightInset(avatar)} />
         <ProgressBar />
       </AbsoluteFill>
     </ThemeContext.Provider>

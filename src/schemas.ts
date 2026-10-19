@@ -338,6 +338,9 @@ const sceneSchema = z.discriminatedUnion('layout', [
 
 export const themeNameSchema = z.enum(['kids', 'clean', 'pop', 'dark']);
 
+/** 同梱のカワウソ画像 (578×720) で、顔を丸く切り出す位置 (画像の幅を 1 とした割合) */
+const OTTER_FACE = { x: 0.47, y: 0.29, size: 0.74 };
+
 export const metaSchema = z.object({
   /** 動画タイトル (サムネイル・概要欄の既定値に使う) */
   title: z.string().optional(),
@@ -384,8 +387,8 @@ export const metaSchema = z.object({
     })
     .optional(),
   /**
-   * 右下で喋るキャラクター。口の動きは音声の音量から自動生成。
-   * 省略時は同梱のカワウソ (public/avatar/) を表示する。false で非表示
+   * 右下で喋るキャラクター。動くのは口だけで、口の形は音声の音量から自動生成。
+   * 省略時は同梱のカワウソ (public/avatar/) の顔を丸い枠で表示する。false で非表示
    */
   avatar: z
     .union([
@@ -397,7 +400,21 @@ export const metaSchema = z.object({
         half: z.string().optional(),
         closed: z.string().default('avatar/closed.png'),
         name: z.string().optional(),
-        size: z.number().default(250),
+        /** 大きさ [px]。顔の丸い枠では直径 (既定 220)、全身・builtin では高さ (既定 250) */
+        size: z.number().optional(),
+        /** face: 顔だけを丸い枠で見せる / full: 画像の全体 (全身) を見せる */
+        framing: z.enum(['face', 'full']).default('face'),
+        /**
+         * framing: face のときに切り出す顔の位置。画像の幅を 1 とした割合で、丸の中心 (x, y) と直径 (size)。
+         * 既定は同梱のカワウソの顔。自前の画像では顔の位置に合わせて指定する
+         */
+        face: z
+          .object({
+            x: z.number(),
+            y: z.number(),
+            size: z.number().positive(),
+          })
+          .default(OTTER_FACE),
       }),
     ])
     .default({
@@ -405,7 +422,8 @@ export const metaSchema = z.object({
       open: 'avatar/open.png',
       half: 'avatar/half.png',
       closed: 'avatar/closed.png',
-      size: 250,
+      framing: 'face',
+      face: OTTER_FACE,
     }),
   /** チャンネル登録を促すポップアップを出すシーンID (シーン開始時に約4秒表示) */
   subscribePopup: z
