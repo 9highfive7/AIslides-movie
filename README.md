@@ -181,6 +181,7 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | `statement` | 一文を大きく見せるキメ画面。`text`（`**強調**` にマーカー・`\n` 改行）/ `sub?` / `icon?` | `text` / `sub` | 1文字ずつ弾み、マーカーが引かれる |
 | `ranking` | `items[]` — `{ id, rank?, icon?, title, body? }`（2〜5個。1位から順に書く） | 各項目の `id` | reveal なしなら下位から出現。1位は王冠と光の帯 |
 | `image` | `src`（`public/` からの相対パス or https URL）/ `caption?` / `fit?`（`cover` / `contain`） | `image` / `caption` | 画像がゆっくりズーム＆パン |
+| `layered` | 画像生成 AI で作った絵を重ねる場面。`background`（`{ src, blur? }`）/ `foreground?`（手前の飾り・背景透過）/ `objects[]` — `{ id, src, x, y, height, enter?, motion?, effect?, shadow? }`（物の画像・1〜6個）/ `title?` / `callouts?`（`[{ id, target, title, sub?, tone? }]`）/ `stat?` / `camera?`（`pan` / `zoom` / `none`）。詳しくは下の「画像を重ねる場面（layered）」 | 各 objects の `id`・各 callout の `id`・`title` / `stat` | 層ごとに違う速さで流れる（視差）。物は弾んで出て、focus で拡大して光る。湯気・冷気・光はコードで足す |
 | `outro` | `title?`（既定「ご視聴ありがとうございました」）/ `message?` / `subscribe?`（既定 true）/ `endScreen?`（既定 true） | なし | 登録ボタンのクリック演出。`endScreen` で YouTube 終了画面用の枠を表示 |
 
 **scene3d の場面（preset）**
@@ -248,6 +249,60 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 - 目に見えないものも、たとえで形にすると伝わります（データ → `letter`、お金 → `coin`、時間 → `clock`、ふえる → `arrow-up`、AI → `robot`）
 - 形を足すときは `src/three/catalog.ts` の `SHAPES` にキーを追加し、`src/three/models.tsx` の `MODELS` に同じキーで形を定義します（床に置いて高さ約1.6・幅約1.8以内にそろえる）
 - 素材集: `templates/sample-kids-3d.json`（「雨はどうしてふるの？」約3分。`row` / `flow` / `cycle`・`count`・`size` をすべて使った子ども向けのデモ）
+
+### 画像を重ねる場面（layered）
+
+Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物・手前の層**に分けて重ね、層ごとに違う速さで動かすレイアウトです。絵の描き込みは AI に任せ、文字と動きはこれまでどおり台本から付けます。
+
+```jsonc
+{
+  "id": "hot-cold",
+  "layout": "layered",
+  "content": {
+    "camera": "pan",                                             // pan: 横へ流れる / zoom: ゆっくり寄る / none
+    "background": { "src": "layered/vending/background.jpg" },   // 背景 (少しぼかして物を目立たせる。blur で調整)
+    "foreground": { "src": "layered/vending/foreground.png" },   // 手前の飾り (省略可。背景透過の PNG)
+    "objects": [
+      { "id": "machine", "src": "layered/vending/machine.png", "x": 0.52, "y": 0.85, "height": 0.64, "enter": "fade", "effect": "glow" },
+      { "id": "cold", "src": "layered/vending/can-cold.png", "x": 0.21, "y": 0.64, "height": 0.26, "motion": "float", "effect": "frost" },
+      { "id": "hot", "src": "layered/vending/can-hot.png", "x": 0.79, "y": 0.64, "height": 0.26, "motion": "float", "effect": "steam" }
+    ],
+    "title": "同じ箱の中で、**冷やす**と**温める**",
+    "callouts": [
+      { "id": "cold-cap", "target": "cold", "title": "つめた〜い", "sub": "約5℃", "tone": "accent" }
+    ]
+  },
+  "lines": [
+    { "text": "しかもこの箱、**冷たい**飲み物と、", "reveal": ["cold", "cold-cap"], "focus": ["cold"] }
+  ]
+}
+```
+
+| objects のキー | 説明 |
+|---|---|
+| `src` | 物の画像。**背景が透明な PNG** にする（`public/` からの相対パス or https URL） |
+| `x` / `y` | 物の中心の横位置 / 足もと（下端）の縦位置。画面の幅・高さを 1 とした割合（`x: 0.5` で中央、`y: 0.85` で下から15%の所に立つ） |
+| `height` | 物の高さ（画面の高さを 1 とした割合）。幅は画像の縦横比から決まる |
+| `enter` | 出方。`pop`（弾んで出る・既定）/ `drop`（上から落ちて弾む）/ `rise`（下からふわっと）/ `fade`（じわっと） |
+| `motion` | 出たあとの動き。`none`（既定）/ `float`（ふわふわ浮かぶ）/ `sway`（ゆらゆら揺れる） |
+| `effect` | コードで足す効果。`none`（既定）/ `steam`（湯気と温かい光）/ `frost`（冷気の粒と冷たい光）/ `glow`（後ろから照らす光と足もとの照り返し） |
+| `shadow` | 足もとの影（既定 `true`。宙に浮かせる物は `false`） |
+
+- 物は `reveal` で出て、`focus` で少し大きくなって光り、ほかの物は暗くなります。注釈（`callouts`）は `target` の物の位置から自動で置かれ、物と一緒に流れます
+- `camera: "pan"` では背景はゆっくり・物はふつう・手前は速く横へ流れ、立体的に見えます。`zoom` は手前ほど大きく寄ります
+- サンプル: `templates/sample-layered.json`（自販機の2場面・約30秒）。`public/layered/vending/` の絵は**仕組みを試すための仮の絵**（図形で描いたもの）なので、画像生成 AI で作った絵に差し替えて使ってください
+
+**画像生成 AI で素材を作るコツ**
+
+- **1枚に1つずつ**作ります（背景・物ごとに別の画像）。物は「背景は透明（または真っ白な無地）」と指定し、真っ白で出てきたら背景を消すツールで透明にします
+- **絵に文字を入れない**ように指定します（崩れやすいため）。見出し・注釈・数字はこのレイアウトで重ねます
+- 絵柄をそろえるため、同じ回の素材は同じ言い回し（例:「アニメ映画の背景美術風」「やわらかい陰影の立体イラスト」）を毎回入れ、できれば同じ会話の中で続けて作ります
+- 背景は 16:9（1920×1080 以上）、物は高さ 700px 以上あると、寄っても粗くなりません
+- 指示文の例
+  - 背景: 「日本の住宅街の夕暮れ、電柱と電線、遠くに街の灯り、アニメ映画の背景美術風、人物なし、文字なし、16:9」
+  - 物: 「日本の白い自動販売機を正面やや右から、やわらかい陰影の立体イラスト、背景は透明、文字やロゴなし」
+  - 手前: 「画面の左下と右下にだけ、ぼけた植え込みの葉、ほかは透明、文字なし、16:9」
+- 説明図として正しいかは必ず人の目で確かめてください（AI は仕組みの絵をもっともらしく間違えることがあります）。素材は各サービスの利用規約で動画への使用が許可されているものを使ってください
 
 ### 動画全体の設定（meta）
 
@@ -339,7 +394,7 @@ npm run audio && npm run build:youtube                           # いつもの�
 - 目安: 10分 ≒ ナレーション約3,000字 ≒ **25〜30シーン / 80〜90セリフ**
 - 長尺では `section`（章扉）と `chapter` タグで章構成を作ると視聴者が迷わない
 - 総尺が10分を超えると `npm run audio` が警告を出します（目安超過。ブロックはしない）
-- 素材集: `templates/sample-token-saving-18scenes.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）、`templates/sample-kids-3d.json`（子ども向け・3D オブジェクト中心の約3分のデモ）、`templates/zukai-02-vending-machine.json`（paper テーマ・3D の場面 (preset) を使った自販機の話）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
+- 素材集: `templates/sample-token-saving-18scenes.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）、`templates/sample-kids-3d.json`（子ども向け・3D オブジェクト中心の約3分のデモ）、`templates/zukai-02-vending-machine.json`（paper テーマ・3D の場面 (preset) を使った自販機の話）、`templates/sample-layered.json`（画像を重ねる場面 `layered` の試作・約30秒）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
 
 ## 図解ドキュメンタリー風（paper テーマ + 3D）
 
@@ -454,6 +509,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── audio/           # 生成物: セリフごとの WAV
 │   ├── sfx/             # 効果音 (pop / whoosh / ding / click。npm run sfx で再生成)
 │   ├── avatar/          # キャラクター画像 (口: open / half / closed)
+│   ├── layered/         # layered の素材 (背景・物・手前の画像。vending/ はサンプル用の仮の絵)
 │   └── fonts/           # Noto Sans JP / Noto Serif JP (可変フォント)
 ├── studio/              # 動画生成アプリ (npm run studio)。server.ts / pipeline.ts / store.ts / public/ (画面)
 ├── scripts/

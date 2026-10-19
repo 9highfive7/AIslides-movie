@@ -243,6 +243,71 @@ const scene3dBuildSchema = z.object({
     .default({ view: 'right' }),
 });
 
+/** layered: 1枚の画像の層 (背景・手前) */
+const layerImageSchema = z.object({
+  /** public/ からの相対パス (例: "layered/vending/background.jpg") または https:// のURL */
+  src: z.string(),
+  /** ぼかし [px]。背景や手前をぼかすと、物が目立って奥行きが出る (省略時: 背景 2 / 手前 8) */
+  blur: z.number().min(0).max(30).optional(),
+});
+
+/** layered: 物の画像 (背景が透明な PNG) 1つ */
+const layeredObjectSchema = z.object({
+  id: z.string(),
+  /** public/ からの相対パス または https:// のURL。背景が透明な PNG にする */
+  src: z.string(),
+  /** 物の中心の横位置 (画面の幅を 1 とした割合。0 = 左端 / 0.5 = 中央 / 1 = 右端) */
+  x: z.number().min(0).max(1),
+  /** 物の足もと (下端) の縦位置 (画面の高さを 1 とした割合。0 = 上端 / 1 = 下端) */
+  y: z.number().min(0).max(1),
+  /** 物の高さ (画面の高さを 1 とした割合)。幅は画像の縦横比から決まる */
+  height: z.number().min(0.05).max(1),
+  /** 出方。pop: 弾んで出る / drop: 上から落ちて弾む / rise: 下からふわっと / fade: じわっと */
+  enter: z.enum(['pop', 'drop', 'rise', 'fade']).default('pop'),
+  /** 出たあとの動き。float: ふわふわ浮かぶ / sway: ゆらゆら揺れる */
+  motion: z.enum(['none', 'float', 'sway']).default('none'),
+  /** コードで足す効果。steam: 湯気と温かい光 / frost: 冷気の粒と冷たい光 / glow: 後ろから照らす光 */
+  effect: z.enum(['none', 'steam', 'frost', 'glow']).default('none'),
+  /** 足もとの影 */
+  shadow: z.boolean().default(true),
+});
+
+/**
+ * layered: 画像生成 AI で作った「背景・物・手前」の画像を重ね、層ごとに違う速さで動かす (視差)。
+ * 文字 (見出し・注釈・数字) は画像に入れず、ここで重ねる。
+ */
+const layeredSchema = z.object({
+  background: layerImageSchema,
+  foreground: layerImageSchema.optional(),
+  objects: z.array(layeredObjectSchema).min(1).max(6),
+  /** 画面上部中央の明朝の一文 (reveal "title"。**強調** は朱色) */
+  title: z.string().optional(),
+  /** 物を引き出し線で指す注釈 (箱の位置は物の位置から自動で決まる) */
+  callouts: z
+    .array(
+      z.object({
+        id: z.string(),
+        /** 指す物の id */
+        target: z.string(),
+        title: z.string(),
+        sub: z.string().optional(),
+        tone: z.enum(['normal', 'accent', 'warning', 'muted']).default('normal'),
+      }),
+    )
+    .max(4)
+    .default([]),
+  /** 数字カード (reveal "stat" で出る) */
+  stat: z
+    .object({
+      kicker: z.string().optional(),
+      value: z.string(),
+      note: z.string().optional(),
+    })
+    .optional(),
+  /** カメラ。pan: 横へ流れる (層ごとに速さが違う) / zoom: ゆっくり寄っていく / none: 止める */
+  camera: z.enum(['pan', 'zoom', 'none']).default('pan'),
+});
+
 const compareItemSchema = z.object({
   id: z.string(),
   icon: iconSchema.optional(),
@@ -502,6 +567,11 @@ const sceneSchema = z.discriminatedUnion('layout', [
   }),
   z.object({
     ...sceneBaseSchema,
+    layout: z.literal('layered'),
+    content: layeredSchema,
+  }),
+  z.object({
+    ...sceneBaseSchema,
     layout: z.literal('outro'),
     content: z.object({
       title: z.string().default('ご視聴ありがとうございました'),
@@ -678,6 +748,7 @@ export type Scene3DObjectsContent = z.infer<typeof scene3dObjectsSchema>;
 export type Scene3DPresetContent = z.infer<typeof scene3dPresetSchema>;
 export type Scene3DBuildContent = z.infer<typeof scene3dBuildSchema>;
 export type Scene3DContent = Scene3DObjectsContent | Scene3DPresetContent | Scene3DBuildContent;
+export type LayeredContent = z.infer<typeof layeredSchema>;
 
 /** scene3d の content が preset で場面を選ぶ形か */
 export const isPresetScene3D = (content: Scene3DContent): content is Scene3DPresetContent => 'preset' in content;

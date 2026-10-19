@@ -1,4 +1,12 @@
-import { isBuildScene3D, isPresetScene3D, type ScriptConfig, type Scene, type Scene3DBuildContent, type Scene3DObjectsContent } from './schemas';
+import {
+  isBuildScene3D,
+  isPresetScene3D,
+  type LayeredContent,
+  type ScriptConfig,
+  type Scene,
+  type Scene3DBuildContent,
+  type Scene3DObjectsContent,
+} from './schemas';
 import { isBuildShape, isShapeName, resolveBuildColor, resolveColor } from './three/catalog';
 
 /** scene3d の矢印のID。flow は物と物の間 (N-1本)、cycle は輪を一周 (N本) */
@@ -73,6 +81,31 @@ const lintBuild = (content: Scene3DBuildContent, at: string): string[] => {
   return issues;
 };
 
+/** layered の要素ID: 物・注釈・title・stat */
+const layeredElementIds = (content: LayeredContent): string[] => [
+  ...content.objects.map((obj) => obj.id),
+  ...content.callouts.map((c) => c.id),
+  'title',
+  'stat',
+];
+
+/** layered の整合性 (注釈の参照先・IDの重複) */
+const lintLayered = (content: LayeredContent, at: string): string[] => {
+  const issues: string[] = [];
+  const objectIds = new Set(content.objects.map((obj) => obj.id));
+  content.callouts.forEach((c, ci) => {
+    if (!objectIds.has(c.target)) {
+      issues.push(`${at}.callouts.${ci}.target: "${c.target}" という物はありません`);
+    }
+  });
+  const ids = layeredElementIds(content);
+  const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+  if (dup.length > 0) {
+    issues.push(`${at}: 要素ID が重複しています (${[...new Set(dup)].join(', ')})。title / stat も物の id には使えません`);
+  }
+  return issues;
+};
+
 /**
  * シーン内で reveal / focus に指定できる要素IDの一覧。
  * レイアウトの描画側と同じ規則 (矢印の自動ID など) をここに集約する。
@@ -123,6 +156,8 @@ export const elementIds = (scene: Scene): string[] => {
         return buildElementIds(scene.content);
       }
       return [...scene.content.objects.map((obj) => obj.id), ...scene3dArrowIds(scene.content), 'caption'];
+    case 'layered':
+      return layeredElementIds(scene.content);
   }
 };
 
@@ -143,6 +178,9 @@ export const lintScript = (script: ScriptConfig): string[] => {
       issues.push(`scenes.${si}.id: シーンIDは英数字・ハイフン・アンダースコアのみ使えます ("${scene.id}")`);
     }
 
+    if (scene.layout === 'layered') {
+      issues.push(...lintLayered(scene.content, `scenes.${si}.content`));
+    }
     if (scene.layout === 'scene3d' && isBuildScene3D(scene.content)) {
       issues.push(...lintBuild(scene.content, `scenes.${si}.content`));
     }

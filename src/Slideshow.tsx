@@ -56,9 +56,10 @@ const SceneView: React.FC<{
   const editorial = theme.chrome === 'editorial';
   const { meta } = script;
   const is3d = uses3dStyle(meta);
-  // scene3d は three.js のカメラを自前で持つので、画面全体のズームはかけない。
+  // scene3d は three.js のカメラを、layered は層ごとの視差を自前で持つので、画面全体のズームはかけない。
   // objects で並べる形は舞台 (床) の背景も自前で描く
   const isScene3d = scene.layout === 'scene3d';
+  const ownCamera = isScene3d || scene.layout === 'layered';
   const isStage = isScene3d && isObjectsScene3D(scene.content);
 
   return (
@@ -78,7 +79,7 @@ const SceneView: React.FC<{
             at={ctx.introAt}
           />
         ) : null}
-        <Camera enabled={meta.camera === 'subtle' && !dark && !isScene3d} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
+        <Camera enabled={meta.camera === 'subtle' && !dark && !ownCamera} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
           <SceneLayoutView scene={scene} />
         </Camera>
         {editorial ? (

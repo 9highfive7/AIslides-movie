@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "title": "なぜ自販機は1台で冷たいと温かいを同時に出せるのか（layered の試作）",
+    "theme": "paper",
+    "header": { "label": "図解 No.02", "title": "自販機の冷温の秘密" },
+    "transition": "fade",
+    "progressBar": false,
+    "avatar": false,
+    "subtitle": { "style": "box" },
+    "sfx": { "volume": 0.35, "reveal": false, "transition": false }
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "layout": "layered",
+      "content": {
+        "camera": "zoom",
+        "background": { "src": "layered/vending/background.jpg" },
+        "foreground": { "src": "layered/vending/foreground.png" },
+        "objects": [
+          { "id": "machine", "src": "layered/vending/machine.png", "x": 0.52, "y": 0.86, "height": 0.57, "enter": "drop", "effect": "glow" }
+        ],
+        "title": "日本に**約390万台**",
+        "stat": { "kicker": "そのうち飲み物の自販機", "value": "約220万台", "note": "日本自動販売システム機械工業会" }
+      },
+      "lines": [
+        { "text": "あなたの近くにもある、あの箱。", "reveal": ["machine"] },
+        { "text": "自動販売機は日本に**約390万台**。世界でも有数の自販機大国です。", "reveal": ["title"] },
+        { "text": "飲み物の自販機だけでも、**約220万台**あります。", "reveal": ["stat"] }
+      ]
+    },
+    {
+      "id": "hot-cold",
+      "layout": "layered",
+      "content": {
+        "camera": "pan",
+        "background": { "src": "layered/vending/background.jpg" },
+        "foreground": { "src": "layered/vending/foreground.png" },
+        "objects": [
+          { "id": "machine", "src": "layered/vending/machine.png", "x": 0.52, "y": 0.85, "height": 0.64, "enter": "fade", "effect": "glow" },
+          { "id": "cold", "src": "layered/vending/can-cold.png", "x": 0.21, "y": 0.64, "height": 0.26, "enter": "pop", "motion": "float", "effect": "frost", "shadow": false },
+          { "id": "hot", "src": "layered/vending/can-hot.png", "x": 0.79, "y": 0.64, "height": 0.26, "enter": "pop", "motion": "float", "effect": "steam", "shadow": false }
+        ],
+        "title": "同じ箱の中で、**冷やす**と**温める**",
+        "callouts": [
+          { "id": "cold-cap", "target": "cold", "title": "つめた〜い", "sub": "約5℃", "tone": "accent" },
+          { "id": "hot-cap", "target": "hot", "title": "あったか〜い", "sub": "約55℃", "tone": "warning" }
+        ]
+      },
+      "lines": [
+        { "text": "しかもこの箱、**冷たい**飲み物と、", "reveal": ["cold", "cold-cap"], "focus": ["cold"] },
+        { "text": "**温かい**飲み物を、同時に売っています。", "reveal": ["hot", "hot-cap"], "focus": ["hot"] },
+        { "text": "なぜ、1台で両方を出せるのでしょうか。", "focus": ["machine"] }
+      ]
+    }
+  ]
+}
