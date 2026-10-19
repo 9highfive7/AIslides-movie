@@ -101,3 +101,69 @@ export const DEFAULT_FLOATING: Record<'title' | 'section' | 'outro', ShapeName[]
   section: ['cube', 'star', 'ball', 'ring'],
   outro: ['heart', 'star', 'gift', 'ball'],
 };
+
+/**
+ * scene3d の「組み立て (parts)」形式で使う形。自販機の場面と同じ「ベタ塗り + 黒い輪郭線」で描く。
+ * 基本形は size [幅, 高さ, 奥行き] にそのまま伸び縮みし、作り込んだ物は高さに合わせて縦横比を保って拡大・縮小する。
+ */
+export const BUILD_BASIC_SHAPES = {
+  box: '箱',
+  plate: '板 (薄い箱)',
+  cylinder: '円柱 (size は [直径, 高さ, 直径])',
+  sphere: '球',
+  hemisphere: '半球 (ドーム)',
+  cone: '円すい',
+  pyramid: '四角すい',
+  roof: '三角屋根 (三角柱)',
+  ring: 'わっか (正面を向く)',
+  arrow: '平たい矢印 (+x 向き。turn で向きを変える)',
+} as const;
+
+/** 作り込んだ物 (src/three/objects.tsx)。size は [幅, 高さ, 奥行き] の既定値 (m) */
+export const BUILD_PROPS = {
+  vendingMachine: { ja: '自販機', size: [1.8, 3.2, 1.4] },
+  vendingMachineOpen: { ja: '扉が開き中の管が見える自販機', size: [1.8, 3.2, 1.4] },
+  fridge: { ja: '冷蔵庫', size: [1.2, 2.3, 0.95] },
+  house: { ja: '家', size: [2.4, 2.6, 1.8] },
+  bolt: { ja: '稲妻 (電気)', size: [1.04, 2, 0.22] },
+} as const satisfies Record<string, { ja: string; size: readonly [number, number, number] }>;
+
+export type BuildBasicShape = keyof typeof BUILD_BASIC_SHAPES;
+export type BuildProp = keyof typeof BUILD_PROPS;
+
+export const isBuildBasicShape = (name: string): name is BuildBasicShape =>
+  Object.prototype.hasOwnProperty.call(BUILD_BASIC_SHAPES, name);
+export const isBuildProp = (name: string): name is BuildProp => Object.prototype.hasOwnProperty.call(BUILD_PROPS, name);
+/** parts の shape に書けるか (基本形・作り込んだ物・3D オブジェクトのキー) */
+export const isBuildShape = (name: string): boolean => isBuildBasicShape(name) || isBuildProp(name) || isShapeName(name);
+
+/** 組み立て形式の色名 (paper テーマの紺・朱・墨に合う、落ち着いた色) */
+export const BUILD_COLORS: Record<string, string> = {
+  navy: '#3F5F86',
+  'navy-dark': '#2F4A6B',
+  'navy-light': '#5B7DA6',
+  sky: '#9DB8D6',
+  cold: '#C9D7E8',
+  red: '#C63A2B',
+  orange: '#E2763A',
+  hot: '#F0C8BC',
+  gold: '#E8C35A',
+  green: '#6E9A6A',
+  brown: '#B98A4A',
+  purple: '#7A5C8E',
+  paper: '#F2ECDF',
+  beige: '#DCD3BF',
+  metal: '#B8BEC6',
+  gray: '#8C857A',
+  white: '#FFFFFF',
+  black: '#3A3630',
+  ink: '#24211C',
+};
+
+/** 組み立て形式の色名・#RRGGBB を解釈する。解釈できなければ undefined */
+export const resolveBuildColor = (value: string | undefined): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  return BUILD_COLORS[value.toLowerCase()] ?? (/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value) ? value : undefined);
+};

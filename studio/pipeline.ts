@@ -85,17 +85,21 @@ export const sceneLabel = (scene: ScriptConfig['scenes'][number]): string => {
 /** キッズは小学生向けのやさしい言葉 + 3D オブジェクト中心、それ以外は大人向けの解説で書く */
 const audienceOf = (look: Look): Audience => (look === 'kids' ? 'kids' : 'general');
 
-/** 見た目の選択を台本の meta に反映する (新規作成のときだけ) */
+/** 見た目の選択を台本の meta に反映する (新規作成のときだけ)。3D図解は paper テーマで描く */
 const applyLook = (script: ScriptConfig, options: ProjectOptions): ScriptConfig => {
-  const meta = { ...script.meta, theme: options.look };
-  if (options.look === 'paper') {
+  const editorial = options.look === 'paper' || options.look === 'zukai3d';
+  const meta = { ...script.meta, theme: editorial ? 'paper' : options.look };
+  if (editorial) {
     Object.assign(meta, {
       transition: 'fade',
       avatar: false,
       progressBar: false,
       subtitle: { ...meta.subtitle, style: 'box' },
       sfx: { ...meta.sfx, reveal: false, transition: false, volume: 0.35 },
-      header: meta.header ?? { label: '図解', title: meta.title ? [...meta.title].slice(0, 20).join('') : undefined },
+      header: meta.header ?? {
+        label: options.look === 'zukai3d' ? '3D図解' : '図解',
+        title: meta.title ? [...meta.title].slice(0, 20).join('') : undefined,
+      },
     });
   }
   return scriptSchema.parse({ ...script, meta });
@@ -110,6 +114,9 @@ const buildMaterial = (topic: string, settings: string, options: ProjectOptions)
     `## 目安の尺\n約${options.durationSec}秒 (ナレーションは全体で約${Math.round(options.durationSec * 6)}字。1秒あたり約6字)`,
     options.look === 'paper'
       ? '## 見た目\n図解ドキュメンタリー風 (紙・紺×朱×墨・明朝)。題材に合う 3D の場面 (scene3d) があれば使い、なければ statement / stats / share / bars / flow などの図解で見せる。title / outro シーンは使わない。'
+      : '',
+    options.look === 'zukai3d'
+      ? '## 見た目\n図解ドキュメンタリー風 (紙・紺×朱×墨・明朝) の 3D 図解。自販機の透視図のように、題材の物そのもの (機械・建物・道具・体・地形など) を scene3d の「組み立て (parts)」形式で作り込んで見せる。内容のシーンの半分以上を parts 形式の scene3d にし、外箱を ghost で透かして中の部品を見せる・目に見えない流れ (熱・電気・水・データ・お金) を flows で流す・callouts で部位を指して説明する・数の多さは repeat で並べる。説明の順に部品や流れを reveal し、組み立てていくように見せる。題材に合う preset があればそれも使ってよい。それ以外のシーンは statement / stats / share / bars / flow などの図解で見せる。title / outro シーンは使わない。'
       : '',
     '数字には必ず出典を付け、不確かな数字は「約」「およそ」を付けるか使わない。',
     '-----',

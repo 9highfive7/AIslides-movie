@@ -1,5 +1,5 @@
-import { isPresetScene3D, type ScriptConfig, type Scene, type Scene3DObjectsContent } from './schemas';
-import { isShapeName, resolveColor } from './three/catalog';
+import { isBuildScene3D, isPresetScene3D, type ScriptConfig, type Scene, type Scene3DBuildContent, type Scene3DObjectsContent } from './schemas';
+import { isBuildShape, isShapeName, resolveBuildColor, resolveColor } from './three/catalog';
 
 /** scene3d の矢印のID。flow は物と物の間 (N-1本)、cycle は輪を一周 (N本) */
 export const scene3dArrowIds = (content: Scene3DObjectsContent): string[] => {
@@ -23,6 +23,55 @@ export const SCENE3D_ELEMENT_IDS = {
   // machine / bolt: 稲妻 / house: 家 / months: カレンダーがめくれる
   vendingEnergy: ['machine', 'bolt', 'house', 'months'],
 } as const;
+
+/** 組み立て形式の要素ID: 部品・流れ・注釈・title・stat、寄る先があれば zoom */
+const buildElementIds = (content: Scene3DBuildContent): string[] => [
+  ...content.parts.map((part) => part.id),
+  ...content.flows.map((flow) => flow.id),
+  ...content.callouts.map((c) => c.id),
+  'title',
+  'stat',
+  ...(content.camera.zoomTo ? ['zoom'] : []),
+];
+
+/** 組み立て形式の整合性 (形・色・注釈と寄る先の参照・IDの重複) */
+const lintBuild = (content: Scene3DBuildContent, at: string): string[] => {
+  const issues: string[] = [];
+  content.parts.forEach((part, pi) => {
+    if (!isBuildShape(part.shape)) {
+      issues.push(
+        `${at}.parts.${pi}.shape: 形 "${part.shape}" はありません (基本形・作り込んだ物・3D オブジェクトのキーは src/three/catalog.ts を参照)`,
+      );
+    }
+    if (part.color !== undefined && resolveBuildColor(part.color) === undefined) {
+      issues.push(`${at}.parts.${pi}.color: 色 "${part.color}" は使えません (色名か #RRGGBB)`);
+    }
+    if (part.size && part.size.some((v) => v <= 0)) {
+      issues.push(`${at}.parts.${pi}.size: 大きさは 0 より大きくしてください`);
+    }
+  });
+  content.flows.forEach((flow, fi) => {
+    if (flow.color !== undefined && resolveBuildColor(flow.color) === undefined) {
+      issues.push(`${at}.flows.${fi}.color: 色 "${flow.color}" は使えません (色名か #RRGGBB)`);
+    }
+  });
+  const targets = new Set([...content.parts.map((p) => p.id), ...content.flows.map((f) => f.id)]);
+  content.callouts.forEach((c, ci) => {
+    if (!targets.has(c.target)) {
+      issues.push(`${at}.callouts.${ci}.target: "${c.target}" という部品・流れはありません`);
+    }
+  });
+  const zoomTo = content.camera.zoomTo;
+  if (zoomTo !== undefined && !content.parts.some((p) => p.id === zoomTo)) {
+    issues.push(`${at}.camera.zoomTo: "${zoomTo}" という部品はありません`);
+  }
+  const ids = buildElementIds(content);
+  const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+  if (dup.length > 0) {
+    issues.push(`${at}: 要素ID が重複しています (${[...new Set(dup)].join(', ')})。title / stat / zoom も部品の id には使えません`);
+  }
+  return issues;
+};
 
 /**
  * シーン内で reveal / focus に指定できる要素IDの一覧。
@@ -67,9 +116,13 @@ export const elementIds = (scene: Scene): string[] => {
     case 'share':
       return [...scene.content.segments.map((seg) => seg.id), 'source'];
     case 'scene3d':
-      return isPresetScene3D(scene.content)
-        ? [...SCENE3D_ELEMENT_IDS[scene.content.preset], 'title', 'stat', ...scene.content.callouts.map((c) => c.id)]
-        : [...scene.content.objects.map((obj) => obj.id), ...scene3dArrowIds(scene.content), 'caption'];
+      if (isPresetScene3D(scene.content)) {
+        return [...SCENE3D_ELEMENT_IDS[scene.content.preset], 'title', 'stat', ...scene.content.callouts.map((c) => c.id)];
+      }
+      if (isBuildScene3D(scene.content)) {
+        return buildElementIds(scene.content);
+      }
+      return [...scene.content.objects.map((obj) => obj.id), ...scene3dArrowIds(scene.content), 'caption'];
   }
 };
 
@@ -90,7 +143,10 @@ export const lintScript = (script: ScriptConfig): string[] => {
       issues.push(`scenes.${si}.id: シーンIDは英数字・ハイフン・アンダースコアのみ使えます ("${scene.id}")`);
     }
 
-    if (scene.layout === 'scene3d' && !isPresetScene3D(scene.content)) {
+    if (scene.layout === 'scene3d' && isBuildScene3D(scene.content)) {
+      issues.push(...lintBuild(scene.content, `scenes.${si}.content`));
+    }
+    if (scene.layout === 'scene3d' && !isPresetScene3D(scene.content) && !isBuildScene3D(scene.content)) {
       scene.content.objects.forEach((obj, oi) => {
         if (!isShapeName(obj.shape)) {
           issues.push(

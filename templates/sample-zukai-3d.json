@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "title": "電子レンジはなぜ中から温まるのか",
+    "theme": "paper",
+    "header": { "label": "3D図解", "title": "電子レンジのしくみ" },
+    "transition": "fade",
+    "progressBar": false,
+    "avatar": false,
+    "subtitle": { "style": "box" },
+    "sfx": { "volume": 0.35, "reveal": false, "transition": false },
+    "thumbnail": { "text": "電子レンジは\n**中から**温める", "sub": "火を使わない加熱のヒミツ" }
+  },
+  "scenes": [
+    {
+      "id": "mw-body",
+      "layout": "scene3d",
+      "chapter": "箱の中身",
+      "content": {
+        "title": "電子レンジの中には**電波を出す装置**がある",
+        "parts": [
+          { "id": "shell", "shape": "box", "size": [3.2, 1.9, 2.2], "at": [0, 0, 0], "color": "navy", "ghost": true },
+          { "id": "panel", "shape": "box", "size": [0.7, 1.7, 0.1], "at": [1.2, 0.1, 1.06], "color": "navy-dark", "text": "1000W" },
+          { "id": "table", "shape": "cylinder", "size": [1.5, 0.08, 1.5], "at": [-0.45, 0.12, 0.1], "color": "paper" },
+          { "id": "cup", "shape": "cylinder", "size": [0.55, 0.6, 0.55], "at": [-0.45, 0.2, 0.1], "color": "red", "label": "水の入ったコップ" },
+          { "id": "magnetron", "shape": "box", "size": [0.6, 0.5, 0.6], "at": [1.2, 1.25, -0.4], "color": "gold", "text": "発振" },
+          { "id": "fan", "shape": "ring", "size": [0.5, 0.5, 0.1], "at": [1.2, 0.4, -0.95], "color": "metal", "motion": "spin" }
+        ],
+        "flows": [
+          {
+            "id": "waves",
+            "path": [[0.9, 1.5, -0.4], [0.2, 1.65, -0.2], [-0.45, 1.65, 0.1], [-0.45, 0.9, 0.1]],
+            "kind": "dots",
+            "color": "orange",
+            "pipe": false,
+            "speed": 1.6
+          }
+        ],
+        "callouts": [
+          { "id": "c-mag", "target": "magnetron", "title": "マグネトロン", "sub": "電波を出す装置", "tone": "accent" },
+          { "id": "c-cup", "target": "cup", "title": "水が揺れる", "sub": "揺れ＝熱になる", "tone": "warning" }
+        ],
+        "camera": { "view": "right", "zoomTo": "cup" }
+      },
+      "lines": [
+        { "text": "電子レンジの外箱を透かして、中をのぞいてみましょう。", "reveal": ["title"] },
+        { "text": "右上にあるのが、電波を出す**マグネトロン**です。", "reveal": ["magnetron", "c-mag"] },
+        { "text": "出てきた電波は、庫内を飛び回って食べ物に届きます。", "reveal": ["waves"] },
+        { "text": "電波を受けた水が細かく揺れて、**熱**が生まれます。", "reveal": ["c-cup", "zoom"], "focus": ["cup"] }
+      ]
+    },
+    {
+      "id": "mw-molecules",
+      "layout": "scene3d",
+      "chapter": "水の分子",
+      "content": {
+        "title": "電波の向きが変わるたび**水の分子が回る**",
+        "parts": [
+          { "id": "oxygen", "shape": "sphere", "size": [0.42, 0.42, 0.42], "at": [0, 0.5, 0], "color": "red", "motion": "bob", "repeat": { "count": 18, "columns": 6, "gap": 1.0 } },
+          { "id": "h1", "shape": "sphere", "size": [0.24, 0.24, 0.24], "at": [0.24, 0.72, 0], "color": "white", "motion": "bob", "repeat": { "count": 18, "columns": 6, "gap": 1.0 } },
+          { "id": "h2", "shape": "sphere", "size": [0.24, 0.24, 0.24], "at": [-0.24, 0.72, 0], "color": "white", "motion": "bob", "repeat": { "count": 18, "columns": 6, "gap": 1.0 } }
+        ],
+        "flows": [
+          { "id": "wave", "path": [[-3.6, 1.3, 1.4], [3.6, 1.3, 1.4]], "kind": "arrow" }
+        ],
+        "callouts": [{ "id": "c-wave", "target": "wave", "title": "電波", "sub": "向きが何十億回も入れ替わる", "tone": "warning" }],
+        "stat": { "kicker": "電子レンジの電波", "value": "2.45GHz", "note": "ISMバンド (電波法)" }
+      },
+      "lines": [
+        { "text": "食べ物の中には、たくさんの**水の分子**があります。", "reveal": ["title"] },
+        { "text": "そこへ、向きがめまぐるしく入れ替わる電波が通ります。", "reveal": ["wave", "c-wave"] },
+        { "text": "その速さは、1秒間に約24億5000万回です。", "reveal": ["stat"] }
+      ]
+    },
+    {
+      "id": "mw-compare",
+      "layout": "scene3d",
+      "chapter": "コンロとの違い",
+      "content": {
+        "title": "コンロは**外から**、レンジは**中から**",
+        "parts": [
+          { "id": "stove", "shape": "box", "size": [2.4, 0.9, 1.6], "at": [-2.4, 0, 0], "color": "beige" },
+          { "id": "burner", "shape": "cylinder", "size": [0.9, 0.08, 0.9], "at": [-2.4, 0.9, 0], "color": "black" },
+          { "id": "pot", "shape": "cylinder", "size": [1.1, 0.8, 1.1], "at": [-2.4, 0.98, 0], "color": "metal", "text": "なべ" },
+          { "id": "oven", "shape": "box", "size": [2.4, 1.5, 1.7], "at": [2.2, 0, 0], "color": "navy", "ghost": true },
+          { "id": "dish", "shape": "cylinder", "size": [0.9, 0.35, 0.9], "at": [2.2, 0.1, 0], "color": "hot", "text": "料理" }
+        ],
+        "flows": [
+          { "id": "flame", "path": [[-2.4, 0.95, 0.65], [-2.4, 1.6, 0.65], [-2.4, 2.2, 0.65]], "kind": "heat", "pipe": false },
+          { "id": "inside", "path": [[2.2, 0.25, 0.2], [2.2, 0.9, 0.2], [2.2, 1.4, 0.2]], "kind": "heat", "pipe": false, "speed": 0.8 }
+        ],
+        "callouts": [
+          { "id": "c-out", "target": "pot", "title": "外から温める", "sub": "火の熱がなべ→料理へ", "tone": "muted" },
+          { "id": "c-in", "target": "dish", "title": "中から温める", "sub": "料理の水そのものが発熱", "tone": "warning" }
+        ],
+        "camera": { "view": "front" }
+      },
+      "lines": [
+        { "text": "コンロは、火の熱をなべから料理へ、外から伝えます。", "reveal": ["title", "flame", "c-out"] },
+        { "text": "電子レンジは、料理の中の水そのものが熱を出します。", "reveal": ["oven", "dish", "inside", "c-in"] }
+      ]
+    }
+  ]
+}

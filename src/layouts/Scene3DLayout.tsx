@@ -21,7 +21,8 @@ import {
   type PlacedGroup,
   type V3,
 } from '../three/stage';
-import { isPresetScene3D, type Scene3DObjectsContent } from '../schemas';
+import { isBuildScene3D, isPresetScene3D, type Scene3DObjectsContent } from '../schemas';
+import { BuildScene } from '../three/BuildScene';
 import type { ContentOf } from './common';
 import { PresetScene3DLayout } from './PresetScene3DLayout';
 
@@ -283,9 +284,15 @@ const Label: React.FC<{ text: string; x: number; y: number; above: boolean; at: 
   );
 };
 
-/** scene3d: preset があれば作り込んだ場面、なければ objects を舞台に並べる */
+/** scene3d: preset があれば作り込んだ場面、parts があれば部品を組み立てた場面、なければ objects を舞台に並べる */
 export const Scene3DLayout: React.FC<{ content: ContentOf<'scene3d'> }> = ({ content }) =>
-  isPresetScene3D(content) ? <PresetScene3DLayout content={content} /> : <ObjectsScene3DLayout content={content} />;
+  isPresetScene3D(content) ? (
+    <PresetScene3DLayout content={content} />
+  ) : isBuildScene3D(content) ? (
+    <BuildScene content={content} />
+  ) : (
+    <ObjectsScene3DLayout content={content} />
+  );
 
 /**
  * 3D オブジェクトで見せるレイアウト。台本の objects (形・色・数・大きさ) を舞台に並べ、
