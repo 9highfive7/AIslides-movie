@@ -38,6 +38,22 @@ export const claudeText = async (system: string, user: string): Promise<string> 
     if (error instanceof Anthropic.RateLimitError) {
       throw new Error('Claude の利用上限に達しました。しばらく待ってから試してください。');
     }
+    if (error instanceof Anthropic.APIConnectionError) {
+      // 「Connection error.」だけでは原因がわからないので、下の原因 (証明書・タイムアウトなど) も出す
+      const causes: string[] = [];
+      const causeOf = (e: unknown): unknown => (e as { cause?: unknown }).cause;
+      for (let c = causeOf(error); c instanceof Error && causes.length < 4; c = causeOf(c)) {
+        const code = (c as { code?: unknown }).code;
+        causes.push(typeof code === 'string' ? `${code} ${c.message}` : c.message);
+      }
+      const cert = causes.some((c) => /CERT|SIGNATURE|SELF_SIGNED|ISSUER/.test(c));
+      throw new Error(
+        `Claude につながりませんでした: ${[error.message, ...causes].join(' / ')}` +
+          (cert
+            ? '\nセキュリティソフトが通信を検査していると、証明書を確かめられないことがあります。そのソフトの証明書ファイルを NODE_EXTRA_CA_CERTS に指定して起動し直してください。'
+            : ''),
+      );
+    }
     if (error instanceof Anthropic.APIError) {
       throw new Error(`Claude の呼び出しに失敗しました (HTTP ${error.status}): ${error.message}`);
     }

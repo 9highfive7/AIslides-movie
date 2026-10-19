@@ -519,6 +519,7 @@ npm run audio && npm run build:youtube                           # いつもの�
 - **`[script.json] … 要素ID "…" はシーン "…" にありません`** — `reveal` / `focus` の綴りの間違いです。メッセージに使えるIDの一覧が出ます。
 - **動きが多すぎる** — `meta.animation: "fadeUp"`・`meta.transition: "fade"`・`meta.camera: "none"`・`meta.animatedBackground: false` で落ち着いた演出になります。立体的な演出をやめるときは `meta.style: "flat"`。
 - **3D の描画が遅い** — GPU のない環境では、3D（`scene3d`・タイトル等に浮かぶオブジェクト）は1フレーム約0.2秒、それ以外は約0.1秒かかります（4コアの目安。3D の多い10分の動画で約40〜60分）。急ぐときは `meta.style: "flat"` にして `scene3d` を減らしてください。
+- **スタジオで「Claude につながりませんでした: … UNABLE_TO_VERIFY_LEAF_SIGNATURE」** — ウイルス対策ソフト（Norton など）が HTTPS の通信を検査していて、Node がそのソフトの証明書を信頼していません。そのソフトの証明書ファイルを `NODE_EXTRA_CA_CERTS` に指定してから `npm run studio` を起動し直します（Norton の例: PowerShell で `$env:NODE_EXTRA_CA_CERTS = 'C:\ProgramData\Norton\Antivirus\wscert.pem'`）。設定をスクリプト（.ps1）に書くときは、Windows PowerShell 5.1 が BOM なしの UTF-8 を正しく読めないので、日本語のコメントを入れないか BOM 付きで保存してください
 - **3D の部分が真っ白・真っ黒になる / WebGL のエラーが出る** — Chrome が WebGL を使えていません。`npm run render -- --gl=angle` または `--gl=swangle`（遅いが確実なソフトウェア描画）を試してください。
 
 ## GitHub Actions で自動生成する（リポジトリ側で完結）
