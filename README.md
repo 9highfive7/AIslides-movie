@@ -2,6 +2,14 @@
 
 `script.json`（台本）を差し替えるだけで、**音声・字幕・アニメーション・効果音のタイミングが自動で決まる**解説動画の生成パイプラインです。VOICEVOX Engine でナレーションを合成し、Remotion で 1920×1080 / 30fps の MP4 にレンダリングします。サムネイル画像と、概要欄に貼れるチャプター・字幕ファイルも同時に作れます。
 
+**既定は「3D アニメ × 子どもにもわかる解説」**
+
+- **3D オブジェクトで見せる**: 新レイアウト `scene3d` で、りんご・たいよう・くも・しずく・ロケット・ロボットなど約50種の 3D オブジェクトを舞台に並べて説明する（three.js。アニメ調の陰影と輪郭線）。物は上から落ちてきて弾み、`count` で「3こ」と数を見せ、`size` で大きさをくらべ、矢印でつないだり（`flow`）輪にして一周させたり（`cycle`）できる。説明中の物はぴょんぴょん跳ねて足もとが光る
+- **画面ぜんたいが立体に**（`meta.style: "3d"`・既定）: カメラが横から回り込んで少し傾いたまま揺れ、カードは積み木のような厚みを持ち、飛び出す絵本のように起き上がって出現する。背景は奥へ続く床と回る積み木。タイトル・章扉・エンディングのまわりには 3D オブジェクトが浮かぶ（サムネイルにも）
+- **子ども向けの配色**（`meta.theme: "kids"`・既定）: 空色 × はっきりした色 × 太い縁取り
+- **子どもにもわかる台本を自動生成**（`npm run script`・既定 `--audience kids`）: 小学3年生がわかる言葉・話しかける口調・身近なたとえで書き、説明の半分以上を 3D オブジェクトで見せる台本を LLM が作る
+- 従来の平面デザインは `meta.style: "flat"`、大人向けの台本は `--audience general` で使えます
+
 **YouTube 向けの演出（すべて台本から自動）**
 
 - **動く画面**: 要素はバネの動きで弾むように出現（ポップ・スライド・ズームなど8種）。見出しは1文字ずつ出現し、背景の模様と図形はゆっくり漂い、シーン中はカメラがゆっくりズームし続ける
@@ -84,7 +92,8 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 {
   "meta": {                     // 動画全体の設定 (すべて省略可)
     "title": "動画タイトル",
-    "theme": "pop",             // "clean" | "pop" | "dark"
+    "theme": "kids",            // "kids" (既定) | "clean" | "pop" | "dark"
+    "style": "3d",              // "3d" (既定) | "flat"
     "transition": "slide"       // 既定のシーン切り替え
   },
   "scenes": [
@@ -110,7 +119,7 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 }
 ```
 
-旧形式（`meta` なし・`reveal` だけの台本）もそのまま使えます。その場合は clean テーマ＋各種アニメーションの既定値で描画されます。
+旧形式（`meta` なし・`reveal` だけの台本）もそのまま使えます。その場合は kids テーマ＋3D スタイル＋各種アニメーションの既定値で描画されます（従来どおりの見た目にしたいときは `"meta": { "theme": "clean", "style": "flat" }`）。
 
 ### セリフ (lines) に書ける項目
 
@@ -126,8 +135,9 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 
 | layout | content の中身 | reveal / focus で使える要素ID | 動き |
 |---|---|---|---|
-| `title` | `kicker?` / `title`（`\n` で改行・`**強調**` 可）/ `subtitle?` | なし | 字間が締まるキッカー、1文字ずつ弾むタイトル |
-| `section` | 章扉。`number?` / `title` / `subtitle?` | なし | 章番号が「ドン」と落ち、背景に巨大な番号が流れる |
+| `title` | `kicker?` / `title`（`\n` で改行・`**強調**` 可）/ `subtitle?` / `objects?`（形キーの配列・6個まで） | なし | 字間が締まるキッカー、1文字ずつ弾むタイトル。3D スタイルでは `objects` の 3D オブジェクトがまわりに浮かぶ |
+| `section` | 章扉。`number?` / `title` / `subtitle?` / `objects?`（4個まで） | なし | 章番号が「ドン」と落ち、背景に巨大な番号が流れる。3D スタイルでは 3D オブジェクトが浮かぶ |
+| `scene3d` | 3D オブジェクトの舞台。`arrangement?`（`row` / `flow` / `cycle`）/ `objects[]` — `{ id, shape, label?, color?, count?, size? }`（1〜6個）/ `caption?` | 各 objects の `id`・矢印 `arrow-N`（`flow` は N-1 本、`cycle` は N 本）・`caption` | 物が落ちてきて弾む。数は1こずつ順に出る。focus で跳ねて足もとが光る（下の「3D オブジェクト」参照） |
 | `compare` | `leftTitle` / `rightTitle` / `left[]` / `right[]` — 各項目は `{ id, icon?, title, body?, tone? }`（`tone: "warning"` で赤） | 各項目の `id` | 左右から滑り込み、中央に VS |
 | `flow` | `steps[]` — `{ id, icon?, title, body? }`（2つ以上） | 各stepの `id` と、矢印 `arrow-1`〜`arrow-N-1`（自動付与） | カードが弾み、矢印が線を引くように伸びて点が流れる |
 | `inputOutput` | `input` / `transform { id, label }` / `output` | `input.id`・`transform.id`・`output.id` と矢印 `arrow-1`, `arrow-2` | 変換ボックスが脈打つ |
@@ -143,20 +153,68 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | `outro` | `title?`（既定「ご視聴ありがとうございました」）/ `message?` / `subscribe?`（既定 true）/ `endScreen?`（既定 true） | なし | 登録ボタンのクリック演出。`endScreen` で YouTube 終了画面用の枠を表示 |
 
 - シーンには `chapter`（左下の章タグ、例: `"chapter": "02 仕組み"`）と `badge`（右上のバッジ、例: `"badge": "おすすめ"`）を付けられます。
-- `icon` に指定できるキーは約85種（`check` `search` `shield-check` `target` `chart-bar` `trophy` `sparkles` `brain` `bell` など）。一覧は `src/components/IconBox.tsx` のレジストリを参照。未登録キーはプレースホルダー表示になります。
+- `icon` に指定できるキーは約120種（`check` `search` `shield-check` `target` `chart-bar` `trophy` `sparkles` `brain` `bell`、子ども向けの `leaf` `droplet` `sun` `fish` `apple` `house` `smile` など）。一覧は `src/components/IconBox.tsx` のレジストリを参照。未登録キーはプレースホルダー表示になります。
 - 存在しない要素IDを `reveal` / `focus` に書くと、`npm run audio` とプレビュー時に警告が出ます。
 - `outro` は YouTube の終了画面（最大20秒）に使えるよう、セリフを2つ以上入れて5秒以上にするのがおすすめです。
+
+### 3D オブジェクト（scene3d）
+
+言葉だけでは伝わりにくいことを、形のある物にして見せるレイアウトです。子ども向けの説明の主役になります。
+
+```jsonc
+{
+  "id": "up",
+  "layout": "scene3d",
+  "heading": "水が空へのぼるまで",
+  "content": {
+    "arrangement": "flow",                                       // row: 横に並べる / flow: 矢印でつなぐ / cycle: 輪にして一周
+    "objects": [
+      { "id": "sea", "shape": "drop", "label": "海の水" },
+      { "id": "sun", "shape": "sun", "label": "たいよう" },
+      { "id": "steam", "shape": "arrow-up", "label": "水じょうき", "color": "sky" },
+      { "id": "cloud", "shape": "cloud", "label": "くも" }
+    ],
+    "caption": "ひとこと (省略可)"
+  },
+  "lines": [
+    { "text": "ここに、海の水があるよ。", "reveal": ["sea"], "focus": ["sea"] },
+    { "text": "たいようの光であたためられると…", "reveal": ["arrow-1", "sun"], "focus": ["sun"] }
+  ]
+}
+```
+
+| objects のキー | 説明 |
+|---|---|
+| `shape` | 形のキー（下表）。未登録のキーは「はてな」の形になり、`npm run audio` で警告が出る |
+| `label` | 物の下（`cycle` の奥側の物は上）に出る名札 |
+| `color` | 色名（`red` `orange` `yellow` `green` `lime` `blue` `sky` `navy` `purple` `pink` `brown` `gray` `white` `black` `gold`）または `#RRGGBB`。省略時は形ごとの色 |
+| `count` | 同じ物をいくつ並べるか（1〜12）。1こずつ順に出てくるので数えられる。奥の列はひな壇に乗る |
+| `size` | 大きさの倍率（0.3〜2.5）。大小のくらべっこに使う |
+
+**形のキー（48種）** — 一覧と日本語の説明は `src/three/catalog.ts`、形そのものは `src/three/models.tsx`
+
+| 分類 | キー |
+|---|---|
+| 基本の形・記号 | `cube` `ball` `cylinder` `cone` `pyramid` `ring` `star` `heart` `arrow-up` `arrow-down` `question` `check` `cross` |
+| しぜん | `sun` `moon` `earth` `cloud` `drop` `fire` `tree` `flower` `sprout` `mountain` `fish` |
+| ひと | `person` `robot` |
+| もの | `house` `building` `car` `rocket` `book` `lightbulb` `coin` `gift` `apple` `cake` `battery` `phone` `computer` `chip` `server` `letter` `speech` `clock` `magnifier` `trophy` `lock` `magnet` |
+
+- 目に見えないものも、たとえで形にすると伝わります（データ → `letter`、お金 → `coin`、時間 → `clock`、ふえる → `arrow-up`、AI → `robot`）
+- 形を足すときは `src/three/catalog.ts` の `SHAPES` にキーを追加し、`src/three/models.tsx` の `MODELS` に同じキーで形を定義します（床に置いて高さ約1.6・幅約1.8以内にそろえる）
+- 素材集: `templates/sample-kids-3d.json`（「雨はどうしてふるの？」約3分。`row` / `flow` / `cycle`・`count`・`size` をすべて使った子ども向けのデモ）
 
 ### 動画全体の設定（meta）
 
 | キー | 既定値 | 説明 |
 |---|---|---|
 | `title` | （title シーンのタイトル） | 動画タイトル。概要欄ファイルとサムネイルの既定値に使う |
-| `theme` | `clean` | `clean`（落ち着いた青×紺）/ `pop`（クリーム地・太枠・黄色マーカー・縁取り字幕）/ `dark`（濃紺地・テック系） |
+| `theme` | `kids` | `kids`（空色×はっきりした色×太い縁取り・子ども向け）/ `clean`（落ち着いた青×紺）/ `pop`（クリーム地・太枠・黄色マーカー・縁取り字幕）/ `dark`（濃紺地・テック系） |
+| `style` | `3d` | `3d`: カードに厚み・立体的な出現（`animation: "auto"` のとき）・傾いて揺れるカメラ・奥へ続く床と回る積み木の背景・タイトル/章扉/エンディング/サムネイルに 3D オブジェクト / `flat`: 従来の平面デザイン。`scene3d` レイアウトはどちらでも 3D |
 | `transition` | `slide` | シーン切り替え: `slide` / `slideUp` / `wipe` / `zoom` / `circle` / `fade` / `none`（シーンごとに `transition` で上書き可） |
-| `animation` | `auto` | 要素の出現: `auto`（レイアウトごとのおすすめ）/ `fadeUp` / `pop` / `slideLeft` / `slideRight` / `zoom` / `blur` / `flip` / `none`（シーンごとに `animation` で上書き可） |
-| `camera` | `subtle` | シーン中のゆっくりズーム。`none` で止める |
-| `animatedBackground` | `true` | 背景の模様・図形を漂わせる |
+| `animation` | `auto` | 要素の出現: `auto`（レイアウトごとのおすすめ。`style: "3d"` では立体版に置き換わる）/ `fadeUp` / `pop` / `slideLeft` / `slideRight` / `zoom` / `blur` / `flip` / 立体の `rise3d`（飛び出す絵本のように起き上がる）/ `drop3d`（手前から飛んできて着地）/ `swing3d`（扉のように回り込む）/ `flip3d`（裏返る）/ `none`（シーンごとに `animation` で上書き可） |
+| `camera` | `subtle` | シーン中のゆっくりズーム（3D スタイルでは回り込み・傾き・揺れも）。`none` で止める |
+| `animatedBackground` | `true` | 背景の模様・図形（3D スタイルでは床と積み木）を動かす |
 | `progressBar` | `true` | 画面下端の進行バー（章の区切り付き） |
 | `subtitle` | `{ enabled: true, style: "auto" }` | `style`: `box`（帯）/ `outline`（縁取り文字）/ `auto`（テーマ既定）。YouTube の字幕機能だけ使うなら `enabled: false` |
 | `sfx` | `{ enabled: true, volume: 0.5, reveal: true, transition: true }` | 効果音。`reveal` = 出現時の pop、`transition` = 切り替え時の whoosh |
@@ -183,13 +241,21 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 
 台本を手書きする代わりに、LLM で自動生成できます。OpenAI互換の Chat Completions API を使います。
 
+**既定は子ども向け**（`--audience kids`）です。小学3年生がわかる言葉・話しかける口調（「〜だよ」「〜かな？」）・身近なたとえで書き、内容のシーンの半分以上を `scene3d`（3D オブジェクト）で見せ、「問いかけ → こたえ → りゆう → おさらい」の順に構成します。配色は kids テーマになります。
+
 ```bash
 export OPENAI_API_KEY="sk-..."
-npm run script -- "Remotionの魅力を解説する動画の台本を作って"   # プロンプトから
-npm run script -- --url https://example.com/article              # 記事URLから
-npm run script -- --theme pop "…"                                # テーマも同時に指定
+npm run script -- "雨はどうしてふるのかを解説して"                 # プロンプトから (子ども向け・3D)
+npm run script -- --url https://example.com/article              # 記事URLから (子ども向けにかみくだく)
+npm run script -- --audience general "Remotionの魅力を解説して"   # 大人向けの解説
+npm run script -- --theme pop "…"                                # テーマも同時に指定 (keep = 既存の台本のまま)
 npm run audio && npm run build:youtube                           # いつもの流れへ
 ```
+
+| オプション | 既定値 | 説明 |
+|---|---|---|
+| `--audience` | `kids` | `kids`: 子ども向けのやさしい解説 + 3D オブジェクト中心 / `general`: 一般向け（です・ます調。`scene3d` は2〜3シーンに1回ほど） |
+| `--theme` | `auto` | `auto`: kids なら kids テーマ・general なら既存の台本のテーマ / `keep`: 既存の台本のまま / テーマ名 |
 
 | 環境変数 | 既定値 | 説明 |
 |---|---|---|
@@ -197,8 +263,8 @@ npm run audio && npm run build:youtube                           # いつもの�
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI互換エンドポイント（Ollama なら `http://localhost:11434/v1`） |
 | `SCRIPT_MODEL` | `gpt-4o-mini` | モデル名（JSON mode 対応のものを推奨） |
 
-- 生成結果は `public/script.json` に**上書き**されます。ただし既存の `meta` の見た目の設定（テーマ・BGM・アバターなど）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけ LLM の提案で差し替えます
-- スキーマ検証・要素IDの整合性チェックを通らない場合は、エラー内容を渡して1回だけ自動リトライします
+- 生成結果は `public/script.json` に**上書き**されます。ただし既存の `meta` の見た目の設定（BGM・アバター・`style` など）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけ LLM の提案で差し替えます（テーマは `--theme` の規則で決まる）
+- スキーマ検証・要素IDの整合性チェック（存在しない 3D の形キーも含む）を通らない場合は、エラー内容を渡して1回だけ自動リトライします
 - 生成される台本は YouTube 向けの構成（title → section で章立て → statement / ranking などで山場 → outro）になるよう指示しています
 - URL指定はHTMLの本文テキストを抽出して使います。JavaScriptで描画されるページやログインが必要なページは取得できないため、本文をコピーしてプロンプトとして渡してください
 - 生成後は台本を確認・手直ししてから `npm run audio` を実行してください
@@ -227,11 +293,11 @@ npm run audio && npm run build:youtube                           # いつもの�
 - 目安: 10分 ≒ ナレーション約3,000字 ≒ **25〜30シーン / 80〜90セリフ**
 - 長尺では `section`（章扉）と `chapter` タグで章構成を作ると視聴者が迷わない
 - 総尺が10分を超えると `npm run audio` が警告を出します（目安超過。ブロックはしない）
-- 素材集: `public/script.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
+- 素材集: `public/script.json`（約9分のフルデモ — pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）、`templates/sample-kids-3d.json`（子ども向け・3D オブジェクト中心の約3分のデモ）と `templates/sample-claude-code-7scenes.json`（7シーンのコンパクト版・旧形式）。シーン単位でコピーして組み合わせて使えます
 
 ## デザインの変更
 
-配色・カードの枠や影・字幕の既定スタイルは `src/themes/index.ts` の `THEMES`（clean / pop / dark）に集約しています。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。
+配色・カードの枠や影・字幕の既定スタイルは `src/themes/index.ts` の `THEMES`（kids / clean / pop / dark）に集約しています。新しいテーマを足すときは `THEMES` にエントリを追加し、`src/schemas.ts` の `themeNameSchema` に名前を足します。3D スタイルのカードの厚みは `with3d`（`DEPTH_3D`）、厚みの色は各テーマの `colors.edge`、`scene3d` の舞台の色は `colors.stage` / `colors.stageEdge`、背景の積み木の色は `toys` です。
 
 ## トラブルシューティング
 
@@ -243,7 +309,9 @@ npm run audio && npm run build:youtube                           # いつもの�
 - **キャラクターを別の画像にしたい** — 背景が透明な PNG を `public/avatar/` に置き、`meta.avatar` でファイル名を指定します。口を開けた画像と閉じた画像の2枚（＋任意で半開き）が必要です。
 - **キャラクターの口が動かない／一定のリズムで動く** — 古い `timeline.json` です。`npm run audio` を再実行すると音声の音量から口パクが作られます（`audio:mock` では擬似的なリズム）。
 - **`[script.json] … 要素ID "…" はシーン "…" にありません`** — `reveal` / `focus` の綴りの間違いです。メッセージに使えるIDの一覧が出ます。
-- **動きが多すぎる** — `meta.animation: "fadeUp"`・`meta.transition: "fade"`・`meta.camera: "none"`・`meta.animatedBackground: false` で落ち着いた演出になります。
+- **動きが多すぎる** — `meta.animation: "fadeUp"`・`meta.transition: "fade"`・`meta.camera: "none"`・`meta.animatedBackground: false` で落ち着いた演出になります。立体的な演出をやめるときは `meta.style: "flat"`。
+- **3D の描画が遅い** — GPU のない環境では、3D（`scene3d`・タイトル等に浮かぶオブジェクト）は1フレーム約0.2秒、それ以外は約0.1秒かかります（4コアの目安。3D の多い10分の動画で約40〜60分）。急ぐときは `meta.style: "flat"` にして `scene3d` を減らしてください。
+- **3D の部分が真っ白・真っ黒になる / WebGL のエラーが出る** — Chrome が WebGL を使えていません。`npm run render -- --gl=angle` または `--gl=swangle`（遅いが確実なソフトウェア描画）を試してください。
 
 ## GitHub Actions で自動生成する（リポジトリ側で完結）
 
@@ -267,11 +335,11 @@ curl -X POST \
 
 gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-video -F 'client_payload[source_type]=url' -F 'client_payload[source]=https://…'`
 
-- 手動実行では `theme`（`keep` / `clean` / `pop` / `dark`）も選べます（台本生成時のみ。API からは `client_payload.theme`）
+- 手動実行では `audience`（`kids`（既定）/ `general`）と `theme`（`auto`（既定）/ `keep` / `kids` / `clean` / `pop` / `dark`）も選べます（台本生成時のみ。API からは `client_payload.audience` / `client_payload.theme`。省略時は kids / auto）
 
 **実行の流れ**: VOICEVOX Engine を service コンテナで起動 → `npm ci` → (台本生成) → `npm run audio` → `npm run render` → `npm run thumbnail` / `npm run youtube` → `video.mp4`・`thumbnail.png`・`youtube/`（概要欄の目次・字幕）をアーティファクトに保存（30日）→ 台本生成時は `script.json` / `timeline.json` もリポジトリにコミットして戻します。
 
-**費用**: 公開リポジトリなら無料（プライベートは無料枠2,000分/月）。10分動画1本で約20〜40分のランタイムを見込んでください。
+**費用**: 公開リポジトリなら無料（プライベートは無料枠2,000分/月）。10分動画1本で約30〜60分のランタイムを見込んでください（3D のシーンが多いほど長くなる。ジョブの上限は120分）。
 
 ## Genspark 側との連携
 
@@ -296,7 +364,7 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── generate-sfx.ts      # 効果音の合成
 │   └── lib/ (voicevox / llm / fetch-page / wav / estimate / levels / sfx / youtube)
 ├── shared/              # 音声側とRemotion側の共通処理 (timing.ts / markup.ts)
-├── templates/           # 台本サンプル（素材集）
+├── templates/           # 台本サンプル（素材集。sample-kids-3d.json が子ども向け 3D のデモ）
 ├── docs/manual.html     # 手順書 (画面例つき。ブラウザで開く)
 └── src/
     ├── Root.tsx / Slideshow.tsx / Thumbnail.tsx / data.ts / schemas.ts / elements.ts / audio-events.ts / fonts.ts
@@ -304,6 +372,9 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
     ├── animation/       # バネの設定・出現プリセット・トランジション
     ├── context/         # シーンごとの reveal / focus のタイミング
     ├── components/      # Reveal / KineticText / CountUp / DrawArrow / SubtitleLayer / AudioLayer /
-    │                    # Avatar / SubscribeButton / SubscribePopup / ProgressBar / SceneBackground / Camera ...
-    └── layouts/         # 15種のレイアウト (index.tsx が layout 名 → コンポーネントの対応表)
+    │                    # Avatar / SubscribeButton / SubscribePopup / ProgressBar / SceneBackground / Camera /
+    │                    # FloatingToys (タイトル等に浮かぶ 3D オブジェクト) ...
+    ├── three/           # 3D オブジェクト (catalog.ts: 形キーの一覧 / models.tsx: 形 / toon.tsx: アニメ調の材質と輪郭線 /
+    │                    # stage.ts: scene3d の配置とカメラ)
+    └── layouts/         # 16種のレイアウト (index.tsx が layout 名 → コンポーネントの対応表。Scene3DLayout が 3D の舞台)
 ```

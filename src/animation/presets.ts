@@ -63,11 +63,58 @@ export const revealStyle = (preset: Exclude<RevealPreset, 'auto'>, p: number): C
         transform: `perspective(1200px) rotateX(${rest * -85}deg)`,
         transformOrigin: '50% 0%',
       };
+    // ここから立体的な出現。transform の perspective() で奥行きを付けるので、親の設定は不要
+    case 'rise3d':
+      // 飛び出す絵本のように、床に寝ていた板が起き上がる
+      return {
+        opacity,
+        transform: `perspective(1400px) rotateX(${rest * 80}deg)`,
+        transformOrigin: '50% 100%',
+      };
+    case 'drop3d':
+      // 画面の手前 (カメラ側) から飛んできて着地する。バネの行き過ぎで少し沈んで戻る
+      return {
+        opacity,
+        transform: `perspective(1400px) translateZ(${rest * 520}px) rotateX(${rest * -18}deg)`,
+      };
+    case 'swing3d':
+      // 左端を軸に、奥に開いていた扉が手前に閉じてくるように回り込む
+      return {
+        opacity,
+        transform: `perspective(1600px) rotateY(${rest * 80}deg)`,
+        transformOrigin: '0% 50%',
+      };
+    case 'flip3d':
+      // カードをくるっと裏返して表を見せる
+      return {
+        opacity,
+        transform: `perspective(1400px) rotateY(${rest * 160}deg)`,
+        backfaceVisibility: 'hidden',
+      };
     case 'none':
       return {};
   }
 };
 
+/** style: "3d" で auto を使うとき、平面の出現をそれに近い立体の出現に置き換える */
+export const to3dPreset = (preset: Exclude<RevealPreset, 'auto'>): Exclude<RevealPreset, 'auto'> => {
+  switch (preset) {
+    case 'fadeUp':
+    case 'blur':
+      return 'rise3d';
+    case 'pop':
+    case 'zoom':
+      return 'drop3d';
+    case 'slideLeft':
+      return 'swing3d';
+    case 'slideRight':
+    case 'flip':
+      return 'flip3d';
+    default:
+      return preset;
+  }
+};
+
 /** プリセットごとのバネ。弾ませたいものだけ bouncy */
 export const springForPreset = (preset: Exclude<RevealPreset, 'auto'>): Partial<SpringConfig> =>
-  preset === 'pop' ? SPRINGS.bouncy : SPRINGS.snappy;
+  preset === 'pop' || preset === 'drop3d' || preset === 'flip3d' ? SPRINGS.bouncy : SPRINGS.snappy;

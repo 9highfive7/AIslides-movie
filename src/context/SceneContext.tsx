@@ -13,6 +13,8 @@ export interface SceneContextValue {
   ts: TimelineScene;
   /** シーンで使う出現アニメーション ('auto' のときは各レイアウトの既定) */
   preset: RevealPreset;
+  /** style: "3d" (auto の出現を立体的なものに置き換える) */
+  is3d: boolean;
   /** シーン冒頭の見出しなどが動き始めるフレーム */
   introAt: number;
   /** 要素の出現開始フレーム。reveal 指定がなければ order 番目としてシーン冒頭に出す */
@@ -62,6 +64,7 @@ export const buildSceneContext = (scene: Scene, ts: TimelineScene, meta: Meta): 
     scene,
     ts,
     preset: scene.animation ?? meta.animation,
+    is3d: meta.style === '3d',
     introAt,
     appearAt: (elementId, order = 0) => {
       const at = elementId === null ? undefined : revealFrames.get(elementId);

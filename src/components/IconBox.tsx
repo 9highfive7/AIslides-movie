@@ -85,9 +85,44 @@ import {
   Video,
   Wrench,
   CircleX,
+  Leaf,
+  Sprout,
+  Droplet,
+  CloudRain,
+  Sun,
+  Cloud,
+  Umbrella,
+  Fish,
+  TreePine,
+  Apple,
+  Car,
+  House,
+  Smile,
+  School,
+  Cat,
+  Dog,
+  Bird,
+  Snowflake,
+  Rainbow,
+  Moon,
+  Mountain,
+  Waves,
+  Flower,
+  Music,
+  Pencil,
+  Backpack,
+  Cookie,
+  Bus,
+  Plane,
+  Recycle,
+  Earth,
+  Thermometer,
+  Wind,
+  Microscope,
+  Telescope,
   type LucideIcon,
 } from 'lucide-react';
-import { useTheme } from '../themes';
+import { shade, useTheme } from '../themes';
 
 /** script.json の icon フィールドに指定できるキー → lucide の線アイコン */
 const REGISTRY: Record<string, LucideIcon> = {
@@ -175,6 +210,42 @@ const REGISTRY: Record<string, LucideIcon> = {
   video: Video,
   wrench: Wrench,
   'x-circle': CircleX,
+  // 子ども向けの身近なもの
+  leaf: Leaf,
+  sprout: Sprout,
+  droplet: Droplet,
+  'cloud-rain': CloudRain,
+  sun: Sun,
+  cloud: Cloud,
+  umbrella: Umbrella,
+  fish: Fish,
+  tree: TreePine,
+  apple: Apple,
+  car: Car,
+  house: House,
+  smile: Smile,
+  school: School,
+  cat: Cat,
+  dog: Dog,
+  bird: Bird,
+  snowflake: Snowflake,
+  rainbow: Rainbow,
+  moon: Moon,
+  mountain: Mountain,
+  waves: Waves,
+  flower: Flower,
+  music: Music,
+  pencil: Pencil,
+  backpack: Backpack,
+  cookie: Cookie,
+  bus: Bus,
+  plane: Plane,
+  recycle: Recycle,
+  earth: Earth,
+  thermometer: Thermometer,
+  wind: Wind,
+  microscope: Microscope,
+  telescope: Telescope,
 };
 
 /** 台本で使えるアイコンキーの一覧 (台本生成プロンプトにも使う) */
@@ -193,6 +264,29 @@ export const IconBox: React.FC<{
   const Icon = (name !== undefined && REGISTRY[name]) || CircleDot;
   const color = tone === 'warning' ? theme.colors.warning : theme.colors.accent;
   const backgroundColor = tone === 'warning' ? theme.colors.warningSoft : theme.colors.accentSoft;
+
+  if (theme.depth > 0) {
+    // 立体 (style: "3d"): つやのある押しボタンのようなタイル
+    const lift = Math.max(4, Math.round(size * 0.09));
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: Math.min(theme.radius, size * 0.3),
+          background: `linear-gradient(160deg, ${shade(color, 0.3)} 0%, ${color} 70%)`,
+          boxShadow: `0 ${lift}px 0 ${shade(color, -0.35)}, inset 0 3px 0 rgba(255, 255, 255, 0.35)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          marginBottom: lift,
+        }}
+      >
+        <Icon size={Math.round(size * 0.52)} strokeWidth={2.4} color={tone === 'warning' ? '#FFFFFF' : theme.colors.onAccent} />
+      </div>
+    );
+  }
 
   return (
     <div

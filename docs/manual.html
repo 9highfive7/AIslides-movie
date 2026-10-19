@@ -76,7 +76,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
 <header class="hero">
   <div>
     <h1>動画生成ガイド</h1>
-    <p>台本（script.json）から、音声・字幕・アニメーション・効果音付きの YouTube 向け解説動画（MP4）と、サムネイル・概要欄の目次・字幕ファイルを作る手順書です。</p>
+    <p>台本（script.json）から、音声・字幕・アニメーション・効果音付きの YouTube 向け解説動画（MP4）と、サムネイル・概要欄の目次・字幕ファイルを作る手順書です。動画は既定で、3D オブジェクトを使った子どもにもわかる見せ方になります。</p>
   </div>
 </header>
 
@@ -86,6 +86,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <strong>目次</strong>
   <ol>
     <li><a href="#overview">全体像</a></li>
+    <li><a href="#kids3d">3Dアニメと子ども向けの解説（既定）</a></li>
     <li><a href="#youtube">YouTube向けの演出</a></li>
     <li><a href="#prep">準備する</a></li>
     <li><a href="#local">ローカルで作る</a></li>
@@ -145,6 +146,74 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
 </table>
 </div>
 
+<h2 id="kids3d">3Dアニメと子ども向けの解説（既定）</h2>
+<p>動画は<strong>何も設定しなくても</strong>、3D の画面と、子どもにもわかる見せ方で作られます。むずかしいことを、形・数・大きさ・動きのある 3D オブジェクトにして説明します。</p>
+
+<div class="shots">
+  <figure><img src="images/3d-flow.jpg" alt="scene3d の flow の例。しずく・たいよう・上向き矢印・くもの 3D オブジェクトが青い 3D の矢印でつながり、くもが強調されている" loading="lazy"><figcaption><code>scene3d</code>（<code>flow</code>）：物を 3D の矢印でつなぐ</figcaption></figure>
+  <figure><img src="images/3d-count.jpg" alt="scene3d の count の例。大きなくもの横に、小さな水のつぶが8こ、ひな壇に2列で並んでいる" loading="lazy"><figcaption><code>count</code>：同じ物を数だけ並べる（1こずつ出てくる）</figcaption></figure>
+  <figure><img src="images/3d-cycle.jpg" alt="scene3d の cycle の例。海・水じょうき・くも・雨・山や川が輪に並び、内側の矢印で一周している" loading="lazy"><figcaption><code>cycle</code>：輪にして、くりかえしを見せる</figcaption></figure>
+  <figure><img src="images/3d-title.jpg" alt="タイトル画面の例。青い背景の中央に「雨はどうしてふるの？」、まわりにくも・しずく・たいようなどの 3D オブジェクトが浮かぶ" loading="lazy"><figcaption>タイトルと章扉のまわりにも 3D オブジェクトが浮かぶ</figcaption></figure>
+  <figure><img src="images/3d-cards.jpg" alt="箇条書きの例。厚みのあるカードと 3D のアイコン、奥へ続く床のグリッドと回る積み木の背景" loading="lazy"><figcaption>ほかのレイアウトも立体に（厚みのあるカード・床・積み木）</figcaption></figure>
+</div>
+
+<div class="feature">
+  <div><b>3D オブジェクト（scene3d）</b><p>りんご・たいよう・くも・しずく・ロケット・ロボットなど48種。アニメ調の陰影と輪郭線で、上から落ちてきて弾みます。説明中の物はぴょんぴょん跳ねて足もとが光ります。</p></div>
+  <div><b>数と大きさ</b><p><code>count</code> で「3こ」を本当に3こ並べ、<code>size</code> で大小をくらべます。目に見えないもの（データ・お金・時間）も、手紙・コイン・時計などにたとえて形にします。</p></div>
+  <div><b>立体の画面（style: 3d）</b><p>カメラが横から回り込み、少し傾いたまま揺れます。カードは積み木のような厚みを持ち、飛び出す絵本のように起き上がって出てきます。</p></div>
+  <div><b>子ども向けの台本</b><p><code>npm run script</code> は既定で、小学3年生がわかる言葉・話しかける口調・身近なたとえで台本を書き、説明の半分以上を 3D オブジェクトで見せます。</p></div>
+</div>
+
+<h3>scene3d の書き方</h3>
+<pre><code>{
+  "id": "up",
+  "layout": "scene3d",
+  "heading": "水が空へのぼるまで",
+  "content": {
+    "arrangement": "flow",      // row: 横に並べる / flow: 矢印でつなぐ / cycle: 輪にして一周
+    "objects": [
+      { "id": "sea", "shape": "drop", "label": "海の水" },
+      { "id": "sun", "shape": "sun", "label": "たいよう" },
+      { "id": "steam", "shape": "arrow-up", "label": "水じょうき", "color": "sky" },
+      { "id": "cloud", "shape": "cloud", "label": "くも" }
+    ]
+  },
+  "lines": [
+    { "text": "ここに、海の水があるよ。", "reveal": ["sea"], "focus": ["sea"] },
+    { "text": "たいようの光であたためられると…", "reveal": ["arrow-1", "sun"], "focus": ["sun"] }
+  ]
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>objects のキー</th><th>説明</th></tr></thead>
+  <tbody>
+    <tr><td><code>shape</code></td><td>形のキー（下表）。ないキーは「はてな」の形になり、<code>npm run audio</code> で警告が出る</td></tr>
+    <tr><td><code>label</code></td><td>物の下に出る名札（輪の奥側の物は上）</td></tr>
+    <tr><td><code>color</code></td><td>色名（<code>red</code> <code>orange</code> <code>yellow</code> <code>green</code> <code>blue</code> <code>sky</code> <code>purple</code> <code>pink</code> など）か <code>#RRGGBB</code>。省略時は形ごとの色</td></tr>
+    <tr><td><code>count</code></td><td>同じ物をいくつ並べるか（1〜12）。奥の列はひな壇に乗るので全部数えられる</td></tr>
+    <tr><td><code>size</code></td><td>大きさの倍率（0.3〜2.5）</td></tr>
+  </tbody>
+</table>
+</div>
+<p>reveal / focus に使えるIDは、各 objects の <code>id</code>、矢印の <code>arrow-1</code>〜（<code>flow</code> は物の数−1本、<code>cycle</code> は物の数と同じ本数）、<code>caption</code> です。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>分類</th><th>形のキー（全48種。一覧は <code>src/three/catalog.ts</code>）</th></tr></thead>
+  <tbody>
+    <tr><td>基本の形・記号</td><td><code>cube</code> <code>ball</code> <code>cylinder</code> <code>cone</code> <code>pyramid</code> <code>ring</code> <code>star</code> <code>heart</code> <code>arrow-up</code> <code>arrow-down</code> <code>question</code> <code>check</code> <code>cross</code></td></tr>
+    <tr><td>しぜん</td><td><code>sun</code> <code>moon</code> <code>earth</code> <code>cloud</code> <code>drop</code> <code>fire</code> <code>tree</code> <code>flower</code> <code>sprout</code> <code>mountain</code> <code>fish</code></td></tr>
+    <tr><td>ひと</td><td><code>person</code> <code>robot</code></td></tr>
+    <tr><td>もの</td><td><code>house</code> <code>building</code> <code>car</code> <code>rocket</code> <code>book</code> <code>lightbulb</code> <code>coin</code> <code>gift</code> <code>apple</code> <code>cake</code> <code>battery</code> <code>phone</code> <code>computer</code> <code>chip</code> <code>server</code> <code>letter</code> <code>speech</code> <code>clock</code> <code>magnifier</code> <code>trophy</code> <code>lock</code> <code>magnet</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>タイトル（<code>title</code>）と章扉（<code>section</code>）の content に <code>"objects": ["cloud", "drop", "sun"]</code> のように形のキーを書くと、そのオブジェクトがまわりに浮かびます（省略時は星・ボールなどの既定の形）。見本は <code>templates/sample-kids-3d.json</code>（「雨はどうしてふるの？」約3分）です。</p>
+
+<div class="callout">
+  <b>前の見た目に戻したいとき</b>
+  <code>meta</code> に <code>"style": "flat"</code> を書くと従来の平面デザインに、<code>"theme": "clean"</code> などで従来の配色になります。大人向けの台本は <code>npm run script -- --audience general "…"</code> で作れます。
+</div>
+
 <h2 id="youtube">YouTube向けの演出</h2>
 <p>次の演出は、台本に特別なことを書かなくても自動で入ります。どれも <a href="#meta">meta</a> の設定で弱めたり止めたりできます。</p>
 
@@ -159,7 +228,8 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <div><b>登録の導線</b><p>動画の途中に「チャンネル登録」のポップアップ（カーソルがクリックする演出）。最後は終了画面の枠付きエンディング。</p></div>
 </div>
 
-<h3>テーマ（配色）は3種類</h3>
+<h3>テーマ（配色）は4種類</h3>
+<p>既定は子ども向けの <code>kids</code>（空色の背景・はっきりした色・太い縁取り。上の 3D の画面例）です。ほかに次の3つがあります。</p>
 <div class="shots">
   <figure><img src="images/theme-clean.jpg" alt="clean テーマの比較画面。淡い青の背景に白いカード、帯付きの字幕" loading="lazy"><figcaption><code>clean</code>：落ち着いた青と紺。帯付き字幕</figcaption></figure>
   <figure><img src="images/theme-pop.jpg" alt="pop テーマの比較画面。クリーム色の背景に太枠のカード、縁取り字幕と右下のキャラクター" loading="lazy"><figcaption><code>pop</code>：太枠・黄色マーカー・縁取り字幕</figcaption></figure>
@@ -270,7 +340,8 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 <pre><code>{
   "meta": {                     // 動画全体の設定（すべて省略可）
     "title": "動画タイトル",
-    "theme": "pop"
+    "theme": "kids",            // 既定。clean / pop / dark も選べる
+    "style": "3d"               // 既定。flat で平面デザイン
   },
   "scenes": [
     {
@@ -290,7 +361,7 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
     }
   ]
 }</code></pre>
-<p>以前の形式（<code>meta</code> なし・<code>reveal</code> だけの台本）もそのまま使えます。その場合は <code>clean</code> テーマで、アニメーションは既定値になります。</p>
+<p>以前の形式（<code>meta</code> なし・<code>reveal</code> だけの台本）もそのまま使えます。その場合は <code>kids</code> テーマ・3D スタイルで、アニメーションは既定値になります。</p>
 
 <h3>セリフ（lines）に書ける項目</h3>
 <div class="table-wrap">
@@ -320,8 +391,9 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 <table>
   <thead><tr><th>layout</th><th>用途と content の中身</th><th>reveal / focus に使えるID</th><th>動き</th></tr></thead>
   <tbody>
-    <tr><td><code>title</code></td><td>タイトル画面。<code>kicker?</code> / <code>title</code>（<code>\n</code> で改行・<code>**強調**</code> 可）/ <code>subtitle?</code></td><td>なし</td><td>タイトルが1文字ずつ弾む</td></tr>
-    <tr><td><code>section</code></td><td>章扉。<code>number?</code> / <code>title</code> / <code>subtitle?</code></td><td>なし</td><td>章番号が「ドン」と落ちる</td></tr>
+    <tr><td><code>title</code></td><td>タイトル画面。<code>kicker?</code> / <code>title</code>（<code>\n</code> で改行・<code>**強調**</code> 可）/ <code>subtitle?</code> / <code>objects?</code>（形のキー・6個まで）</td><td>なし</td><td>タイトルが1文字ずつ弾み、まわりに 3D オブジェクトが浮かぶ</td></tr>
+    <tr><td><code>section</code></td><td>章扉。<code>number?</code> / <code>title</code> / <code>subtitle?</code> / <code>objects?</code>（4個まで）</td><td>なし</td><td>章番号が「ドン」と落ち、3D オブジェクトが浮かぶ</td></tr>
+    <tr><td><code>scene3d</code><span class="tag">新</span></td><td>3D オブジェクトの舞台。<code>arrangement?</code>（<code>row</code> / <code>flow</code> / <code>cycle</code>）/ <code>objects[]</code>（<code>{ id, shape, label?, color?, count?, size? }</code>）/ <code>caption?</code></td><td>各 objects の <code>id</code>、矢印 <code>arrow-1</code>〜、<code>caption</code></td><td>物が落ちてきて弾む。focus で跳ねて足もとが光る</td></tr>
     <tr><td><code>compare</code></td><td>左右比較。<code>leftTitle</code> / <code>rightTitle</code> / <code>left[]</code> / <code>right[]</code>（各項目 <code>{ id, icon?, title, body?, tone? }</code>）</td><td>各項目の <code>id</code></td><td>左右から滑り込み、中央に VS</td></tr>
     <tr><td><code>flow</code></td><td>手順の流れ。<code>steps[]</code>（2つ以上）</td><td>各stepの <code>id</code>、矢印 <code>arrow-1</code>〜</td><td>矢印が線を引くように伸び、点が流れる</td></tr>
     <tr><td><code>inputOutput</code></td><td>入力→変換→出力。<code>input</code> / <code>transform</code> / <code>output</code></td><td>各 <code>id</code>、矢印 <code>arrow-1</code>, <code>arrow-2</code></td><td>変換ボックスが脈打つ</td></tr>
@@ -346,8 +418,8 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 
 <h3>アイコンと素材集</h3>
 <ul>
-  <li><code>icon</code> には約85種のキー（<code>check</code>、<code>search</code>、<code>trophy</code>、<code>sparkles</code>、<code>brain</code>、<code>bell</code> など）が使えます。一覧は <code>src/components/IconBox.tsx</code> の <code>REGISTRY</code> にあり、追加もそこに書くだけです。</li>
-  <li>書き方の見本は <code>public/script.json</code>（約9分のデモ。pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と <code>templates/sample-claude-code-7scenes.json</code>（7シーン版・以前の形式）。シーン単位でコピーして使えます。</li>
+  <li><code>icon</code> には約120種のキー（<code>check</code>、<code>search</code>、<code>trophy</code>、<code>sparkles</code>、<code>brain</code>、<code>bell</code>、子ども向けの <code>leaf</code>、<code>droplet</code>、<code>sun</code>、<code>fish</code>、<code>apple</code>、<code>smile</code> など）が使えます。一覧は <code>src/components/IconBox.tsx</code> の <code>REGISTRY</code> にあり、追加もそこに書くだけです。</li>
+  <li>書き方の見本は <code>templates/sample-kids-3d.json</code>（子ども向け・3D オブジェクト中心の約3分のデモ）、<code>public/script.json</code>（約9分のデモ。pop テーマ・キャラクター・登録ポップアップ・statement・outro 入り）と <code>templates/sample-claude-code-7scenes.json</code>（7シーン版・以前の形式）。シーン単位でコピーして使えます。</li>
 </ul>
 
 <h3>長さの目安</h3>
@@ -360,9 +432,10 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
   <thead><tr><th>キー</th><th>既定値</th><th>説明</th></tr></thead>
   <tbody>
     <tr><td><code>title</code></td><td>title シーンのタイトル</td><td>動画タイトル。概要欄ファイルとサムネイルに使う</td></tr>
-    <tr><td><code>theme</code></td><td><code>clean</code></td><td>配色。<code>clean</code> / <code>pop</code> / <code>dark</code></td></tr>
+    <tr><td><code>theme</code></td><td><code>kids</code></td><td>配色。<code>kids</code>（子ども向け）/ <code>clean</code> / <code>pop</code> / <code>dark</code></td></tr>
+    <tr><td><code>style</code></td><td><code>3d</code></td><td><code>3d</code>：カードに厚み・立体的な出現・回り込んで揺れるカメラ・床と積み木の背景・タイトルなどに 3D オブジェクト / <code>flat</code>：従来の平面デザイン（<code>scene3d</code> はどちらでも 3D）</td></tr>
     <tr><td><code>transition</code></td><td><code>slide</code></td><td>シーン切り替え。<code>slide</code> / <code>slideUp</code> / <code>wipe</code> / <code>zoom</code> / <code>circle</code> / <code>fade</code> / <code>none</code>（シーンごとに上書き可）</td></tr>
-    <tr><td><code>animation</code></td><td><code>auto</code></td><td>要素の出現。<code>auto</code>（レイアウトのおすすめ）/ <code>fadeUp</code> / <code>pop</code> / <code>slideLeft</code> / <code>slideRight</code> / <code>zoom</code> / <code>blur</code> / <code>flip</code> / <code>none</code>（シーンごとに上書き可）</td></tr>
+    <tr><td><code>animation</code></td><td><code>auto</code></td><td>要素の出現。<code>auto</code>（レイアウトのおすすめ。3D スタイルでは立体版になる）/ <code>fadeUp</code> / <code>pop</code> / <code>slideLeft</code> / <code>slideRight</code> / <code>zoom</code> / <code>blur</code> / <code>flip</code> / 立体の <code>rise3d</code>（飛び出す絵本のように起き上がる）/ <code>drop3d</code>（手前から飛んできて着地）/ <code>swing3d</code>（扉のように回り込む）/ <code>flip3d</code>（裏返る）/ <code>none</code>（シーンごとに上書き可）</td></tr>
     <tr><td><code>camera</code></td><td><code>subtle</code></td><td>シーン中のゆっくりズーム。<code>none</code> で止める</td></tr>
     <tr><td><code>animatedBackground</code></td><td><code>true</code></td><td>背景の模様と図形を漂わせる</td></tr>
     <tr><td><code>progressBar</code></td><td><code>true</code></td><td>画面下端の進行バー（章の区切り付き）</td></tr>
@@ -393,20 +466,24 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 
 <div class="callout">
   <b>動きを控えめにしたいとき</b>
-  <code>"animation": "fadeUp"</code>、<code>"transition": "fade"</code>、<code>"camera": "none"</code>、<code>"animatedBackground": false</code> にすると、落ち着いた解説動画向けの演出になります。
+  <code>"animation": "fadeUp"</code>、<code>"transition": "fade"</code>、<code>"camera": "none"</code>、<code>"animatedBackground": false</code> にすると、落ち着いた解説動画向けの演出になります。立体の演出をやめるときは <code>"style": "flat"</code>。
 </div>
 
 <h2 id="auto">台本を自動生成する</h2>
 <p>OpenAI互換のChat Completions APIで、プロンプトまたは記事URLから台本を作れます。YouTube 向けの構成（タイトル → 章立て → キメの画面やランキングで山場 → エンディング）になるよう指示してあり、強調（<code>**語句**</code>）や <code>focus</code>、動画タイトル・サムネイルの文言も提案させます。</p>
+<p><strong>既定は子ども向け</strong>（<code>--audience kids</code>）です。小学3年生がわかる言葉・話しかける口調（「〜だよ」「〜かな？」）・身近なたとえで書き、内容のシーンの半分以上を <code>scene3d</code>（3D オブジェクト）で見せ、「問いかけ → こたえ → りゆう → おさらい」の順にします。配色は <code>kids</code> テーマになります。むずかしい記事のURLを渡すと、子ども向けにかみくだいた台本になります。</p>
 <pre><code>export OPENAI_API_KEY="sk-..."
 
-# プロンプトから
-npm run script -- "Remotionの魅力を解説する動画の台本を作って"
+# プロンプトから（子ども向け・3D）
+npm run script -- "雨はどうしてふるのかを解説して"
 
-# 記事URLから
+# 記事URLから（子ども向けにかみくだく）
 npm run script -- --url https://example.com/article
 
-# テーマも同時に指定
+# 大人向けの解説にする
+npm run script -- --audience general "Remotionの魅力を解説して"
+
+# テーマも同時に指定（keep = 今の台本のまま）
 npm run script -- --theme pop "…"
 
 # 続けて音声 → 書き出し → 投稿用ファイル
@@ -423,8 +500,8 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 </table>
 </div>
 <ul>
-  <li>生成結果は <code>public/script.json</code> を<strong>上書き</strong>します。ただし既存の <code>meta</code> の見た目の設定（テーマ・BGM・キャラクターなど）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけを差し替えます。</li>
-  <li>形式の間違いや、存在しない要素IDの指定があると、エラー内容を渡して1回だけ自動リトライします。</li>
+  <li>生成結果は <code>public/script.json</code> を<strong>上書き</strong>します。ただし既存の <code>meta</code> の見た目の設定（BGM・キャラクター・<code>style</code> など）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけを差し替えます。テーマは <code>--theme</code>（既定 <code>auto</code>：子ども向けなら <code>kids</code>、大人向けなら今の台本のまま）で決まります。</li>
+  <li>形式の間違いや、存在しない要素ID・3D の形のキーの指定があると、エラー内容を渡して1回だけ自動リトライします。</li>
   <li>URL指定は本文テキストを抽出します。JavaScriptで描画されるページやログイン必須のページは取得できません。その場合は本文をコピーしてプロンプトとして渡してください。</li>
   <li>生成後は内容を確認・手直ししてから <code>npm run audio</code> を実行してください。</li>
 </ul>
@@ -447,17 +524,17 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
       </tbody>
     </table>
     </div>
-    <p>台本を生成するときは <code>theme</code>（<code>keep</code> / <code>clean</code> / <code>pop</code> / <code>dark</code>）も選べます。<code>keep</code> は今の台本の設定のままです。</p>
+    <p>台本を生成するときは <code>audience</code>（<code>kids</code>：子ども向け・3D 中心〈既定〉/ <code>general</code>：一般向け）と <code>theme</code>（<code>auto</code>〈既定〉/ <code>keep</code> / <code>kids</code> / <code>clean</code> / <code>pop</code> / <code>dark</code>）も選べます。<code>auto</code> は子ども向けなら <code>kids</code> テーマ、一般向けなら今の台本の設定のまま、<code>keep</code> は常に今の台本の設定のままです。</p>
     <p><code>prompt</code> / <code>url</code> を使うには、リポジトリの Settings → Secrets and variables → Actions に <code>OPENAI_API_KEY</code> を登録します。任意で Variables に <code>OPENAI_BASE_URL</code> / <code>SCRIPT_MODEL</code> も設定できます。</p>
   </li>
   <li>
     <h3>APIから実行する</h3>
-    <p><code>repository_dispatch</code> で外部から起動できます（repo権限のPATが必要）。<code>client_payload</code> に <code>theme</code> も指定できます。</p>
+    <p><code>repository_dispatch</code> で外部から起動できます（repo権限のPATが必要）。<code>client_payload</code> に <code>audience</code> と <code>theme</code> も指定できます（省略時は <code>kids</code> / <code>auto</code>）。</p>
     <pre><code>curl -X POST \
   -H "Authorization: Bearer &lt;YOUR_PAT&gt;" \
   -H "Accept: application/vnd.github+json" \
   https://api.github.com/repos/&lt;user&gt;/&lt;repo&gt;/dispatches \
-  -d '{"event_type":"generate-video","client_payload":{"source_type":"url","source":"https://example.com/article","theme":"pop"}}'</code></pre>
+  -d '{"event_type":"generate-video","client_payload":{"source_type":"url","source":"https://example.com/article","audience":"kids"}}'</code></pre>
   </li>
   <li>
     <h3>完成した動画を受け取る</h3>
@@ -477,7 +554,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 
 <div class="callout">
   <b>費用の目安</b>
-  公開リポジトリなら無料です。プライベートは無料枠が月2,000分で、10分の動画1本につき実行時間は約20〜40分を見込みます。
+  公開リポジトリなら無料です。プライベートは無料枠が月2,000分で、10分の動画1本につき実行時間は約30〜60分を見込みます（3D のシーンが多いほど長くなります。ジョブの上限は120分）。
 </div>
 
 <h2 id="settings">細かい設定を変える</h2>
@@ -524,7 +601,10 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     <tr><td>キャラクターを別の画像にしたい</td><td>背景が透明な PNG を <code>public/avatar/</code> に置き、<code>meta.avatar</code> でファイル名を指定します。口を開けた画像と閉じた画像の2枚（＋任意で半開き）が必要です。</td></tr>
     <tr><td>キャラクターの口が動かない・一定のリズムで動く</td><td>古い <code>timeline.json</code> か、<code>audio:mock</code> で作ったタイムラインです。<code>npm run audio</code> を実行すると音声に合わせて動きます。</td></tr>
     <tr><td>音声と表示がずれる</td><td><code>npm run audio</code> をやり直します。タイムラインは音声の実寸から再計算されます。</td></tr>
-    <tr><td>動きが多すぎる・目が疲れる</td><td><a href="#meta">meta</a> で <code>animation</code>・<code>transition</code>・<code>camera</code>・<code>animatedBackground</code> を控えめにします。</td></tr>
+    <tr><td>動きが多すぎる・目が疲れる</td><td><a href="#meta">meta</a> で <code>animation</code>・<code>transition</code>・<code>camera</code>・<code>animatedBackground</code> を控えめにします。立体の演出をやめるなら <code>"style": "flat"</code>。</td></tr>
+    <tr><td>3D の描画が遅い</td><td>GPU のない環境では、3D のシーンは1フレーム約0.2秒、それ以外は約0.1秒かかります（4コアの目安。3D の多い10分の動画で約40〜60分）。急ぐときは <code>"style": "flat"</code> にして <code>scene3d</code> を減らします。</td></tr>
+    <tr><td>3D の部分が真っ白・真っ黒・WebGL のエラー</td><td>Chrome が WebGL を使えていません。<code>npm run render -- --gl=angle</code> か <code>--gl=swangle</code>（遅いが確実なソフトウェア描画）を試してください。</td></tr>
+    <tr><td>3D の形が「はてな」になる</td><td><code>shape</code> のキーの綴りの間違いです。<code>npm run audio</code> の警告と <a href="#kids3d">形のキーの表</a> を確認してください。</td></tr>
     <tr><td>チャプターが YouTube で認識されない</td><td>章が3つ未満か、10秒未満の章があります。<code>section</code> シーンを増やしてください（<code>npm run youtube</code> が警告を出します）。</td></tr>
     <tr><td>レンダリングが遅い・落ちる</td><td><code>npm run render -- --concurrency=4</code> のように同時実行数を下げます。</td></tr>
     <tr><td>Actionsで「OPENAI_API_KEY が未設定」</td><td>Secretsに登録するか、<code>source_type=none</code> で既存の台本を使います。</td></tr>
@@ -542,14 +622,15 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 │   └── fonts/           Noto Sans JP
 ├── scripts/             音声生成・台本生成・投稿用ファイル・効果音の合成
 ├── shared/              音声側とRemotion側の共通処理（timing.ts / markup.ts）
-├── templates/           台本サンプル
+├── templates/           台本サンプル（sample-kids-3d.json が子ども向け 3D）
 ├── docs/                この手順書
 └── src/
-    ├── themes/          テーマ（clean / pop / dark）
+    ├── themes/          テーマ（kids / clean / pop / dark）と 3D スタイル
     ├── animation/       バネ・出現の動き・トランジション
     ├── context/         シーンごとの reveal / focus のタイミング
     ├── components/      字幕・音声・キャラクター・登録ボタンなどの部品
-    ├── layouts/         15種類のレイアウト
+    ├── three/           3D オブジェクト（形の一覧・形・アニメ調の材質・scene3d の配置とカメラ）
+    ├── layouts/         16種類のレイアウト（Scene3DLayout が 3D の舞台）
     └── Thumbnail.tsx    サムネイル</code></pre>
 
 </main>

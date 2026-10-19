@@ -1,14 +1,20 @@
 import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { useSceneContext } from '../context/SceneContext';
-import { revealStyle, springForPreset, springFrom } from '../animation/presets';
+import { revealStyle, springForPreset, springFrom, to3dPreset } from '../animation/presets';
 import { useTheme } from '../themes';
 import type { RevealPreset } from '../schemas';
 
-/** シーン・meta 指定のプリセットを優先し、'auto' ならレイアウトの既定を使う */
+/**
+ * シーン・meta 指定のプリセットを優先し、'auto' ならレイアウトの既定を使う
+ * (style: "3d" のときは、レイアウトの既定を立体的な出現に置き換える)
+ */
 export const useResolvedPreset = (layoutDefault: Exclude<RevealPreset, 'auto'>) => {
-  const { preset } = useSceneContext();
-  return preset === 'auto' ? layoutDefault : preset;
+  const { preset, is3d } = useSceneContext();
+  if (preset !== 'auto') {
+    return preset;
+  }
+  return is3d ? to3dPreset(layoutDefault) : layoutDefault;
 };
 
 /** 要素の出現フレームとバネの進み具合 (0 → 1) */
