@@ -3,3 +3,4 @@ out/
 public/audio/
 public/timeline.json
 studio-data/
+public/generated/

@@ -44,18 +44,25 @@ const layerMotion = (camera: CameraMode, depth: number, d: number): { x: number;
 
 const layerTransform = (m: { x: number; scale: number }, bleed = 1): string => `translateX(${m.x}px) scale(${m.scale * bleed})`;
 
-/** 物の画像の縦横比 (幅 / 高さ)。読み込むまで描画を待つ */
-const useAspects = (srcs: string[]): number[] | null => {
+/** まだ絵がない (src がなく prompt だけの) 物の仮の枠の縦横比 */
+const PLACEHOLDER_ASPECT = 0.75;
+
+/** 物の画像の縦横比 (幅 / 高さ)。読み込むまで描画を待つ。null (まだ絵がない物) は仮の枠の比率 */
+const useAspects = (srcs: (string | null)[]): number[] | null => {
   const [aspects, setAspects] = useState<number[] | null>(null);
   const [handle] = useState(() => delayRender('layered: 物の画像の大きさを読み込み中'));
   const released = useRef(false);
-  const key = srcs.join('\n');
+  const key = srcs.map((src) => src ?? '').join('\n');
   useEffect(() => {
     let alive = true;
     Promise.all(
       key.split('\n').map(
         (src) =>
           new Promise<number>((resolve) => {
+            if (!src) {
+              resolve(PLACEHOLDER_ASPECT);
+              return;
+            }
             const img = new Image();
             img.onload = () => resolve(img.naturalHeight > 0 ? img.naturalWidth / img.naturalHeight : 1);
             img.onerror = () => resolve(1);
@@ -91,6 +98,36 @@ const rectOf = (obj: LayeredObject, aspect: number): Rect => {
   const w = h * aspect;
   return { left: obj.x * W - w / 2, top: obj.y * H - h, w, h };
 };
+
+/**
+ * まだ絵がない画像 (prompt だけで src がない) の仮の枠。画像生成 API が使えないときや、
+ * 素材を作る前の下書きで出る。何を描く予定かを枠の中に書く
+ */
+const PendingImage: React.FC<{ prompt?: string; label: string; style?: React.CSSProperties }> = ({ prompt, label, style }) => (
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      padding: 18,
+      border: '3px dashed rgba(255, 255, 255, 0.7)',
+      borderRadius: 18,
+      backgroundColor: 'rgba(255, 255, 255, 0.14)',
+      color: '#FFFFFF',
+      textAlign: 'center',
+      textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
+      overflow: 'hidden',
+      ...style,
+    }}
+  >
+    <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '0.06em' }}>{label}</div>
+    {prompt ? <div style={{ fontSize: 17, lineHeight: 1.5, opacity: 0.9 }}>{prompt}</div> : null}
+  </div>
+);
 
 /** 決まった乱数 (同じ i なら毎フレーム同じ値) */
 const hash = (i: number): number => {
@@ -272,10 +309,14 @@ const ObjectView: React.FC<{ obj: LayeredObject; rect: Rect; order: number }> = 
         }}
       >
         <Aura effect={obj.effect} rect={rect} t={t} />
-        <Img
-          src={resolveSrc(obj.src)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', filter: filters.join(' ') || undefined }}
-        />
+        {obj.src ? (
+          <Img
+            src={resolveSrc(obj.src)}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', filter: filters.join(' ') || undefined }}
+          />
+        ) : (
+          <PendingImage prompt={obj.prompt} label="物の絵（仮）" style={{ filter: filters.join(' ') || undefined }} />
+        )}
         {obj.effect === 'frost' ? <Frost rect={rect} t={t} /> : null}
         {obj.effect === 'steam' ? <Steam rect={rect} t={t} id={obj.id} /> : null}
       </div>
@@ -312,7 +353,7 @@ const calloutPlace = (rect: Rect, nth: number) => {
 export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }) => {
   const frame = useCurrentFrame();
   const ctx = useSceneContext();
-  const aspects = useAspects(content.objects.map((obj) => resolveSrc(obj.src)));
+  const aspects = useAspects(content.objects.map((obj) => (obj.src ? resolveSrc(obj.src) : null)));
   const d = interpolate(frame, [ctx.ts.startFrame, ctx.ts.startFrame + ctx.ts.durationFrames], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -325,10 +366,20 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       <AbsoluteFill style={{ transform: layerTransform(bgMotion, BLEED.background), transformOrigin: ZOOM_ORIGIN }}>
-        <Img
-          src={resolveSrc(content.background.src)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${content.background.blur ?? 2}px)` }}
-        />
+        {content.background.src ? (
+          <Img
+            src={resolveSrc(content.background.src)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${content.background.blur ?? 2}px)` }}
+          />
+        ) : (
+          <AbsoluteFill style={{ background: 'linear-gradient(180deg, #2B3566 0%, #6B5A82 55%, #C98A68 100%)' }}>
+            <PendingImage
+              prompt={content.background.prompt}
+              label="背景の絵（仮）"
+              style={{ inset: 'auto 60px 40px auto', width: 520, height: 'auto', alignItems: 'flex-start', textAlign: 'left' }}
+            />
+          </AbsoluteFill>
+        )}
       </AbsoluteFill>
 
       {rects ? (
@@ -348,7 +399,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
         </AbsoluteFill>
       ) : null}
 
-      {content.foreground ? (
+      {content.foreground?.src ? (
         <AbsoluteFill style={{ transform: layerTransform(fgMotion, BLEED.foreground), transformOrigin: ZOOM_ORIGIN, pointerEvents: 'none' }}>
           <Img
             src={resolveSrc(content.foreground.src)}

@@ -36,8 +36,20 @@ document.querySelectorAll('.chips').forEach((chips) => {
     const btn = e.target.closest('button');
     if (!btn) return;
     chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
+    renderImageState();
   });
 });
+
+/** AIイラストを選んだときだけ、画像生成 AI の準備状況を出す */
+const renderImageState = () => {
+  const images = state.status?.images;
+  $('image-row').hidden = chosen('look') !== 'illust' || !images;
+  if (!images) return;
+  $('image-state').textContent = images.ready
+    ? `● 画像生成 ${images.provider === 'gemini' ? 'Gemini' : 'OpenAI'}（${images.model}）`
+    : '● 画像生成 AI 未設定（仮の枠の絵で作ります。GEMINI_API_KEY か OPENAI_API_KEY を設定）';
+  $('image-state').className = `voice-state ${images.ready ? 'ok' : 'ng'}`;
+};
 
 const formValues = () => ({
   topic: $('topic').value.trim(),
@@ -141,7 +153,7 @@ const renderProgress = () => {
     $('stage').textContent = v.status === 'done' ? '生成が終わりました' : v.status === 'error' ? 'エラーで止まりました' : '生成待ち';
     $('pct').textContent = v.status === 'done' ? '100%' : '';
     $('bar').style.width = v.status === 'done' ? '100%' : '0';
-    $('time').textContent = v.status === 'done' ? `所要時間 ${fmtTime(v.elapsedSec)} ・ ${fmtTime(v.durationSec)}の動画${v.mockAudio ? '（無音の仮音声）' : ''}` : '';
+    $('time').textContent = v.status === 'done' ? `所要時間 ${fmtTime(v.elapsedSec)} ・ ${fmtTime(v.durationSec)}の動画${mockNote(v)}` : '';
     $('steps').innerHTML = '';
     $('error').hidden = !v.error;
     $('error').textContent = v.error || '';
@@ -166,6 +178,9 @@ const renderProgress = () => {
   $('error').hidden = job.status !== 'error';
   $('error').textContent = job.error || '';
 };
+
+/** 仮の音声・仮の絵で作った版の注記 */
+const mockNote = (v) => [v.mockAudio ? '無音の仮音声' : '', v.mockImages ? '仮の絵あり' : ''].filter(Boolean).map((t) => `（${t}）`).join('');
 
 const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -207,7 +222,7 @@ const renderPreview = () => {
     still.hidden = true;
     overlay.hidden = true;
     tag.hidden = false;
-    tag.textContent = `完成版 v${v.n}${v.mockAudio ? '（無音の仮音声）' : ''}`;
+    tag.textContent = `完成版 v${v.n}${mockNote(v)}`;
     return;
   }
   video.pause();
@@ -384,6 +399,7 @@ const showStatus = async () => {
   $('notice').textContent = notes.join('\n');
   $('voice-state').textContent = voice.alive ? '● VOICEVOX 接続中' : '● VOICEVOX 未起動（無音の仮音声で作ります）';
   $('voice-state').className = `voice-state ${voice.alive ? 'ok' : 'ng'}`;
+  renderImageState();
 };
 
 showStatus();

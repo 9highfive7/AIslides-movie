@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { scriptProvider } from '../scripts/lib/script-writer';
+import { resolveImageProvider } from '../scripts/lib/image-gen';
 import { busy, enqueue, jobOf, sceneLabel, voiceStatus } from './pipeline';
 import { listProjects, loadProject, newProjectId, safeProjectFile, saveProject, versionDir, type Look, type Project } from './store';
 import { scriptSchema } from '../src/schemas';
@@ -74,7 +75,7 @@ const sendFile = (req: http.IncomingMessage, res: http.ServerResponse, file: str
   fs.createReadStream(file).pipe(res);
 };
 
-const LOOKS: Look[] = ['paper', 'zukai3d', 'kids', 'pop', 'clean', 'dark'];
+const LOOKS: Look[] = ['paper', 'zukai3d', 'illust', 'kids', 'pop', 'clean', 'dark'];
 
 const parseOptions = (body: Record<string, unknown>) => ({
   look: LOOKS.includes(body.look as Look) ? (body.look as Look) : 'paper',
@@ -122,6 +123,10 @@ const handle = async (req: http.IncomingMessage, res: http.ServerResponse): Prom
               : Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
         },
         voice: await voiceStatus(),
+        images: (() => {
+          const p = resolveImageProvider();
+          return p ? { provider: p.provider, model: p.model, ready: true } : { provider: null, model: null, ready: false };
+        })(),
         busy: busy(),
       });
       return;

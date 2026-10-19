@@ -14,8 +14,11 @@ import crypto from 'node:crypto';
 export const ROOT = path.resolve(__dirname, '..');
 export const DATA_DIR = path.join(ROOT, 'studio-data', 'projects');
 
-/** 見た目。zukai3d は paper テーマで、部品を組み立てた作り込みの 3D 図解 (自販機の場面のような) を中心にする */
-export type Look = 'paper' | 'zukai3d' | 'kids' | 'pop' | 'clean' | 'dark';
+/**
+ * 見た目。zukai3d は paper テーマで、部品を組み立てた作り込みの 3D 図解 (自販機の場面のような) を中心にする。
+ * illust は paper テーマで、画像生成 AI の絵 (背景・物) を重ねる場面 (layered) を中心にする
+ */
+export type Look = 'paper' | 'zukai3d' | 'illust' | 'kids' | 'pop' | 'clean' | 'dark';
 
 export interface ProjectOptions {
   look: Look;
@@ -36,6 +39,8 @@ export interface VersionInfo {
   durationSec?: number;
   /** VOICEVOX が使えず、無音の仮音声で作った */
   mockAudio?: boolean;
+  /** 画像生成 AI が使えない・失敗したため、仮の枠の絵がある */
+  mockImages?: boolean;
   /** 生成にかかった時間 [秒] */
   elapsedSec?: number;
 }

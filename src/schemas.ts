@@ -243,34 +243,50 @@ const scene3dBuildSchema = z.object({
     .default({ view: 'right' }),
 });
 
+/** layered の画像は、ファイル (src) か画像生成 AI への指示 (prompt) のどちらかが要る */
+const hasSrcOrPrompt = (image: { src?: string; prompt?: string }): boolean => Boolean(image.src || image.prompt);
+const SRC_OR_PROMPT = { message: 'src (画像のパス) か prompt (画像生成 AI への指示) のどちらかを書いてください' };
+
+/**
+ * 画像生成 AI への指示。npm run images (動画生成アプリでは「素材の画像」の工程) で絵を作り、
+ * src を自動で埋める。同じ指示の絵は作り直さずに使い回す
+ */
+const imagePromptSchema = z.string().min(1).optional();
+
 /** layered: 1枚の画像の層 (背景・手前) */
-const layerImageSchema = z.object({
-  /** public/ からの相対パス (例: "layered/vending/background.jpg") または https:// のURL */
-  src: z.string(),
-  /** ぼかし [px]。背景や手前をぼかすと、物が目立って奥行きが出る (省略時: 背景 2 / 手前 8) */
-  blur: z.number().min(0).max(30).optional(),
-});
+const layerImageSchema = z
+  .object({
+    /** public/ からの相対パス (例: "layered/vending/background.jpg") または https:// のURL */
+    src: z.string().optional(),
+    prompt: imagePromptSchema,
+    /** ぼかし [px]。背景や手前をぼかすと、物が目立って奥行きが出る (省略時: 背景 2 / 手前 8) */
+    blur: z.number().min(0).max(30).optional(),
+  })
+  .refine(hasSrcOrPrompt, SRC_OR_PROMPT);
 
 /** layered: 物の画像 (背景が透明な PNG) 1つ */
-const layeredObjectSchema = z.object({
-  id: z.string(),
-  /** public/ からの相対パス または https:// のURL。背景が透明な PNG にする */
-  src: z.string(),
-  /** 物の中心の横位置 (画面の幅を 1 とした割合。0 = 左端 / 0.5 = 中央 / 1 = 右端) */
-  x: z.number().min(0).max(1),
-  /** 物の足もと (下端) の縦位置 (画面の高さを 1 とした割合。0 = 上端 / 1 = 下端) */
-  y: z.number().min(0).max(1),
-  /** 物の高さ (画面の高さを 1 とした割合)。幅は画像の縦横比から決まる */
-  height: z.number().min(0.05).max(1),
-  /** 出方。pop: 弾んで出る / drop: 上から落ちて弾む / rise: 下からふわっと / fade: じわっと */
-  enter: z.enum(['pop', 'drop', 'rise', 'fade']).default('pop'),
-  /** 出たあとの動き。float: ふわふわ浮かぶ / sway: ゆらゆら揺れる */
-  motion: z.enum(['none', 'float', 'sway']).default('none'),
-  /** コードで足す効果。steam: 湯気と温かい光 / frost: 冷気の粒と冷たい光 / glow: 後ろから照らす光 */
-  effect: z.enum(['none', 'steam', 'frost', 'glow']).default('none'),
-  /** 足もとの影 */
-  shadow: z.boolean().default(true),
-});
+const layeredObjectSchema = z
+  .object({
+    id: z.string(),
+    /** public/ からの相対パス または https:// のURL。背景が透明な PNG にする */
+    src: z.string().optional(),
+    prompt: imagePromptSchema,
+    /** 物の中心の横位置 (画面の幅を 1 とした割合。0 = 左端 / 0.5 = 中央 / 1 = 右端) */
+    x: z.number().min(0).max(1),
+    /** 物の足もと (下端) の縦位置 (画面の高さを 1 とした割合。0 = 上端 / 1 = 下端) */
+    y: z.number().min(0).max(1),
+    /** 物の高さ (画面の高さを 1 とした割合)。幅は画像の縦横比から決まる */
+    height: z.number().min(0.05).max(1),
+    /** 出方。pop: 弾んで出る / drop: 上から落ちて弾む / rise: 下からふわっと / fade: じわっと */
+    enter: z.enum(['pop', 'drop', 'rise', 'fade']).default('pop'),
+    /** 出たあとの動き。float: ふわふわ浮かぶ / sway: ゆらゆら揺れる */
+    motion: z.enum(['none', 'float', 'sway']).default('none'),
+    /** コードで足す効果。steam: 湯気と温かい光 / frost: 冷気の粒と冷たい光 / glow: 後ろから照らす光 */
+    effect: z.enum(['none', 'steam', 'frost', 'glow']).default('none'),
+    /** 足もとの影 */
+    shadow: z.boolean().default(true),
+  })
+  .refine(hasSrcOrPrompt, SRC_OR_PROMPT);
 
 /**
  * layered: 画像生成 AI で作った「背景・物・手前」の画像を重ね、層ごとに違う速さで動かす (視差)。
@@ -610,6 +626,11 @@ export const metaSchema = z.object({
       title: z.string().optional(),
     })
     .optional(),
+  /**
+   * 画像生成 AI で作る素材 (layered の prompt) に共通の絵柄 (例: "やわらかい陰影のアニメ調イラスト、明るい色")。
+   * 各 prompt の後ろに足して、動画全体の絵柄をそろえる
+   */
+  imageStyle: z.string().optional(),
   /** 既定のシーントランジション */
   transition: transitionSchema.default('slide'),
   /** 既定の出現アニメーション */

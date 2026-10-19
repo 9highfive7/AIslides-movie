@@ -71,8 +71,8 @@ export ANTHROPIC_API_KEY=sk-ant-...   # 台本を書く AI (Claude)。Windows �
 npm run studio                        # → http://localhost:4300 をブラウザで開く
 ```
 
-- **① 動画のテーマ / ② 細かい設定**: 自由に書きます（尺・口調・見せ方・出典の付け方など）。見た目（図解（紙・明朝）/ 3D図解（自販機風）/ キッズ（3D）/ ポップ / クリーン / ダーク）・尺・声はボタンで選べます。キッズを選ぶと、小学生にもわかる言葉で 3D オブジェクト中心の台本を書きます。3D図解を選ぶと、自販機の回のように題材の物そのものを 3D で作り込んだ場面（`scene3d` の組み立て形式・下記）を中心に、paper テーマの台本を書きます
-- **動画を生成**: 進捗バーで「台本とリサーチ → ナレーション → 字幕のタイミング → 3D・図解の描画 → 書き出し」のどこまで進んだかと残り時間が見られます。場面の下絵は、できたものから先に表示されます
+- **① 動画のテーマ / ② 細かい設定**: 自由に書きます（尺・口調・見せ方・出典の付け方など）。見た目（図解（紙・明朝）/ 3D図解（自販機風）/ AIイラスト（重ね絵）/ キッズ（3D）/ ポップ / クリーン / ダーク）・尺・声はボタンで選べます。キッズを選ぶと、小学生にもわかる言葉で 3D オブジェクト中心の台本を書きます。3D図解を選ぶと、自販機の回のように題材の物そのものを 3D で作り込んだ場面（`scene3d` の組み立て形式・下記）を中心に、paper テーマの台本を書きます。AIイラストを選ぶと、画像生成 AI が描いた背景と物を重ねて動かす場面（`layered`・下記）を中心に、paper テーマの台本を書き、**絵も自動で作ります**
+- **動画を生成**: 進捗バーで「台本とリサーチ → 素材の画像（AI） → ナレーション → 字幕のタイミング → 3D・図解の描画 → 書き出し」のどこまで進んだかと残り時間が見られます。場面の下絵は、できたものから先に表示されます
 - **プレビュー**: 完成した動画をその場で再生。下の場面をクリックすると、その場面へ移動します
 - **③ 修正の指示**: 場面を選んで指示を書くと、その場面だけを AI が直して作り直します（選ばなければ動画全体）。直すたびに版（v1, v2, …）が増え、右上で前の版に戻って見られます
 - **④ 保存**: 動画（MP4）・サムネイル・YouTube 用の概要欄（目次）・字幕ファイル・台本（JSON）
@@ -85,6 +85,7 @@ npm run studio                        # → http://localhost:4300 をブラウ�
 |---|---|
 | 台本を書く AI | `ANTHROPIC_API_KEY`（Claude。既定モデル `claude-opus-5-5`、`CLAUDE_MODEL` で変更可）。`ant auth login` 済みならキーなしでも動きます。OpenAI 互換 API を使うときは `OPENAI_API_KEY`（`SCRIPT_PROVIDER=openai` で明示も可） |
 | ナレーション | VOICEVOX Engine を起動しておく（下記）。起動していなければ無音の仮音声で作ります（画面に表示） |
+| 絵を描く AI（AIイラストのとき） | `GEMINI_API_KEY`（Gemini。既定モデル `gemini-2.5-flash-image`）か `OPENAI_API_KEY`（OpenAI。既定モデル `gpt-image-1`）。両方あれば Gemini（`IMAGE_PROVIDER=openai` で切り替え）。モデルは `IMAGE_MODEL` で変更可。キーがなければ絵の場所に仮の枠を出して作ります（画面に表示） |
 | 3D の描画 | Linux ではソフトウェア描画（`STUDIO_GL=swangle`）が既定。Mac / Windows は GPU を使います |
 
 - ポートは `STUDIO_PORT`（既定 4300）。このPCからだけ開けます（127.0.0.1 で待ち受け）
@@ -281,6 +282,7 @@ Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物�
 | objects のキー | 説明 |
 |---|---|
 | `src` | 物の画像。**背景が透明な PNG** にする（`public/` からの相対パス or https URL） |
+| `prompt` | `src` の代わりに、画像生成 AI に描かせる絵の指示（下の「絵を画像生成 AI に自動で描かせる」）。`background` / `foreground` にも書ける |
 | `x` / `y` | 物の中心の横位置 / 足もと（下端）の縦位置。画面の幅・高さを 1 とした割合（`x: 0.5` で中央、`y: 0.85` で下から15%の所に立つ） |
 | `height` | 物の高さ（画面の高さを 1 とした割合）。幅は画像の縦横比から決まる |
 | `enter` | 出方。`pop`（弾んで出る・既定）/ `drop`（上から落ちて弾む）/ `rise`（下からふわっと）/ `fade`（じわっと） |
@@ -292,7 +294,32 @@ Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物�
 - `camera: "pan"` では背景はゆっくり・物はふつう・手前は速く横へ流れ、立体的に見えます。`zoom` は手前ほど大きく寄ります
 - サンプル: `templates/sample-layered.json`（自販機の2場面・約30秒）。`public/layered/vending/` の絵は**仕組みを試すための仮の絵**（図形で描いたもの）なので、画像生成 AI で作った絵に差し替えて使ってください
 
-**画像生成 AI で素材を作るコツ**
+**絵を画像生成 AI に自動で描かせる（`prompt`）**
+
+`src` の代わりに `prompt`（何を描くかの指示）を書くと、`npm run images` が画像生成 AI で絵を作って `src` を書き込みます。動画生成アプリで「AIイラスト（重ね絵）」を選んだときは、台本を書く AI が `prompt` を書き、この処理も自動で行います。
+
+```jsonc
+"meta": { "imageStyle": "やわらかい陰影のアニメ調の立体イラスト、夕暮れのあたたかい光" },  // 全部の絵に共通の絵柄
+...
+"background": { "prompt": "日本の住宅街の夕暮れの通り。電柱と電線、遠くにマンションの灯り" },
+"objects": [
+  { "id": "cold", "prompt": "冷えた青い炭酸飲料の缶を少し傾けて。表面に細かい水滴", "x": 0.21, "y": 0.64, "height": 0.26 }
+]
+```
+
+```bash
+export GEMINI_API_KEY=...        # または OPENAI_API_KEY=...
+npm run images                   # → public/generated/ に絵を作り、script.json の src を書き込む
+npm run audio && npm run render
+```
+
+- 物の絵は真っ白な無地の背景で描かせ、外周につながった白を消して透明にし、余白を詰めます（物の内側の白は残ります。真っ白な物は背景と区別しにくいので、色や影の付け方も `prompt` に書いてください）。背景は 1920×1080 に切りそろえます
+- 絵には文字を入れないよう、決まりごと（文字・ロゴなし、人物なし など）を自動で足して頼みます
+- 絵は `public/generated/` に、指示の内容から決まる名前で保存します。**同じ指示なら作り直さずに使い回す**ので、修正で1つの場面だけ直したときもほかの絵はそのまま。同じ物を別の場面に出すときは `prompt` を同じにすると、同じ絵になります。絵を作り直したいときは `prompt` を少し変えるか、`public/generated/` の該当ファイルを消します
+- キーがない・作れなかった（安全性の判定で断られた など）絵は、`prompt` を書いた仮の枠で表示されます。`npm run images` の最後に、作れなかった絵とその理由が出ます
+- 見本: `templates/sample-layered-ai.json`（`sample-layered.json` と同じ2場面を `prompt` で書いたもの）
+
+**画像生成 AI で素材を作るコツ**（手で作るとき）
 
 - **1枚に1つずつ**作ります（背景・物ごとに別の画像）。物は「背景は透明（または真っ白な無地）」と指定し、真っ白で出てきたら背景を消すツールで透明にします
 - **絵に文字を入れない**ように指定します（崩れやすいため）。見出し・注釈・数字はこのレイアウトで重ねます
@@ -312,6 +339,7 @@ Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物�
 | `theme` | `kids` | `kids`（空色×はっきりした色×太い縁取り・子ども向け）/ `clean`（落ち着いた青×紺）/ `pop`（クリーム地・太枠・黄色マーカー・縁取り字幕）/ `dark`（濃紺地・テック系）/ `paper`（生成り色の紙・紺×朱×墨・明朝の見出し。図解ドキュメンタリー風。下記） |
 | `style` | `3d` | `3d`: カードに厚み・立体的な出現（`animation: "auto"` のとき）・傾いて揺れるカメラ・奥へ続く床と回る積み木の背景・タイトル/章扉/エンディング/サムネイルに 3D オブジェクト / `flat`: 従来の平面デザイン。`scene3d` レイアウトはどちらでも 3D。`paper` テーマは常に `flat` で描く |
 | `header` | なし | `{ label: "図解 No.01", title: "半導体の回路を焼く機械" }`。`paper` テーマで左上に出す柱。シーンに `chapter` があれば `title` の代わりにそれを出す |
+| `imageStyle` | なし | `layered` の `prompt` で描かせる絵すべてに共通の絵柄（例: `"やわらかい陰影のアニメ調の立体イラスト、明るい色"`）。各 `prompt` の後ろに足して、動画全体の絵柄をそろえる |
 | `transition` | `slide` | シーン切り替え: `slide` / `slideUp` / `wipe` / `zoom` / `circle` / `fade` / `none`（シーンごとに `transition` で上書き可） |
 | `animation` | `auto` | 要素の出現: `auto`（レイアウトごとのおすすめ。`style: "3d"` では立体版に置き換わる）/ `fadeUp` / `pop` / `slideLeft` / `slideRight` / `zoom` / `blur` / `flip` / 立体の `rise3d`（飛び出す絵本のように起き上がる）/ `drop3d`（手前から飛んできて着地）/ `swing3d`（扉のように回り込む）/ `flip3d`（裏返る）/ `none`（シーンごとに `animation` で上書き可） |
 | `camera` | `subtle` | シーン中のゆっくりズーム（3D スタイルでは回り込み・傾き・揺れも）。`none` で止める |
@@ -510,14 +538,16 @@ gh CLI なら: `gh api repos/<user>/<repo>/dispatches -f event_type=generate-vid
 │   ├── sfx/             # 効果音 (pop / whoosh / ding / click。npm run sfx で再生成)
 │   ├── avatar/          # キャラクター画像 (口: open / half / closed)
 │   ├── layered/         # layered の素材 (背景・物・手前の画像。vending/ はサンプル用の仮の絵)
+│   ├── generated/       # 生成物: 画像生成 AI で作った絵 (npm run images / 動画生成アプリ)
 │   └── fonts/           # Noto Sans JP / Noto Serif JP (可変フォント)
 ├── studio/              # 動画生成アプリ (npm run studio)。server.ts / pipeline.ts / store.ts / public/ (画面)
 ├── scripts/
 │   ├── generate-audio.ts    # 音声生成 + タイムライン作成
 │   ├── generate-script.ts   # プロンプト/URL → 台本自動生成 (LLM)
+│   ├── generate-images.ts   # layered の prompt → 画像生成 AI で絵を作る
 │   ├── generate-youtube.ts  # 概要欄の目次・字幕ファイル
 │   ├── generate-sfx.ts      # 効果音の合成
-│   └── lib/ (voicevox / llm / fetch-page / wav / estimate / levels / sfx / youtube)
+│   └── lib/ (voicevox / llm / fetch-page / wav / estimate / levels / sfx / youtube / image-gen / images)
 ├── shared/              # 音声側とRemotion側の共通処理 (timing.ts / markup.ts)
 ├── templates/           # 台本サンプル（素材集。sample-kids-3d.json が子ども向け 3D のデモ）
 ├── docs/manual.html     # 手順書 (画面例つき。ブラウザで開く)

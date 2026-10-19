@@ -57,6 +57,19 @@ const SCENE3D_SPEC = `"scene3d": 3D オブジェクトを舞台に並べて見�
      - color に使える色名: ${Object.keys(BUILD_COLORS).join(', ')} (または #RRGGBB)
      - 要素ID: parts・flows・callouts の各 id・"title"・"stat"・"zoom" (camera.zoomTo があるとき。reveal するとその部品へ寄る)。reveal しない部品はシーン冒頭に順に出る。説明の順に部品・流れ・注釈を reveal すると、組み立てていくように見える`;
 
+/** 画像生成 AI の絵を重ねる場面 (layered) の説明。見た目で「AIイラスト」を選んだときだけ使わせる */
+const LAYERED_SPEC = `"layered": 画像生成 AI が描く絵 (背景1枚 + 物1〜3個) を重ねて見せる場面。背景はゆっくり・物はふつうの速さで流れて奥行きが出る。content = { "camera": "pan | zoom", "background": { "prompt": "背景の絵の指示" }, "objects": [ { "id": "o-1", "prompt": "物の絵の指示", "x": 0.5, "y": 0.85, "height": 0.55, "enter": "pop | drop | rise | fade", "motion": "none | float | sway", "effect": "none | steam | frost | glow", "shadow": true } ], "title": "上部の一文(省略可・**強調**可)", "callouts": [ { "id": "c-1", "target": "物の id", "title": "…(8字以内)", "sub": "…(省略可)", "tone": "accent / warning / muted / normal" } ] (省略可・2つまで), "stat": { "kicker": "…", "value": "…", "note": "出典" } (省略可) }
+   - prompt は絵の指示 (日本語で40〜120字)。何を・どの向きから・どんな形と色で描くかを具体的に書く。絵柄 (画風) は meta.imageStyle にまとめて書き、各 prompt には書かない
+   - 絵に文字・数字・ロゴ・看板の文字は入れない (崩れるため)。文字は title / callouts / stat で重ねる。実在の人物・商品名・キャラクターは描かせない
+   - background: 場面の舞台 (場所・時間帯・天気・雰囲気)。人物は入れない。物を置く中央下は空けておく
+   - objects: 1つの物だけを描く (背景は自動で消える)。白い物は背景と区別できるよう、色や影の付け方も書く。仕組みの説明図 (断面・内部構造) は不正確になりやすいので、物の外見を見せ、仕組みは callouts・字幕・ほかのレイアウトで説明する
+   - 配置: x は物の中心 (0 = 左端 / 0.5 = 中央 / 1 = 右端)、y は足もと (0 = 上端 / 1 = 下端)、height は画面の高さに対する物の高さ。字幕が下 12% に、見出しが上 20% にあるので、y は 0.88 以下・y - height は 0.2 以上にする。物どうしが重ならないように置く (横に2つなら x = 0.3 / 0.7、3つなら 0.22 / 0.5 / 0.78)。主役は大きく (height 0.45〜0.6)、脇役は小さく (0.2〜0.3)
+   - enter: pop (弾んで出る・既定) / drop (上から落ちて弾む) / rise (下からふわっと) / fade。motion: float (ふわふわ浮かぶ。宙に浮かぶ物) / sway (ゆらゆら揺れる)。宙に浮かぶ物は shadow: false
+   - effect: steam (湯気と温かい光。温かい物・熱い物) / frost (冷気の粒と冷たい光。冷たい物) / glow (後ろから照らす光。主役・光る物)。コードで動く効果なので、湯気や光は prompt に書かない
+   - camera: pan (横に流れる・既定) / zoom (ゆっくり寄る。1つの物を見せるとき)
+   - 要素ID: objects・callouts の各 id・"title"・"stat"。物は説明の順に reveal し、話している物を focus する
+   - 同じ物や同じ舞台を別の場面にも出すときは、prompt を一字一句同じにする (同じ絵が使い回され、絵柄もそろう)`;
+
 const AUDIENCE_RULES: Record<Audience, { role: string; voice: string; visual: string }> = {
   kids: {
     role: 'あなたは子ども (小学生) 向けの YouTube 解説動画の台本作家です。むずかしいことを、小学3年生でもわかるように、3D オブジェクトを使ってやさしく楽しく説明します。',
@@ -83,8 +96,15 @@ const AUDIENCE_RULES: Record<Audience, { role: string; voice: string; visual: st
   },
 };
 
-export const buildSystemPrompt = (audience: Audience): string => {
+/** 台本の書き方のオプション */
+export interface WriterOptions {
+  /** 画像生成 AI の絵を重ねる場面 (layered) を使わせる */
+  layered?: boolean;
+}
+
+export const buildSystemPrompt = (audience: Audience, options: WriterOptions = {}): string => {
   const rules = AUDIENCE_RULES[audience];
+  const layered = options.layered === true;
   return `${rules.role}
 出力するのは、ナレーション付きの動画 (1920x1080) の台本JSONです。
 
@@ -95,7 +115,7 @@ export const buildSystemPrompt = (audience: Audience): string => {
 - title: YouTube の動画タイトル (32字以内。数字や具体的な言葉で興味を引く)
 - thumbnail: { "text": "サムネイルの大きな文字 (2行まで。改行は\\n、強調語は **で囲む**)", "sub": "補足 (省略可)", "badge": "左上の短いラベル (省略可)" }
 - subscribePopup: { "sceneId": "チャンネル登録を促すポップアップを出すシーンID (動画の中盤の section シーン)" }
-
+${layered ? '- imageStyle: layered の絵すべてに共通の絵柄 (日本語で30〜80字。例: "やわらかい陰影のアニメ調の立体イラスト、明るくあたたかい色、細部まで描き込む")。動画全体で1つ\n' : ''}
 ## scenes の各要素に書けるキー
 - id: シーンID (英小文字とハイフン)
 - layout: レイアウト種別 (下記)
@@ -127,7 +147,7 @@ ${rules.visual}
 10. "checklist": 番号付きチェックリスト。content = { "items": [ { "id": "c-1", "text": "…", "note": "…(省略可)" }, ... ] }。items は2〜4個。おさらいに使う。
 11. "inputOutput": 入力→変換→出力。content = { "input": { "id": "input", "icon": "…", "title": "…", "body": "…" }, "transform": { "id": "transform", "label": "短い説明" }, "output": { "id": "output", "icon": "…", "title": "…", "body": "…" } }。矢印は arrow-1 / arrow-2。
 12. "share": 1本の帯を区切って割合 (シェア) を見せるグラフ。content = { "title": "グラフの題(省略可)", "segments": [ { "id": "sh-1", "display": "約5割", "label": "日本製(省略可)", "value": 50, "tone": "warning / accent / muted" }, ... ], "source": "出典(省略可)" }。segments は1〜3個。区分は reveal したときに左から伸びる。
-13. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。最後のシーンは必ず outro。
+${layered ? `13. ${LAYERED_SPEC}\n` : ''}${layered ? 14 : 13}. "outro": 最後のお礼と登録のお願い。content = { "title": "ご視聴ありがとうございました", "message": "次回予告など(省略可)" }。最後のシーンは必ず outro。
 
 ## ルール
 - シーン全体は6〜12個。1画面の情報量は絞る。同じレイアウトを3回以上連続させない
@@ -174,7 +194,8 @@ export const writeScript = (
   material: string,
   onStatus?: (message: string) => void,
   audience: Audience = 'kids',
-): Promise<ScriptConfig> => askValidScript(buildSystemPrompt(audience), material, onStatus);
+  options: WriterOptions = {},
+): Promise<ScriptConfig> => askValidScript(buildSystemPrompt(audience, options), material, onStatus);
 
 /**
  * 既存の台本を、修正の指示どおりに直す。
@@ -186,6 +207,7 @@ export const reviseScript = async (
   sceneId: string | null,
   onStatus?: (message: string) => void,
   audience: Audience = 'kids',
+  options: WriterOptions = {},
 ): Promise<ScriptConfig> => {
   const target = sceneId ? current.scenes.find((s) => s.id === sceneId) : null;
   if (sceneId && !target) {
@@ -196,8 +218,10 @@ export const reviseScript = async (
     : '動画全体に対する修正です。指示に関係のない部分は変えないでください。';
   const request =
     `次の台本 (JSON) を、修正の指示に従って直してください。直した後の台本全体を、同じ形式のJSONで出力してください。\n` +
-    `${scope}\n\n## 修正の指示\n${instruction}\n\n## 今の台本\n${JSON.stringify(current, null, 2)}`;
-  const revised = await askValidScript(buildSystemPrompt(audience), request, onStatus);
+    `${scope}\n` +
+    (options.layered ? 'layered の絵は prompt から作られます。絵を変えたい物だけ prompt を書き換え、変えない物の prompt は一字一句そのままにしてください (src は書かなくてかまいません)。\n' : '') +
+    `\n## 修正の指示\n${instruction}\n\n## 今の台本\n${JSON.stringify(current, null, 2)}`;
+  const revised = await askValidScript(buildSystemPrompt(audience, options), request, onStatus);
   if (!target) {
     return { ...revised, meta: { ...current.meta, ...revised.meta } };
   }
