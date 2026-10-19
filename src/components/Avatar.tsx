@@ -4,8 +4,15 @@ import { script, timeline } from '../data';
 import { useTheme } from '../themes';
 
 /**
+ * 口の形を保つ長さ [フレーム]。毎フレーム変えると速すぎて目障りなので、
+ * この長さごとに1回だけ形を変える (30fps で 1秒に約6回のパクパク)。
+ */
+export const MOUTH_HOLD_FRAMES = 5;
+
+/**
  * frame 時点の口の開き具合 (0〜1)。
  * npm run audio が音声の音量から1フレームごとに 0〜9 の数字列 (levels) を作っている。
+ * MOUTH_HOLD_FRAMES ごとの区間の平均音量を使い、区間の中では同じ形のままにする。
  */
 export const mouthOpenAt = (frame: number): number => {
   for (const ts of timeline.scenes) {
@@ -17,13 +24,18 @@ export const mouthOpenAt = (frame: number): number => {
       if (local < 0 || local >= line.durationFrames) {
         continue;
       }
+      const step = Math.floor(local / MOUTH_HOLD_FRAMES);
       if (line.levels.length === 0) {
         // 古い timeline.json 用の代替: 一定のリズムで口を動かす
-        return Math.floor(local / 3) % 2 === 0 ? 0.7 : 0.15;
+        return step % 2 === 0 ? 0.7 : 0.15;
       }
-      const at = (i: number) => Number(line.levels[Math.min(line.levels.length - 1, Math.max(0, i))] ?? 0);
-      // 隣のフレームと平均してパクパクしすぎないようにする
-      return (at(local) * 0.6 + at(local - 1) * 0.4) / 9;
+      const from = step * MOUTH_HOLD_FRAMES;
+      const to = Math.min(from + MOUTH_HOLD_FRAMES, line.levels.length);
+      let sum = 0;
+      for (let i = from; i < to; i++) {
+        sum += Number(line.levels[i] ?? 0);
+      }
+      return to > from ? sum / (to - from) / 9 : 0;
     }
   }
   return 0;
