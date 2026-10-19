@@ -74,7 +74,7 @@ const sendFile = (req: http.IncomingMessage, res: http.ServerResponse, file: str
   fs.createReadStream(file).pipe(res);
 };
 
-const LOOKS: Look[] = ['paper', 'kids', 'pop', 'clean', 'dark'];
+const LOOKS: Look[] = ['paper', 'zukai3d', 'kids', 'pop', 'clean', 'dark'];
 
 const parseOptions = (body: Record<string, unknown>) => ({
   look: LOOKS.includes(body.look as Look) ? (body.look as Look) : 'paper',

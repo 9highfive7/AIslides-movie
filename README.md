@@ -71,7 +71,7 @@ export ANTHROPIC_API_KEY=sk-ant-...   # 台本を書く AI (Claude)。Windows �
 npm run studio                        # → http://localhost:4300 をブラウザで開く
 ```
 
-- **① 動画のテーマ / ② 細かい設定**: 自由に書きます（尺・口調・見せ方・出典の付け方など）。見た目（図解（紙・明朝）/ キッズ（3D）/ ポップ / クリーン / ダーク）・尺・声はボタンで選べます。キッズを選ぶと、小学生にもわかる言葉で 3D オブジェクト中心の台本を書きます
+- **① 動画のテーマ / ② 細かい設定**: 自由に書きます（尺・口調・見せ方・出典の付け方など）。見た目（図解（紙・明朝）/ 3D図解（自販機風）/ キッズ（3D）/ ポップ / クリーン / ダーク）・尺・声はボタンで選べます。キッズを選ぶと、小学生にもわかる言葉で 3D オブジェクト中心の台本を書きます。3D図解を選ぶと、自販機の回のように題材の物そのものを 3D で作り込んだ場面（`scene3d` の組み立て形式・下記）を中心に、paper テーマの台本を書きます
 - **動画を生成**: 進捗バーで「台本とリサーチ → ナレーション → 字幕のタイミング → 3D・図解の描画 → 書き出し」のどこまで進んだかと残り時間が見られます。場面の下絵は、できたものから先に表示されます
 - **プレビュー**: 完成した動画をその場で再生。下の場面をクリックすると、その場面へ移動します
 - **③ 修正の指示**: 場面を選んで指示を書くと、その場面だけを AI が直して作り直します（選ばなければ動画全体）。直すたびに版（v1, v2, …）が増え、右上で前の版に戻って見られます
@@ -349,6 +349,44 @@ npm run audio && npm run build:youtube                           # いつもの�
 - 紙の図解なので、`meta.style` が `3d` でもカードの厚みや床・積み木の背景は付けず、平面で描きます
 - 落ち着いた見せ方にするため、サンプルでは `transition: "fade"`・`avatar: false`・`progressBar: false`・出現音なしにしています
 - `scene3d` レイアウトは three.js（`@remotion/three`）で描きます。作り込んだ 3D の場面は `preset` で選びます（上の「scene3d の場面（preset）」の表）
+- preset にない題材は、`parts`（部品）を並べて**組み立てる**形で、同じ絵本風（ベタ塗り + 黒い輪郭線）の 3D 図解を作れます（下記）
+
+### scene3d の組み立て形式（parts）
+
+自販機の透視図のような作り込んだ場面を、three.js を書かずに台本だけで作る形です。動画生成アプリで「3D図解（自販機風）」を選ぶと、AI がこの形で題材の物を組み立てます。見本は `templates/sample-zukai-3d.json`（電子レンジのしくみ・3シーン）。
+
+```jsonc
+{
+  "layout": "scene3d",
+  "content": {
+    "title": "電子レンジの中には**電波を出す装置**がある",
+    "parts": [
+      // 単位は m。at は部品の足もと (底面の中心)、y = 0 が床。x は右・z は手前が正
+      { "id": "shell", "shape": "box", "size": [3.2, 1.9, 2.2], "at": [0, 0, 0], "color": "navy", "ghost": true },
+      { "id": "cup", "shape": "cylinder", "size": [0.55, 0.6, 0.55], "at": [-0.45, 0.2, 0.1], "color": "red", "label": "コップ" },
+      { "id": "magnetron", "shape": "box", "size": [0.6, 0.5, 0.6], "at": [1.2, 1.25, -0.4], "color": "gold", "text": "発振" }
+    ],
+    "flows": [{ "id": "waves", "path": [[0.9, 1.5, -0.4], [-0.45, 1.65, 0.1], [-0.45, 0.9, 0.1]], "kind": "dots", "pipe": false }],
+    "callouts": [{ "id": "c-mag", "target": "magnetron", "title": "マグネトロン", "sub": "電波を出す装置", "tone": "accent" }],
+    "camera": { "view": "right", "zoomTo": "cup" }
+  }
+}
+```
+
+| キー | 内容 |
+|---|---|
+| `parts[].shape` | 基本形 `box` / `plate` / `cylinder` / `sphere` / `hemisphere` / `cone` / `pyramid` / `roof` / `ring` / `arrow`、作り込んだ物 `vendingMachine` / `vendingMachineOpen` / `fridge` / `house` / `bolt`、または 3D オブジェクトのキー（`src/three/catalog.ts`） |
+| `parts[].size` / `at` / `turn` / `tilt` | 大きさ `[幅, 高さ, 奥行き]`・足もとの位置・向き（度）・傾き（度） |
+| `parts[].color` | `navy` / `navy-dark` / `navy-light` / `sky` / `cold` / `red` / `orange` / `hot` / `gold` / `green` / `brown` / `purple` / `paper` / `beige` / `metal` / `gray` / `white` / `black` / `ink` か `#RRGGBB` |
+| `parts[].text` / `label` | 正面（薄い板は上面）に書く文字（box / plate / cylinder）/ 上に浮かぶ名札 |
+| `parts[].ghost` | 半透明の外箱にして中の部品を見せる |
+| `parts[].enter` / `motion` | 出方 `pop` / `drop` / `grow` / `fade`、出たあとの動き `none` / `spin` / `bob` / `pulse` |
+| `parts[].repeat` | `{ "count": 18, "columns": 6, "gap": 1.0 }` で同じ物を奥へ並べる（数の多さ） |
+| `flows[]` | 折れ線 `path` に沿った管と流れる玉。`kind`: `heat`（熱の玉）/ `cold`（冷たさの玉）/ `dots`（色の粒）/ `arrow`（伸びる矢印）。`pipe` / `loop` / `speed` |
+| `callouts[]` | `target` の部品・流れを引き出し線で指す注釈（4つまで。箱の位置は自動） |
+| `camera` | `view`: `front` / `left` / `right` / `top` / `low`。距離は全体が収まるよう自動。`zoomTo` を書くと reveal `"zoom"` でその部品へ寄る |
+
+要素ID（reveal / focus に書けるもの）は、部品・流れ・注釈の各 `id` と `title` / `stat`（`zoomTo` があれば `zoom`）。reveal しない部品はシーン冒頭に順に出るので、説明の順に部品を reveal すると組み立てていくように見えます。
 - 明朝体（Noto Serif JP）は `public/fonts/` に同梱しています（`OFL-NotoSerifJP.txt` がライセンス）
 
 > 3D の場面は WebGL で描くため、GPU のない環境（Linux サーバーや CI）では `npm run render -- --gl=swangle` のようにソフトウェア描画を指定すると確実です。

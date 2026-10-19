@@ -10,7 +10,7 @@
 import { scriptSchema, type ScriptConfig } from '../../src/schemas';
 import { lintScript } from '../../src/elements';
 import { ICON_NAMES } from '../../src/components/IconBox';
-import { COLOR_NAMES, SHAPES, SHAPE_NAMES } from '../../src/three/catalog';
+import { BUILD_BASIC_SHAPES, BUILD_COLORS, BUILD_PROPS, COLOR_NAMES, SHAPES, SHAPE_NAMES } from '../../src/three/catalog';
 import { chatJson, extractJson, resolveLlmConfig } from './llm';
 import { CLAUDE_MODEL, claudeText, hasClaudeEnvCredentials } from './claude';
 
@@ -31,8 +31,14 @@ const askJson = async (system: string, user: string): Promise<unknown> => {
 export type Audience = 'kids' | 'general';
 
 const SHAPE_LIST = SHAPE_NAMES.map((name) => `${name}(${SHAPES[name].ja})`).join(', ');
+const BASIC_LIST = Object.entries(BUILD_BASIC_SHAPES)
+  .map(([name, ja]) => `${name}(${ja})`)
+  .join(' / ');
+const PROP_LIST = Object.entries(BUILD_PROPS)
+  .map(([name, prop]) => `${name}(${prop.ja})`)
+  .join(' / ');
 
-/** 見せ方 (3D オブジェクト) の説明。子ども向け・大人向けで共通 */
+/** 見せ方 (3D オブジェクト・作り込んだ場面・組み立てる図解) の説明。子ども向け・大人向けで共通 */
 const SCENE3D_SPEC = `"scene3d": 3D オブジェクトを舞台に並べて見せる。物が上から落ちてきて弾み、説明中の物はぴょんぴょん跳ねる。content = { "arrangement": "row | flow | cycle", "objects": [ { "id": "o-1", "shape": "形のキー", "label": "名札 (8字以内)", "color": "色名 (省略可)", "count": 数 (省略可。1〜12), "size": 大きさ (省略可。0.5〜2) }, ... ], "caption": "ひとこと (省略可。25字以内)" }。objects は1〜5個。
    - row: 横に並べる (しょうかい・くらべる)。flow: 左から右へ矢印でつなぐ (じゅんばん・原因と結果。矢印のIDは "arrow-1", "arrow-2", ...)。cycle: 輪にして矢印で一周する (くりかえし・じゅんかん。物は2個以上。矢印のIDは "arrow-1"〜"arrow-N")
    - 数は count で見せる (「りんごが3こ」→ shape: "apple", count: 3。1こずつ順に出てくるので数えられる)
@@ -41,7 +47,15 @@ const SCENE3D_SPEC = `"scene3d": 3D オブジェクトを舞台に並べて見�
    - 要素ID: objects の各 id・矢印 arrow-N・"caption"
    - shape に使えるキー (必ずこの中から選ぶ): ${SHAPE_LIST}
    - color に使える色名: ${Object.keys(COLOR_NAMES).join(', ')}
-   - もう1つの形 (作り込んだ 3D の場面): content = { "preset": "…", "title": "上部の一文(省略可・**強調**可)", "stat": { "kicker": "…", "value": "190億個", "note": "出典" }(省略可), "callouts": [ { "id": "…", "title": "…", "sub": "…", "tone": "accent / warning / muted / normal" } ](省略可) }。preset と要素ID: "phoneChip" (スマホの箱が開きチップへ寄る。open / label / zoom、content.label = { title, sub }) / "vendingCount" (自販機1台 → 大量の自販機。machine / many) / "vendingHotCold" (自販機の左右に冷たさと熱の玉。machine / cold / heat、callouts は 冷たさ・熱 の順に2つ) / "vendingCutaway" (扉が開き管の中を熱が流れる。open / flow、callouts は 吸熱・圧縮・放熱・膨張 の順に4つ) / "heatReuse" (冷蔵庫は熱を捨て、自販機は回す。left / right、callouts は 捨てる熱・回す熱 の2つ) / "vendingEnergy" (自販機→稲妻→家とカレンダー。machine / bolt / house / months、callouts は カレンダーに1つ)。title / stat / 各 callout の id も reveal に書ける。題材に合う preset がなければ使わない。`;
+   - もう1つの形 (作り込んだ 3D の場面): content = { "preset": "…", "title": "上部の一文(省略可・**強調**可)", "stat": { "kicker": "…", "value": "190億個", "note": "出典" }(省略可), "callouts": [ { "id": "…", "title": "…", "sub": "…", "tone": "accent / warning / muted / normal" } ](省略可) }。preset と要素ID: "phoneChip" (スマホの箱が開きチップへ寄る。open / label / zoom、content.label = { title, sub }) / "vendingCount" (自販機1台 → 大量の自販機。machine / many) / "vendingHotCold" (自販機の左右に冷たさと熱の玉。machine / cold / heat、callouts は 冷たさ・熱 の順に2つ) / "vendingCutaway" (扉が開き管の中を熱が流れる。open / flow、callouts は 吸熱・圧縮・放熱・膨張 の順に4つ) / "heatReuse" (冷蔵庫は熱を捨て、自販機は回す。left / right、callouts は 捨てる熱・回す熱 の2つ) / "vendingEnergy" (自販機→稲妻→家とカレンダー。machine / bolt / house / months、callouts は カレンダーに1つ)。title / stat / 各 callout の id も reveal に書ける。題材に合う preset がなければ使わない。
+   - 3つ目の形 (組み立てる 3D の図解。自販機の透視図のように、題材の物を基本形の組み合わせで作り込み、絵本風のベタ塗り + 黒い輪郭線で描く): content = { "title": "上部の一文(省略可・**強調**可)", "parts": [ { "id": "body", "shape": "box", "size": [幅, 高さ, 奥行き], "at": [x, y, z], "color": "navy", "turn": 向き(度・省略可), "tilt": 傾き(度・省略可), "text": "正面の文字(省略可・8字以内)", "label": "上に浮かぶ名札(省略可・8字以内)", "ghost": true (中を見せる半透明の外箱・省略可), "enter": "pop | drop | grow | fade" (省略可), "motion": "none | spin | bob | pulse" (省略可), "repeat": { "count": 2〜60, "columns": 列数, "gap": 間隔 } (同じ物を奥へ並べる・省略可) }, ... ], "flows": [ { "id": "f-1", "path": [[x, y, z], ...], "kind": "heat | cold | dots | arrow", "color": "色名(省略可)", "pipe": true, "loop": false, "speed": 1 } ] (省略可・6本まで), "callouts": [ { "id": "c-1", "target": "指す部品か流れの id", "title": "…", "sub": "…", "tone": "accent / warning / muted / normal" } ] (省略可・4つまで。箱の位置は自動), "stat": { "kicker": "…", "value": "…", "note": "出典" } (省略可), "camera": { "view": "front | left | right | top | low", "zoomTo": "寄る部品の id (省略可)" } (省略可) }
+     - 単位は m。y = 0 が床で、at は部品の足もと (底面の中心)。x は右、z は手前が正。場面全体は幅・高さ 1〜10 くらいにまとめる。カメラの距離は全体が画面に収まるよう自動で決まる
+     - shape: 基本形 ${BASIC_LIST}、作り込んだ物 ${PROP_LIST}、または上の 3D オブジェクトのキー (基本形で作れない物だけ)。text が書けるのは box / plate / cylinder
+     - 部品は 4〜20 個。台・外箱・中の部品・窓・ボタン・配線などの細部を重ねて、それらしい形に作り込む (例: パソコン = plate のキーボード + 薄い box の画面 (text: "画面") + cylinder の脚)。部品が宙に浮かないよう、重ねる部品の at の y は下の部品の高さに合わせる。中を見せたい外箱は ghost: true にして、中の部品を外箱の内側に置く
+     - flows は熱・電気・水・データ・お金などの目に見えない動きを、管と流れる玉 (heat: 熱の玉 / cold: 冷たさの玉 / dots: 色の粒) か、伸びていく矢印 (arrow) で見せる。path は部品の位置に合わせて通す (部品の表面より少し手前・上を通すと見やすい)
+     - enter: pop (弾んで出る・既定) / drop (上から落ちる) / grow (下から伸びる。棒グラフ・ビル・水位) / fade。motion: spin (回る。ファン・歯車) / bob (浮かぶ) / pulse (脈打つ。光る・熱い)
+     - color に使える色名: ${Object.keys(BUILD_COLORS).join(', ')} (または #RRGGBB)
+     - 要素ID: parts・flows・callouts の各 id・"title"・"stat"・"zoom" (camera.zoomTo があるとき。reveal するとその部品へ寄る)。reveal しない部品はシーン冒頭に順に出る。説明の順に部品・流れ・注釈を reveal すると、組み立てていくように見える`;
 
 const AUDIENCE_RULES: Record<Audience, { role: string; voice: string; visual: string }> = {
   kids: {

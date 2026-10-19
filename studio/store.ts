@@ -14,7 +14,8 @@ import crypto from 'node:crypto';
 export const ROOT = path.resolve(__dirname, '..');
 export const DATA_DIR = path.join(ROOT, 'studio-data', 'projects');
 
-export type Look = 'paper' | 'kids' | 'pop' | 'clean' | 'dark';
+/** 見た目。zukai3d は paper テーマで、部品を組み立てた作り込みの 3D 図解 (自販機の場面のような) を中心にする */
+export type Look = 'paper' | 'zukai3d' | 'kids' | 'pop' | 'clean' | 'dark';
 
 export interface ProjectOptions {
   look: Look;

@@ -88,7 +88,7 @@ export const StatOverlay: React.FC<{
 /**
  * 3D の物を引き出し線で指す注釈。線は物の画面上の位置から伸びるので、カメラや物が動いても追いかける。
  */
-const Callout: React.FC<{
+export const Callout: React.FC<{
   callout: Content['callouts'][number];
   anchor: { x: number; y: number };
   box: { x: number; y: number; align: 'left' | 'right' };

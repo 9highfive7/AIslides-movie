@@ -149,6 +149,100 @@ const scene3dPresetSchema = z.object({
     .default([]),
 });
 
+/** 3D の座標 [x, y, z] (m)。x は右・y は上・z は手前が正 */
+const vec3Schema = z.tuple([z.number(), z.number(), z.number()]);
+
+/** scene3d (組み立て): 部品1つ */
+const buildPartSchema = z.object({
+  id: z.string(),
+  /** 形。基本形 (box / cylinder ...)・作り込んだ物 (vendingMachine ...)・3D オブジェクトのキー (src/three/catalog.ts) */
+  shape: z.string(),
+  /** 大きさ [幅, 高さ, 奥行き] (m)。作り込んだ物・3D オブジェクトは高さだけ使い、縦横比を保つ */
+  size: vec3Schema.optional(),
+  /** 足もと (底面の中心) の位置。y = 0 が床 */
+  at: vec3Schema.default([0, 0, 0]),
+  /** 向き (度。y 軸まわり、正で左回り) */
+  turn: z.number().default(0),
+  /** 傾き (度。z 軸まわり。円柱を寝かせて管にするなど) */
+  tilt: z.number().default(0),
+  /** 色名 (BUILD_COLORS) か #RRGGBB */
+  color: z.string().optional(),
+  /** 正面 (薄い板なら上面) に書く文字 */
+  text: z.string().optional(),
+  /** 上に浮かぶ名札 */
+  label: z.string().optional(),
+  /** 半透明にする (中を見せる外箱) */
+  ghost: z.boolean().default(false),
+  /** 出方。pop: 弾んで出る / drop: 上から落ちる / grow: 下から伸びる / fade: ふわっと出る */
+  enter: z.enum(['pop', 'drop', 'grow', 'fade']).default('pop'),
+  /** 出たあとの動き。spin: 回る / bob: 浮かぶ / pulse: 脈打つ */
+  motion: z.enum(['none', 'spin', 'bob', 'pulse']).default('none'),
+  /** 同じ物を並べる (数の多さ)。columns 列で奥へ並べ、gap は物の中心どうしの間隔 (m) */
+  repeat: z
+    .object({
+      count: z.number().int().min(2).max(60),
+      columns: z.number().int().min(1).max(12).optional(),
+      gap: z.number().min(0.1).max(20).optional(),
+    })
+    .optional(),
+});
+
+/** scene3d (組み立て): 管と、その中を流れる玉 (熱・冷たさ・粒) か矢印 */
+const buildFlowSchema = z.object({
+  id: z.string(),
+  /** 通る点 (2〜16点。直線でつなぐ) */
+  path: z.array(vec3Schema).min(2).max(16),
+  /** heat: 熱の玉 / cold: 冷たさの玉 / dots: 色の粒 / arrow: 矢印だけ */
+  kind: z.enum(['heat', 'cold', 'dots', 'arrow']).default('dots'),
+  color: z.string().optional(),
+  /** 管を描く (false なら玉だけが流れる) */
+  pipe: z.boolean().default(true),
+  /** 最後の点から最初の点へ戻って一周する */
+  loop: z.boolean().default(false),
+  /** 流れる速さの倍率 */
+  speed: z.number().min(0.2).max(4).default(1),
+});
+
+/**
+ * scene3d: 部品を組み立てて作る 3D の図解 (自販機の場面と同じ絵本風の見た目)。
+ * 題材ごとに three.js を書かなくても、基本形の組み合わせ・流れ・注釈で作り込んだ場面を作れる。
+ */
+const scene3dBuildSchema = z.object({
+  /** 画面上部中央の明朝の一文 (reveal "title"。**強調** は朱色) */
+  title: z.string().optional(),
+  parts: z.array(buildPartSchema).min(1).max(30),
+  flows: z.array(buildFlowSchema).max(6).default([]),
+  /** 部品か流れを引き出し線で指す注釈 (箱の位置は自動で決まる) */
+  callouts: z
+    .array(
+      z.object({
+        id: z.string(),
+        /** 指す部品か流れの id */
+        target: z.string(),
+        title: z.string(),
+        sub: z.string().optional(),
+        tone: z.enum(['normal', 'accent', 'warning', 'muted']).default('normal'),
+      }),
+    )
+    .max(4)
+    .default([]),
+  /** 数字カード (reveal "stat" で出る) */
+  stat: z
+    .object({
+      kicker: z.string().optional(),
+      value: z.string(),
+      note: z.string().optional(),
+    })
+    .optional(),
+  /** カメラ。全体が収まる距離は自動で決まる。zoomTo があれば reveal "zoom" でその部品へ寄る */
+  camera: z
+    .object({
+      view: z.enum(['front', 'left', 'right', 'top', 'low']).default('right'),
+      zoomTo: z.string().optional(),
+    })
+    .default({ view: 'right' }),
+});
+
 const compareItemSchema = z.object({
   id: z.string(),
   icon: iconSchema.optional(),
@@ -400,8 +494,11 @@ const sceneSchema = z.discriminatedUnion('layout', [
   z.object({
     ...sceneBaseSchema,
     layout: z.literal('scene3d'),
-    /** objects で物を並べる形 (scene3dObjectsSchema) か、preset で作り込んだ場面を選ぶ形 (scene3dPresetSchema) */
-    content: z.union([scene3dObjectsSchema, scene3dPresetSchema]),
+    /**
+     * objects で物を並べる形 (scene3dObjectsSchema)・preset で作り込んだ場面を選ぶ形 (scene3dPresetSchema)・
+     * parts で部品を組み立てる形 (scene3dBuildSchema) のどれか
+     */
+    content: z.union([scene3dObjectsSchema, scene3dPresetSchema, scene3dBuildSchema]),
   }),
   z.object({
     ...sceneBaseSchema,
@@ -579,10 +676,17 @@ export type SfxName = z.infer<typeof sfxNameSchema>;
 export type ThemeName = z.infer<typeof themeNameSchema>;
 export type Scene3DObjectsContent = z.infer<typeof scene3dObjectsSchema>;
 export type Scene3DPresetContent = z.infer<typeof scene3dPresetSchema>;
+export type Scene3DBuildContent = z.infer<typeof scene3dBuildSchema>;
+export type Scene3DContent = Scene3DObjectsContent | Scene3DPresetContent | Scene3DBuildContent;
 
 /** scene3d の content が preset で場面を選ぶ形か */
-export const isPresetScene3D = (content: Scene3DObjectsContent | Scene3DPresetContent): content is Scene3DPresetContent =>
-  'preset' in content;
+export const isPresetScene3D = (content: Scene3DContent): content is Scene3DPresetContent => 'preset' in content;
+
+/** scene3d の content が parts で部品を組み立てる形か */
+export const isBuildScene3D = (content: Scene3DContent): content is Scene3DBuildContent => 'parts' in content;
+
+/** scene3d の content が objects を舞台に並べる形か */
+export const isObjectsScene3D = (content: Scene3DContent): content is Scene3DObjectsContent => 'objects' in content;
 export type TimelineLineFromScript = z.infer<typeof narrationLineSchema>;
 
 export type Timeline = z.infer<typeof timelineSchema>;

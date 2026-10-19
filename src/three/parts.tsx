@@ -40,7 +40,8 @@ export const Outlined: React.FC<{
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <mesh geometry={geometry}>
-        <meshLambertMaterial color={map ? '#FFFFFF' : color} map={map ?? null} transparent={transparent} opacity={opacity} />
+        {/* 半透明の面は奥の物 (中の部品・流れる玉) を隠さないよう、深度を書かない */}
+        <meshLambertMaterial color={map ? '#FFFFFF' : color} map={map ?? null} transparent={transparent} opacity={opacity} depthWrite={!transparent} />
       </mesh>
       {noEdges ? null : (
         <lineSegments geometry={edges}>

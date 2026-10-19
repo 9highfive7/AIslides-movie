@@ -18,7 +18,7 @@ import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
 import { FloatingToys } from './components/FloatingToys';
 import { SceneLayoutView } from './layouts';
-import { isPresetScene3D, type Scene, type TimelineScene, type TransitionType } from './schemas';
+import { isObjectsScene3D, type Scene, type TimelineScene, type TransitionType } from './schemas';
 
 const H = TRANSITION_HALF_FRAMES;
 
@@ -59,7 +59,7 @@ const SceneView: React.FC<{
   // scene3d は three.js のカメラを自前で持つので、画面全体のズームはかけない。
   // objects で並べる形は舞台 (床) の背景も自前で描く
   const isScene3d = scene.layout === 'scene3d';
-  const isStage = isScene3d && !isPresetScene3D(scene.content);
+  const isStage = isScene3d && isObjectsScene3D(scene.content);
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
