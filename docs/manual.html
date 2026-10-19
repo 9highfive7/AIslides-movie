@@ -207,7 +207,11 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   </tbody>
 </table>
 </div>
-<p>形の見た目は、Remotion Studio（<code>npm run dev</code>）の左の一覧の <code>ShapeCatalog</code> で一覧できます（<code>npx remotion still ShapeCatalog out/shapes.png</code> で画像にもできます）。</p>
+<p>形の見た目は下の図鑑のとおりです。Remotion Studio（<code>npm run dev</code>）の左の一覧の <code>ShapeCatalog</code> でも同じものを見られ、<code>npx remotion still ShapeCatalog out/shapes.png</code> で画像にもできます。</p>
+<figure>
+  <img src="images/shape-catalog.jpg" alt="3D オブジェクト図鑑。cube・ball・sun・cloud・drop・apple・rocket・robot など48種の 3D オブジェクトが8列6行に並び、それぞれの下に形のキーと日本語の説明" loading="lazy">
+  <figcaption>3D オブジェクト図鑑（<code>ShapeCatalog</code>）。各オブジェクトの下が <code>shape</code> に書くキーです。</figcaption>
+</figure>
 <p>タイトル（<code>title</code>）と章扉（<code>section</code>）の content に <code>"objects": ["cloud", "drop", "sun"]</code> のように形のキーを書くと、そのオブジェクトがまわりに浮かびます（省略時は星・ボールなどの既定の形）。見本は <code>templates/sample-kids-3d.json</code>（「雨はどうしてふるの？」約3分）です。</p>
 
 <div class="callout">
@@ -219,22 +223,23 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
 <p>次の演出は、台本に特別なことを書かなくても自動で入ります。どれも <a href="#meta">meta</a> の設定で弱めたり止めたりできます。</p>
 
 <div class="feature">
-  <div><b>動く画面</b><p>要素がバネの動きで弾むように出現します（8種類）。見出しは1文字ずつ出て、背景はゆっくり漂い、カメラも少しずつズームし続けます。</p></div>
+  <div><b>動く画面</b><p>要素がバネの動きで弾むように出現します（平面8種類＋立体4種類）。見出しは1文字ずつ出て、背景はゆっくり漂い、カメラも少しずつズームし続けます（3D スタイルでは回り込んで揺れます）。</p></div>
   <div><b>シーン切り替え</b><p>スライド・ワイプ・ズーム・円形などで、前後のシーンが重なりながら切り替わります。音声とはずれません。</p></div>
   <div><b>図解の動き</b><p>矢印が線を引くように伸びて点が流れる、数字がカウントアップする、棒グラフが伸びる、チェックが付く、比較の中央に VS、ランキング1位に王冠。</p></div>
   <div><b>強調</b><p>セリフに <code>focus</code> を書くと説明中の要素が拡大され、他は薄くなります。<code>**語句**</code> で字幕の色が変わります。</p></div>
   <div><b>字幕</b><p>YouTube でおなじみの縁取り文字、または帯付きの字幕。テーマに合わせて自動で選ばれます。</p></div>
   <div><b>効果音とBGM</b><p>出現の「ポン」、切り替えの「シュッ」、強調の「チーン」を自動で配置。BGM はナレーション中だけ音量が下がります。</p></div>
-  <div><b>喋るキャラクター</b><p>右下の丸い枠に、カワウソの顔だけが出ます。体や顔は動かず、動くのは口だけで、口の形は音声の大きさから自動で作られます。サムネイルには全身で登場します。自前の画像にも差し替えられます。</p></div>
+  <div><b>喋るキャラクター</b><p>右下の丸い枠に、カワウソの顔だけが出ます。体や顔は動かず、動くのは口だけです。口の形は音声の大きさから自動で作られ、見やすいように1秒に6回ほどのゆっくりした速さで変わります。サムネイルには全身で登場します。自前の画像にも差し替えられます。</p></div>
   <div><b>登録の導線</b><p>動画の途中に「チャンネル登録」のポップアップ（カーソルがクリックする演出）。最後は終了画面の枠付きエンディング。</p></div>
 </div>
 
 <h3>テーマ（配色）は4種類</h3>
-<p>既定は子ども向けの <code>kids</code>（空色の背景・はっきりした色・太い縁取り。上の 3D の画面例）です。ほかに次の3つがあります。</p>
+<p>既定は子ども向けの <code>kids</code> です。同じ比較画面を、4つのテーマで並べました（どれも既定の 3D スタイル）。</p>
 <div class="shots">
-  <figure><img src="images/theme-clean.jpg" alt="clean テーマの比較画面。淡い青の背景に白いカード、帯付きの字幕" loading="lazy"><figcaption><code>clean</code>：落ち着いた青と紺。帯付き字幕</figcaption></figure>
-  <figure><img src="images/theme-pop.jpg" alt="pop テーマの比較画面。クリーム色の背景に太枠のカード、縁取り字幕と右下のキャラクター" loading="lazy"><figcaption><code>pop</code>：太枠・黄色マーカー・縁取り字幕</figcaption></figure>
-  <figure><img src="images/theme-dark.jpg" alt="dark テーマの比較画面。濃紺の背景に青く光るアクセント" loading="lazy"><figcaption><code>dark</code>：濃紺地のテック系</figcaption></figure>
+  <figure><img src="images/theme-kids.jpg" alt="kids テーマの比較画面。空色の背景に厚みのあるカード、縁取り字幕、右下の丸い枠にカワウソの顔" loading="lazy"><figcaption><code>kids</code>（既定）：空色の背景・はっきりした色・縁取り字幕</figcaption></figure>
+  <figure><img src="images/theme-clean.jpg" alt="clean テーマの比較画面。淡い青の背景に厚みのある白いカード、帯付きの字幕" loading="lazy"><figcaption><code>clean</code>：落ち着いた青と紺。帯付き字幕</figcaption></figure>
+  <figure><img src="images/theme-pop.jpg" alt="pop テーマの比較画面。クリーム色の背景に太枠のカード、縁取り字幕と右下の丸い枠のキャラクター" loading="lazy"><figcaption><code>pop</code>：太枠・黄色マーカー・縁取り字幕</figcaption></figure>
+  <figure><img src="images/theme-dark.jpg" alt="dark テーマの比較画面。濃紺の背景と床のグリッドに、青く光るアクセント" loading="lazy"><figcaption><code>dark</code>：濃紺地のテック系</figcaption></figure>
 </div>
 
 <h2 id="prep">準備する</h2>
@@ -303,6 +308,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
     <tr><td><code>npm run youtube</code><span class="tag">新</span></td><td>概要欄の目次・字幕ファイルを作成（<code>out/youtube/</code>）</td></tr>
     <tr><td><code>npm run build:youtube</code><span class="tag">新</span></td><td>render → thumbnail → youtube をまとめて実行</td></tr>
     <tr><td><code>npm run sfx</code><span class="tag">新</span></td><td>効果音を作り直す（音を変えたいときだけ）</td></tr>
+    <tr><td><code>npx remotion still ShapeCatalog out/shapes.png</code><span class="tag">新</span></td><td>3D オブジェクト図鑑を画像に書き出す</td></tr>
     <tr><td><code>npm run typecheck</code></td><td>型チェック</td></tr>
   </tbody>
 </table>
@@ -327,8 +333,8 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 </div>
 
 <figure>
-  <img src="images/thumbnail.jpg" alt="自動生成されたサムネイルの例。濃い背景に縁取りの大きな文字で「トークン節約 4つの方法を実測」" style="max-width:480px" loading="lazy">
-  <figcaption>サムネイルの例。<code>**強調**</code> した語句は色が変わります。</figcaption>
+  <img src="images/thumbnail.jpg" alt="自動生成されたサムネイルの例。濃い背景に縁取りの大きな文字で「トークン節約 4つの方法を実測」、右に全身のカワウソ、まわりに星やボールの 3D オブジェクト" style="max-width:480px" loading="lazy">
+  <figcaption>サムネイルの例。<code>**強調**</code> した語句は色が変わります。3D スタイルでは、タイトルシーンの <code>objects</code>（なければ星やボール）の 3D オブジェクトも浮かびます。</figcaption>
 </figure>
 
 <div class="callout">
@@ -414,7 +420,7 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 
 <div class="shots">
   <figure><img src="images/statement.jpg" alt="statement レイアウトの例。中央に大きく「コンテキストを半分以下に保てる」、強調部分に黄色のマーカー" loading="lazy"><figcaption><code>statement</code>：結論や驚きの事実を大きく見せる</figcaption></figure>
-  <figure><img src="images/ranking.jpg" alt="ranking レイアウトの例。1位から3位のカードが並び、1位は金色の枠と王冠" loading="lazy"><figcaption><code>ranking</code>：1位は王冠付きで強調</figcaption></figure>
+  <figure><img src="images/ranking.jpg" alt="ranking レイアウトの例。1位から3位の厚みのあるカードが並び、1位は金色の枠と王冠" loading="lazy"><figcaption><code>ranking</code>：1位は王冠付きで強調</figcaption></figure>
 </div>
 
 <h3>アイコンと素材集</h3>
@@ -583,7 +589,11 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     <tr><td><code>TRANSITION_FRAMES</code></td><td>18フレーム（シーン切り替えの長さ。半分は LEAD / TAIL 以下）</td><td><code>shared/timing.ts</code></td></tr>
     <tr><td>バネの硬さ（<code>SPRINGS</code>）</td><td>出現の弾み具合</td><td><code>src/animation/presets.ts</code></td></tr>
     <tr><td>トランジションの見た目</td><td>slide / wipe などの動き</td><td><code>src/animation/transitions.ts</code></td></tr>
-    <tr><td>テーマの配色・カードの枠や影</td><td>clean / pop / dark</td><td><code>src/themes/index.ts</code></td></tr>
+    <tr><td>テーマの配色・カードの枠や影</td><td>kids / clean / pop / dark</td><td><code>src/themes/index.ts</code></td></tr>
+    <tr><td>3D スタイルのカードの厚み（<code>DEPTH_3D</code>）</td><td>12px</td><td><code>src/themes/index.ts</code></td></tr>
+    <tr><td>キャラクターの口の速さ（<code>MOUTH_HOLD_FRAMES</code>）</td><td>5フレーム（口の形を保つ長さ。1秒に約6回）。大きくするとゆっくり、小さくすると速くなる</td><td><code>src/components/Avatar.tsx</code></td></tr>
+    <tr><td>3D オブジェクトの形・色</td><td>形のキーと既定色 / 形そのもの</td><td><code>src/three/catalog.ts</code> / <code>src/three/models.tsx</code></td></tr>
+    <tr><td>scene3d の配置・カメラの動き</td><td>並べ方・大きさ・回り込み</td><td><code>src/three/stage.ts</code></td></tr>
     <tr><td>効果音の音色</td><td>pop / whoosh / ding / click</td><td><code>scripts/lib/sfx.ts</code>（変更後に <code>npm run sfx</code>）</td></tr>
   </tbody>
 </table>
