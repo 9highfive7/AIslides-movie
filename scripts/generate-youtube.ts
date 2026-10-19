@@ -1,7 +1,9 @@
 /**
  * YouTube に投稿するための付属ファイルを out/youtube/ に書き出す。
- *   description.txt  概要欄にそのまま貼れるタイトル + 目次 (チャプター)
+ *   description.txt  概要欄にそのまま貼れる説明 + 目次 (チャプター) + 出典 + クレジット + ハッシュタグ
  *   captions.srt     字幕ファイル (YouTube Studio → 字幕 → ファイルをアップロード)
+ *   tags.txt         タグ欄に貼るタグ (カンマ区切り)
+ *   upload.txt       投稿シート (タイトル候補・設定・投稿前の確認)
  *   metadata.json    タイトル・尺・チャプターの機械可読版
  *
  * 使い方: npm run youtube   (先に npm run audio で timeline.json を作っておく)
@@ -9,7 +11,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { scriptSchema, timelineSchema } from '../src/schemas';
-import { buildChapters, buildDescription, buildSrt, formatTimestamp, videoTitle } from './lib/youtube';
+import { buildChapters, buildDescription, buildSrt, buildTags, buildUploadSheet, formatTimestamp, titleCandidates, videoTitle } from './lib/youtube';
+import { loadVoicevoxConfig, voicevoxCredit } from './lib/voicevox';
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -29,16 +32,25 @@ async function main(): Promise<void> {
   const outDir = path.join(ROOT, 'out', 'youtube');
   fs.mkdirSync(outDir, { recursive: true });
 
-  fs.writeFileSync(path.join(outDir, 'description.txt'), buildDescription(script, chapters));
+  const mockAudio = timeline.scenes.some((s) => s.lines.some((l) => l.mock));
+  const credits = mockAudio ? [] : [await voicevoxCredit(loadVoicevoxConfig(path.join(ROOT, 'voicevox.config.json')))];
+  const description = buildDescription(script, chapters, { credits });
+  const durationSec = Number((timeline.totalFrames / timeline.fps).toFixed(2));
+  fs.writeFileSync(path.join(outDir, 'description.txt'), description);
   fs.writeFileSync(path.join(outDir, 'captions.srt'), buildSrt(timeline));
+  fs.writeFileSync(path.join(outDir, 'tags.txt'), `${buildTags(script)}\n`);
+  fs.writeFileSync(path.join(outDir, 'upload.txt'), buildUploadSheet(script, { durationSec, mockAudio, mockImages: false }));
   fs.writeFileSync(
     path.join(outDir, 'metadata.json'),
     JSON.stringify(
       {
         title: videoTitle(script),
-        durationSec: Number((timeline.totalFrames / timeline.fps).toFixed(2)),
+        titles: titleCandidates(script),
+        description,
+        tags: buildTags(script),
+        durationSec,
         chapters: chapters.map((c) => ({ ...c, timestamp: formatTimestamp(c.startSec) })),
-        mockAudio: timeline.scenes.some((s) => s.lines.some((l) => l.mock)),
+        mockAudio,
       },
       null,
       2,

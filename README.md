@@ -21,7 +21,9 @@
 - **キャラクター**: 右下の丸い枠に、喋るカワウソの顔だけを表示（体や顔は動かず、動くのは口だけ。口の形は音声の音量から自動生成。自前の画像にも差し替え可）。サムネイルには全身で登場
 - **登録の導線**: 途中で出る「チャンネル登録」ポップアップ（カーソルがクリックする演出）と、終了画面の枠付きエンディング
 - **進行バー**: 画面下端に再生位置と章の区切り
-- **投稿用ファイル**: サムネイル（1280×720）、概要欄用チャプター（目次）、字幕ファイル（SRT）
+- **投稿用ファイル**: サムネイル（1280×720）、概要欄（説明・目次・出典・クレジット・ハッシュタグ）、タグ、タイトル候補、字幕ファイル（SRT）、投稿シート（YouTube Studio で選ぶ設定と投稿前の確認）
+- **YouTube 向けの書き出し**: H.264 / yuv420p / BT.709 / AAC 320kbps・高めの画質（CRF 16）で書き出し、音量を YouTube の基準（-14 LUFS）にそろえる
+- **AI っぽさを抑える仕上げ**: 切り抜いた絵のふちの白いにじみを取り、物を背景の色になじませ、画面全体に薄い粒子と周辺減光をかける。台本は決まり文句を避け、文末と文の長さに緩急を付けて書く
 
 > 画面例つきの手順書は [`docs/manual.html`](docs/manual.html) にあります（ブラウザで開いてください）。
 
@@ -75,7 +77,8 @@ npm run studio                        # → http://localhost:4300 をブラウ�
 - **動画を生成**: 進捗バーで「台本とリサーチ → 素材の画像（AI） → ナレーション → 字幕のタイミング → 3D・図解の描画 → 書き出し」のどこまで進んだかと残り時間が見られます。場面の下絵は、できたものから先に表示されます
 - **プレビュー**: 完成した動画をその場で再生。下の場面をクリックすると、その場面へ移動します
 - **③ 修正の指示**: 場面を選んで指示を書くと、その場面だけを AI が直して作り直します（選ばなければ動画全体）。直すたびに版（v1, v2, …）が増え、右上で前の版に戻って見られます
-- **④ 保存**: 動画（MP4）・サムネイル・YouTube 用の概要欄（目次）・字幕ファイル・台本（JSON）
+- **④ 保存**: 動画（MP4）・サムネイル・投稿シート・YouTube 用の説明（目次・出典）・字幕ファイル・台本（JSON）。「YouTube に貼る」の「タイトル」「説明」「タグ」で、YouTube Studio の各欄に貼る文言をコピーできます
+- **BGM**: `public/bgm/` に音楽ファイル（mp3 / m4a / wav / ogg）を置くと、「BGM」で選べます。ナレーションの間は自動で音量が下がります（利用規約で動画への使用が許可された音源を使ってください）
 - 作った動画は `studio-data/` に保存され、ヘッダーの「作った動画」から開き直せます
 - 他の AI で書いた台本（JSON）は「台本（JSON）を読み込んで作る」から動画にできます（APIキーなしでも可）
 
@@ -106,13 +109,16 @@ npm run render
 
 # 4. YouTube 投稿用のサムネイル・チャプター・字幕を作る
 npm run thumbnail   # → out/thumbnail.png (1280×720)
-npm run youtube     # → out/youtube/description.txt (タイトル+目次) / captions.srt / metadata.json
+npm run youtube     # → out/youtube/description.txt (説明+目次+出典) / tags.txt / upload.txt (投稿シート) / captions.srt / metadata.json
 ```
 
 `npm run build:youtube` で 3〜4 をまとめて実行できます。
 
 - `description.txt` の目次をそのまま概要欄に貼ると、YouTube のチャプターになります（章扉 `section` が区切り。0:00 から始まり各10秒以上・3つ以上になるよう自動調整）
 - `captions.srt` は YouTube Studio →「字幕」→「ファイルをアップロード」で使えます（自動字幕より正確）
+- `upload.txt` は YouTube Studio の入力欄の順に、タイトル候補・タグ・設定（子ども向けか・改変または合成されたコンテンツの申告など）と投稿前の確認をまとめたものです
+- VOICEVOX の声を使った動画では、各キャラクターの利用規約で求められるクレジット（例: `VOICEVOX:ずんだもん`）を概要欄に自動で入れます
+- `npm run render` は YouTube 向けの設定で書き出したあと、音量を -14 LUFS にそろえます（`npm run finish -- ファイル.mp4` で単独でも実行可。ffmpeg は Remotion 同梱のものを使います）
 
 台本を編集したら、**必ず `npm run audio` を再実行**してからプレビュー/レンダリングしてください（`timeline.json` が音声の実寸から再計算されます。未再生成の場合、Remotion 側で明確なエラーメッセージが出ます）。
 
@@ -345,11 +351,13 @@ npm run audio && npm run render
 | `camera` | `subtle` | シーン中のゆっくりズーム（3D スタイルでは回り込み・傾き・揺れも）。`none` で止める |
 | `animatedBackground` | `true` | 背景の模様・図形（3D スタイルでは床と積み木）を動かす |
 | `progressBar` | `true` | 画面下端の進行バー（章の区切り付き） |
+| `finish` | テーマで決まる | 画面全体の仕上げ `{ grain, vignette }`。`grain`: フィルムのような細かい粒子（`paper` テーマで既定オン）/ `vignette`: 四隅を少し暗くする（既定オン）。重ねた絵や図解が「作りもの」に見えにくくなる |
 | `subtitle` | `{ enabled: true, style: "auto" }` | `style`: `box`（帯）/ `outline`（縁取り文字）/ `auto`（テーマ既定）。YouTube の字幕機能だけ使うなら `enabled: false` |
 | `sfx` | `{ enabled: true, volume: 0.5, reveal: true, transition: true }` | 効果音。`reveal` = 出現時の pop、`transition` = 切り替え時の whoosh |
 | `bgm` | なし | `{ src: "bgm/track.mp3", volume: 0.18, duckVolume: 0.07 }`。`public/` に置いた音源をループ再生し、ナレーション中は `duckVolume` まで下げる。前後は自動フェード |
 | `avatar` | カワウソ (同梱) | 右下で喋るキャラクター。**省略時は同梱のカワウソ（`public/avatar/`）の顔が丸い枠で出る**。動くのは口だけ。`false` で非表示。自前の画像なら `{ "type": "image", "open": "avatar/open.png", "half": "avatar/half.png", "closed": "avatar/closed.png" }`（口を開けた/半開き/閉じた画像。`half` は省略可）。`framing`: `face`（既定。顔だけを丸い枠で）/ `full`（画像の全体）。`face`: 丸く切り出す位置 `{ "x": 0.47, "y": 0.29, "size": 0.74 }`（画像の幅を 1 とした割合で、丸の中心と直径。既定は同梱のカワウソの顔）。`{ "type": "builtin" }` で画像なしの丸顔キャラ。`name` で名札、`size` で大きさ（既定: 丸い枠の直径 220 / 全身・builtin の高さ 250） |
 | `subscribePopup` | なし | `{ sceneId: "sec2", text?: "チャンネル登録" }`。指定シーンの冒頭に約4秒、登録ボタンのクリック演出を右上に出す |
+| `youtube` | なし | 投稿用の文言 `{ titles: [タイトル候補], summary: "概要欄の冒頭", tags: [タグ], hashtags: [ハッシュタグ], sources: [{ label: "出典", url? }] }`。台本を書く AI が一緒に書く。`npm run youtube` の概要欄・タグ・投稿シートに使う |
 | `thumbnail` | なし | `{ text: "大きな文字\n**強調**", sub?, badge?, image? }`。`npm run thumbnail` の文言（省略時は title シーンから作る） |
 
 > BGM・画像を使う場合は、利用規約で動画への使用が許可された素材を使ってください。効果音は `scripts/lib/sfx.ts` でプログラム合成したもので、外部素材は使っていません（`npm run sfx` で再生成）。

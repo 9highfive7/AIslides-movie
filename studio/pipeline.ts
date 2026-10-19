@@ -18,10 +18,11 @@ import { bundle } from '@remotion/bundler';
 import { openBrowser, renderMedia, renderStill, selectComposition } from '@remotion/renderer';
 import { scriptSchema, timelineSchema, type ScriptConfig } from '../src/schemas';
 import { stripMarkup } from '../shared/markup';
-import { loadVoicevoxConfig } from '../scripts/lib/voicevox';
+import { loadVoicevoxConfig, voicevoxCredit } from '../scripts/lib/voicevox';
 import { reviseScript, validateScript, writeScript, type Audience, type WriterOptions } from '../scripts/lib/script-writer';
 import { fillImages } from '../scripts/lib/images';
-import { buildChapters, buildDescription, buildSrt } from '../scripts/lib/youtube';
+import { buildChapters, buildDescription, buildSrt, buildTags, buildUploadSheet, titleCandidates } from '../scripts/lib/youtube';
+import { YOUTUBE_RENDER, fitThumbnail, normalizeLoudness } from '../scripts/lib/finish';
 import { ROOT, loadProject, saveProject, versionDir, type Look, type Project, type ProjectOptions } from './store';
 
 const PUBLIC = path.join(ROOT, 'public');
@@ -91,6 +92,22 @@ const audienceOf = (look: Look): Audience => (look === 'kids' ? 'kids' : 'genera
 
 /** AIイラストのときだけ、画像生成 AI の絵を重ねる場面 (layered) を使わせる */
 const writerOptionsOf = (look: Look): WriterOptions => ({ layered: look === 'illust' });
+
+/** BGM を置く場所 (public/ からの相対パス)。ここに置いた音楽ファイルをスタジオで選べる */
+const BGM_DIR = 'bgm';
+const BGM_EXT = /\.(mp3|m4a|aac|wav|ogg)$/i;
+
+/** スタジオで選べる BGM (public/bgm/ のファイル名) */
+export const listBgm = (): string[] => {
+  const dir = path.join(PUBLIC, BGM_DIR);
+  return fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => BGM_EXT.test(f)).sort() : [];
+};
+
+/** 選んだ BGM を台本に入れる。ナレーションの間は自動で音量を下げる (meta.bgm の既定値) */
+const applyBgm = (script: ScriptConfig, options: ProjectOptions): ScriptConfig =>
+  options.bgm && listBgm().includes(options.bgm)
+    ? scriptSchema.parse({ ...script, meta: { ...script.meta, bgm: { ...script.meta.bgm, src: `${BGM_DIR}/${options.bgm}` } } })
+    : script;
 
 /** 見た目の選択を台本の meta に反映する (新規作成のときだけ)。3D図解・AIイラストは paper テーマで描く */
 const applyLook = (script: ScriptConfig, options: ProjectOptions): ScriptConfig => {
@@ -242,14 +259,17 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
   let script: ScriptConfig;
   if (request.kind === 'create') {
     const material = buildMaterial(request.topic, request.settings, request.options);
-    script = applyLook(
-      await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look), writerOptionsOf(request.options.look)),
+    script = applyBgm(
+      applyLook(
+        await writeScript(material, (m) => (step('script').detail = m), audienceOf(request.options.look), writerOptionsOf(request.options.look)),
+        request.options,
+      ),
       request.options,
     );
   } else if (request.kind === 'import') {
     const checked = validateScript(request.script);
     if (!checked.data) throw new Error(`台本の形式が不正です:\n${checked.problems.join('\n')}`);
-    script = checked.data;
+    script = applyBgm(checked.data, request.options);
   } else {
     // 直前の版から順にさかのぼり、台本がある版を元にする (途中で失敗した版は飛ばす)
     const base = [...project.versions]
@@ -356,7 +376,7 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
     await renderMedia({
       ...common,
       composition,
-      codec: 'h264',
+      ...YOUTUBE_RENDER,
       outputLocation: path.join(outDir, 'video.mp4'),
       concurrency: Math.max(1, Math.min(8, Math.floor(os.cpus().length / 2))),
       onProgress: ({ renderedFrames, encodedFrames }) => {
@@ -373,15 +393,35 @@ export const runJob = async (job: JobState, request: JobRequest, update: () => v
     });
     if (!exportStarted) enter('export', '書き出しています');
 
+    // 音量を YouTube の基準 (-14 LUFS) にそろえる (無音の仮音声のときは何もしない)
+    step('export').detail = '音量をそろえています';
+    await normalizeLoudness(path.join(outDir, 'video.mp4'));
+    progress('export', 0.8);
+
     // 5. 書き出し: サムネイルと YouTube 用ファイル
     step('export').detail = 'サムネイル・概要欄';
     const thumb = await selectComposition({ ...common, id: 'Thumbnail' });
     await renderStill({ ...common, composition: thumb, output: path.join(outDir, 'thumbnail.png') });
+    await fitThumbnail(path.join(outDir, 'thumbnail.png'));
     const yt = path.join(outDir, 'youtube');
     fs.mkdirSync(yt, { recursive: true });
     const { chapters } = buildChapters(script, timeline);
-    fs.writeFileSync(path.join(yt, 'description.txt'), buildDescription(script, chapters));
+    // 声を使ったときは、利用規約で求められるクレジット (VOICEVOX:キャラクター名) を概要欄に入れる
+    const credits = mock
+      ? []
+      : [await voicevoxCredit({ ...loadVoicevoxConfig(path.join(ROOT, 'voicevox.config.json')), speakerId: project.options.speaker })];
+    const description = buildDescription(script, chapters, { credits });
+    fs.writeFileSync(path.join(yt, 'description.txt'), description);
     fs.writeFileSync(path.join(yt, 'captions.srt'), buildSrt(timeline));
+    fs.writeFileSync(path.join(yt, 'tags.txt'), `${buildTags(script)}\n`);
+    fs.writeFileSync(
+      path.join(yt, 'upload.txt'),
+      buildUploadSheet(script, { durationSec: vInfo.durationSec ?? 0, mockAudio: mock, mockImages: Boolean(vInfo.mockImages) }),
+    );
+    fs.writeFileSync(
+      path.join(yt, 'metadata.json'),
+      JSON.stringify({ titles: titleCandidates(script), description, tags: buildTags(script), chapters }, null, 2) + '\n',
+    );
 
     for (const s of job.steps) s.state = 'done';
     step('export').detail = '完了';

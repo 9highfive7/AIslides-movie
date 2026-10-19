@@ -53,6 +53,11 @@
         </select>
         <span class="voice-state" id="voice-state"></span>
       </div>
+      <div class="voice-row">
+        <span>BGM</span>
+        <select id="bgm"><option value="">なし</option></select>
+        <span class="voice-state" id="bgm-state"></span>
+      </div>
       <div class="voice-row" id="image-row" hidden>
         <span>絵</span>
         <span class="voice-state" id="image-state"></span>
@@ -103,7 +108,14 @@
         <label><span class="no">4</span>保存</label>
         <a class="btn primary save-main" id="dl-video">⬇ 動画を保存（MP4）</a>
         <a class="btn ghost" id="dl-thumb">サムネイル（PNG）</a>
-        <a class="btn ghost" id="dl-desc">YouTube用 概要欄（目次）</a>
+        <div class="yt-copy">
+          <span>YouTube に貼る</span>
+          <button type="button" data-copy="title">タイトル</button>
+          <button type="button" data-copy="description">説明</button>
+          <button type="button" data-copy="tags">タグ</button>
+        </div>
+        <a class="btn ghost" id="dl-sheet">投稿シート（設定と確認）</a>
+        <a class="btn ghost" id="dl-desc">YouTube用 説明（目次・出典）</a>
         <a class="btn ghost" id="dl-srt">字幕ファイル（SRT）</a>
         <a class="btn ghost" id="dl-script">台本（JSON）</a>
       </div>

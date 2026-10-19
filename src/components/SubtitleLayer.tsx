@@ -83,13 +83,13 @@ export const SubtitleLayer: React.FC<{ rightInset: number }> = ({ rightInset }) 
               ) : (
                 <div
                   style={{
-                    maxWidth: 1480 - rightInset,
+                    maxWidth: 1600 - rightInset,
                     backgroundColor: theme.colors.subtitleBg,
                     color: '#FFFFFF',
-                    fontSize: theme.chrome === 'editorial' ? 32 : 30,
+                    fontSize: theme.chrome === 'editorial' ? 38 : 34,
                     fontWeight: theme.chrome === 'editorial' ? 700 : 500,
                     lineHeight: 1.55,
-                    padding: '16px 36px',
+                    padding: '14px 36px',
                     borderRadius: theme.radius,
                     textAlign: 'center',
                     border: `1px solid ${theme.colors.onDarkLine}`,

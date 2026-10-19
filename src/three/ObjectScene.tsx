@@ -75,11 +75,11 @@ export const StatOverlay: React.FC<{
   return (
     <Reveal id="stat" order={3} preset="pop" focusRing={false} style={style}>
       <div style={{ ...theme.card, padding: '18px 30px', minWidth: 300, textAlign: 'center' }}>
-        {stat.kicker ? <div style={{ fontSize: 18, fontWeight: 700, color: theme.colors.textSecondary }}>{stat.kicker}</div> : null}
+        {stat.kicker ? <div style={{ fontSize: 24, fontWeight: 700, color: theme.colors.textSecondary }}>{stat.kicker}</div> : null}
         <div style={{ fontFamily: theme.fonts.display, fontSize: 76, fontWeight: 600, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
           <CountUp value={stat.value} frame={frame} at={at} durationFrames={36} />
         </div>
-        {stat.note ? <div style={{ fontSize: 15, color: theme.colors.textSecondary }}>{stat.note}</div> : null}
+        {stat.note ? <div style={{ fontSize: 18, color: theme.colors.textSecondary }}>{stat.note}</div> : null}
       </div>
     </Reveal>
   );
@@ -136,9 +136,9 @@ export const Callout: React.FC<{
           transform: `translateY(${(1 - boxP) * 14}px)`,
         }}
       >
-        <div style={{ fontFamily: theme.fonts.display, fontSize: 34, fontWeight: 700, color, whiteSpace: 'nowrap' }}>{callout.title}</div>
+        <div style={{ fontFamily: theme.fonts.display, fontSize: 38, fontWeight: 700, color, whiteSpace: 'nowrap' }}>{callout.title}</div>
         {callout.sub ? (
-          <div style={{ fontSize: 18, color: theme.colors.textSecondary, marginTop: 2, whiteSpace: 'nowrap' }}>{callout.sub}</div>
+          <div style={{ fontSize: 22, color: theme.colors.textSecondary, marginTop: 2, whiteSpace: 'nowrap' }}>{callout.sub}</div>
         ) : null}
       </div>
     </>

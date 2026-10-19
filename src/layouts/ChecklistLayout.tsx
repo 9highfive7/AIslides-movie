@@ -18,9 +18,9 @@ const CheckMark: React.FC<{ at: number }> = ({ at }) => {
   return (
     <div
       style={{
-        width: 40,
-        height: 40,
-        borderRadius: 9,
+        width: 52,
+        height: 52,
+        borderRadius: 11,
         border: `2.5px solid ${theme.colors.accent}`,
         backgroundColor: filled ? theme.colors.accent : theme.colors.accentSoft,
         display: 'flex',
@@ -30,7 +30,7 @@ const CheckMark: React.FC<{ at: number }> = ({ at }) => {
       }}
     >
       <div style={{ transform: `scale(${p})` }}>
-        <Check size={26} strokeWidth={3.2} color={filled ? theme.colors.onAccent : theme.colors.accent} />
+        <Check size={34} strokeWidth={3.2} color={filled ? theme.colors.onAccent : theme.colors.accent} />
       </div>
     </div>
   );
@@ -40,21 +40,23 @@ const CheckMark: React.FC<{ at: number }> = ({ at }) => {
 export const ChecklistLayout: React.FC<{ content: ContentOf<'checklist'> }> = ({ content }) => {
   const theme = useTheme();
   const ctx = useSceneContext();
+  // スマホでも読める大きさにする。4つ並ぶときは字幕にかからないよう少し詰める
+  const compact = content.items.length >= 4;
 
   return (
     <ContentArea>
-      <div style={{ width: 1160, display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <div style={{ width: 1280, display: 'flex', flexDirection: 'column', gap: compact ? 16 : 26 }}>
         {content.items.map((item, i) => (
           <Reveal key={item.id} id={item.id} order={i} preset="slideLeft">
-            <div style={{ ...theme.card, padding: '24px 30px', display: 'flex', alignItems: 'center', gap: 26 }}>
-              <div style={{ fontSize: 30, fontWeight: 900, color: theme.colors.accent, width: 56, flexShrink: 0 }}>
+            <div style={{ ...theme.card, padding: compact ? '18px 32px' : '28px 36px', display: 'flex', alignItems: 'center', gap: 28 }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: theme.colors.accent, width: 68, flexShrink: 0 }}>
                 {String(i + 1).padStart(2, '0')}
               </div>
               <CheckMark at={ctx.appearAt(item.id, i)} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 23, fontWeight: 800 }}>{item.text}</div>
+                <div style={{ fontSize: compact ? 31 : 36, fontWeight: 800, lineHeight: 1.35 }}>{item.text}</div>
                 {item.note ? (
-                  <div style={{ fontSize: 16, lineHeight: 1.6, color: theme.colors.textSecondary, marginTop: 4 }}>
+                  <div style={{ fontSize: compact ? 21 : 24, lineHeight: 1.45, color: theme.colors.textSecondary, marginTop: compact ? 2 : 6 }}>
                     {item.note}
                   </div>
                 ) : null}

@@ -100,6 +100,11 @@ textarea:disabled { background: #F4F0E8; color: var(--faint); }
 .send .hint { font-size: 12px; color: var(--faint); }
 .save .btn { margin-bottom: 8px; }
 .save .save-main { height: 46px; font-size: 15px; background: var(--red); }
+.yt-copy { display: flex; align-items: center; gap: 6px; margin: 2px 0 10px; font-size: 13px; color: #6B655B; }
+.yt-copy span { margin-right: auto; font-weight: 700; }
+.yt-copy button { height: 34px; padding: 0 12px; border-radius: 8px; border: 1.5px solid var(--ink); background: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+.yt-copy button.done { background: var(--navy); color: #fff; }
+.disabled-card .yt-copy button { pointer-events: none; opacity: .45; }
 .disabled-card { opacity: .5; }
 
 .drawer { position: fixed; inset: 0; background: rgba(36, 33, 28, .3); z-index: 10; display: flex; justify-content: flex-end; }

@@ -641,6 +641,16 @@ export const metaSchema = z.object({
   animatedBackground: z.boolean().default(true),
   /** 画面下端の進行バー (章の区切り付き) */
   progressBar: z.boolean().default(true),
+  /**
+   * 画面全体の仕上げ。grain: フィルムのような細かい粒子 / vignette: 四隅を少し暗くする。
+   * 重ねた絵や図解が「作りもの」に見えにくくなる。省略時はテーマで決まる (paper: 両方 / ほか: vignette だけ)
+   */
+  finish: z
+    .object({
+      grain: z.boolean().optional(),
+      vignette: z.boolean().optional(),
+    })
+    .prefault({}),
   subtitle: z
     .object({
       enabled: z.boolean().default(true),
@@ -710,6 +720,31 @@ export const metaSchema = z.object({
     .object({
       sceneId: z.string(),
       text: z.string().default('チャンネル登録'),
+    })
+    .optional(),
+  /**
+   * YouTube に投稿するときの文言 (台本を書く AI が一緒に書く)。概要欄・タグのファイル (youtube/) に使う。
+   * 省略時はタイトルと目次だけの概要欄になる
+   */
+  youtube: z
+    .object({
+      /** タイトルの候補 (meta.title とは別の切り口。100字以内) */
+      titles: z.array(z.string()).default([]),
+      /** 概要欄の冒頭 (動画の内容を2〜4文で) */
+      summary: z.string().optional(),
+      /** 検索用のタグ (YouTube Studio の「タグ」欄) */
+      tags: z.array(z.string()).default([]),
+      /** 概要欄の最後に付けるハッシュタグ (# は付けても付けなくてもよい。先頭3つがタイトルの上に出る) */
+      hashtags: z.array(z.string()).default([]),
+      /** 出典・参考文献 (数字や研究の出どころ) */
+      sources: z
+        .array(
+          z.object({
+            label: z.string(),
+            url: z.string().optional(),
+          }),
+        )
+        .default([]),
     })
     .optional(),
   /** サムネイル (npm run thumbnail) の文言。省略時は最初の title シーンを使う */

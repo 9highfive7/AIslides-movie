@@ -38,8 +38,11 @@ export const RunningHead: React.FC<{ label?: string; title?: string }> = ({ labe
   );
 };
 
-/** 画面上部中央に明朝で出す見出し (例: "世界の半導体シェア（1988年）")。ふわっと下りてくる */
-export const EditorialHeading: React.FC<{ heading: string; at: number }> = ({ heading, at }) => {
+/**
+ * 画面上部中央に明朝で出す見出し (例: "世界の半導体シェア（1988年）")。ふわっと下りてくる。
+ * backdrop: 絵の上に出すとき (layered)。どんな絵の上でも読めるよう、紙色の下地を敷く
+ */
+export const EditorialHeading: React.FC<{ heading: string; at: number; backdrop?: boolean }> = ({ heading, at, backdrop = false }) => {
   const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -51,18 +54,28 @@ export const EditorialHeading: React.FC<{ heading: string; at: number }> = ({ he
         position: 'absolute',
         left: 0,
         right: 0,
-        top: 150,
-        textAlign: 'center',
-        fontFamily: theme.fonts.display,
-        fontSize: 46,
-        fontWeight: 600,
-        letterSpacing: '0.06em',
-        color: theme.colors.ink,
+        top: backdrop ? 110 : 150,
+        display: 'flex',
+        justifyContent: 'center',
         opacity: interpolate(p, [0, 0.6], [0, 1], { extrapolateRight: 'clamp' }),
         transform: `translateY(${(1 - p) * -16}px)`,
       }}
     >
-      {heading}
+      <div
+        style={{
+          fontFamily: theme.fonts.display,
+          fontSize: 50,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          color: theme.colors.ink,
+          textAlign: 'center',
+          ...(backdrop
+            ? { backgroundColor: 'rgba(233, 225, 207, 0.9)', padding: '6px 28px 10px', boxShadow: '0 4px 18px rgba(0, 0, 0, 0.18)' }
+            : null),
+        }}
+      >
+        {heading}
+      </div>
     </div>
   );
 };

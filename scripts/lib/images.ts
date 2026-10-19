@@ -9,7 +9,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildImagePrompt, generateImage, resolveImageProvider, type ImageKind, type ImageProvider } from './image-gen';
+import { buildImagePrompt, defringe, generateImage, resolveImageProvider, type ImageKind, type ImageProvider } from './image-gen';
 
 /** 作った絵を置く場所 (public/ からの相対パス) */
 export const GENERATED_DIR = 'generated';
@@ -56,6 +56,18 @@ export interface ImageReport {
 const fileFor = (kind: ImageKind, prompt: string): string => {
   const key = crypto.createHash('sha256').update(`${kind}\n${prompt}`).digest('hex').slice(0, 16);
   return `${GENERATED_DIR}/${kind}-${key}.${kind === 'background' ? 'jpg' : 'png'}`;
+};
+
+/**
+ * 動画で使う絵。切り抜いた物・手前の絵は、ふちの白いにじみを取った版 (〜.clean.png) を使う。
+ * 画像生成 AI が返した絵 (を切り抜いたもの) はキャッシュとして元の名前で残し、仕上げだけをやり直せるようにする
+ */
+const finishedFor = (task: Task): string => (task.kind === 'background' ? task.file : task.file.replace(/\.png$/, '.clean.png'));
+
+const ensureFinished = async (task: Task, publicDir: string): Promise<void> => {
+  const out = path.join(publicDir, finishedFor(task));
+  if (out === path.join(publicDir, task.file) || fs.existsSync(out)) return;
+  fs.writeFileSync(out, await defringe(fs.readFileSync(path.join(publicDir, task.file))));
 };
 
 /** 台本から、絵を作る欄を集める (同じ指示の欄はまとめる) */
@@ -128,10 +140,14 @@ export const fillImages = async (
 
   for (const task of tasks) {
     const exists = fs.existsSync(path.join(publicDir, task.file));
-    if (!exists) report.missing++;
+    if (exists) {
+      await ensureFinished(task, publicDir);
+    } else {
+      report.missing++;
+    }
     for (const slot of task.slots) {
       if (exists) {
-        slot.src = task.file;
+        slot.src = finishedFor(task);
       } else if (!usableSrc(slot.src, publicDir)) {
         // 絵が作れず、前の src も使えない → src を消して仮の枠にする
         delete slot.src;

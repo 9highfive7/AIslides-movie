@@ -194,6 +194,62 @@ export const removeBackground = async (input: Buffer): Promise<Buffer> => {
   return sharp(data, { raw: info }).png().toBuffer();
 };
 
+/**
+ * 切り抜いた絵のふちに残る白いにじみ (フリンジ) を取る。背景に重ねたときに「切り貼りした」感じが出る主な原因。
+ *   1. 半透明のふちの色から、混ざっていた背景の白を差し引く (色の分離)
+ *   2. 不透明な部分の輪郭を 1px 内側へ削り、ふちを少しぼかしてなじませる
+ * 背景を消した PNG ならいつでもかけられる (前に作った絵にも、作り直さずにかけられる)。
+ */
+export const defringe = async (png: Buffer, bg: [number, number, number] = [255, 255, 255]): Promise<Buffer> => {
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const alpha = new Uint8Array(w * h);
+  for (let k = 0; k < w * h; k++) alpha[k] = data[k * 4 + 3];
+
+  // 1px 削る (まわり 3x3 の最小値) → 3x3 の平均でぼかす
+  const eroded = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let min = 255;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          const a = xx < 0 || yy < 0 || xx >= w || yy >= h ? 0 : alpha[yy * w + xx];
+          if (a < min) min = a;
+        }
+      }
+      eroded[y * w + x] = min;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const k = y * w + x;
+      const a0 = alpha[k];
+      if (a0 === 0) continue;
+      let sum = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          sum += xx < 0 || yy < 0 || xx >= w || yy >= h ? 0 : eroded[yy * w + xx];
+        }
+      }
+      const a1 = Math.min(a0, Math.round(sum / 9));
+      const i = k * 4;
+      if (a0 < 255) {
+        // 見えている色 = 物の色 * a + 背景の白 * (1 - a) なので、白の分を引いて物の色に戻す
+        const a = Math.max(a0 / 255, 0.2);
+        for (let c = 0; c < 3; c++) {
+          data[i + c] = Math.max(0, Math.min(255, Math.round((data[i + c] - bg[c] * (1 - a)) / a)));
+        }
+      }
+      data[i + 3] = a1;
+    }
+  }
+  return sharp(data, { raw: info }).png().toBuffer();
+};
+
 /** 透明でない部分だけを切り出す (余白を詰める) */
 const trimTransparent = async (png: Buffer): Promise<Buffer> => {
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

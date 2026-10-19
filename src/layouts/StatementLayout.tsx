@@ -55,7 +55,7 @@ export const StatementLayout: React.FC<{
         markerInk={theme.colors.highlightInk}
         style={{
           fontFamily: theme.fonts.display,
-          fontSize: editorial ? 60 : 76,
+          fontSize: editorial ? 68 : 76,
           fontWeight: editorial ? 600 : 900,
           lineHeight: editorial ? 1.6 : 1.35,
           letterSpacing: editorial ? '0.04em' : undefined,
@@ -69,7 +69,7 @@ export const StatementLayout: React.FC<{
       ) : null}
       {content.sub ? (
         <Reveal id="sub" order={3} preset="fadeUp">
-          <div style={{ fontSize: 26, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 30, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 1.6 }}>
             {content.sub}
           </div>
         </Reveal>

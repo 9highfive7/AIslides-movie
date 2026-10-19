@@ -11,7 +11,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { scriptProvider } from '../scripts/lib/script-writer';
 import { resolveImageProvider } from '../scripts/lib/image-gen';
-import { busy, enqueue, jobOf, sceneLabel, voiceStatus } from './pipeline';
+import { busy, enqueue, jobOf, listBgm, sceneLabel, voiceStatus } from './pipeline';
 import { listProjects, loadProject, newProjectId, safeProjectFile, saveProject, versionDir, type Look, type Project } from './store';
 import { scriptSchema } from '../src/schemas';
 
@@ -81,6 +81,7 @@ const parseOptions = (body: Record<string, unknown>) => ({
   look: LOOKS.includes(body.look as Look) ? (body.look as Look) : 'paper',
   durationSec: [60, 90, 180, 300].includes(Number(body.durationSec)) ? Number(body.durationSec) : 90,
   speaker: Number.isInteger(Number(body.speaker)) ? Number(body.speaker) : 3,
+  ...(typeof body.bgm === 'string' && listBgm().includes(body.bgm) ? { bgm: body.bgm } : null),
 });
 
 /** 画面に渡すプロジェクトの情報 (版ごとの場面一覧つき) */
@@ -123,6 +124,7 @@ const handle = async (req: http.IncomingMessage, res: http.ServerResponse): Prom
               : Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
         },
         voice: await voiceStatus(),
+        bgm: listBgm(),
         images: (() => {
           const p = resolveImageProvider();
           return p ? { provider: p.provider, model: p.model, ready: true } : { provider: null, model: null, ready: false };

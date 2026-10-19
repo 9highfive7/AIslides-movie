@@ -57,6 +57,7 @@ const formValues = () => ({
   look: chosen('look'),
   durationSec: Number(chosen('durationSec')),
   speaker: Number($('speaker').value),
+  bgm: $('bgm').value || undefined,
 });
 
 const startProject = async (body) => {
@@ -275,7 +276,14 @@ const renderActions = () => {
 
   const hasVideo = Boolean(v?.hasVideo) && !(isBusy && p.job.version === v.n);
   $('save-card').classList.toggle('disabled-card', !hasVideo);
-  const links = { 'dl-video': 'video.mp4', 'dl-thumb': 'thumbnail.png', 'dl-desc': 'youtube/description.txt', 'dl-srt': 'youtube/captions.srt', 'dl-script': 'script.json' };
+  const links = {
+    'dl-video': 'video.mp4',
+    'dl-thumb': 'thumbnail.png',
+    'dl-sheet': 'youtube/upload.txt',
+    'dl-desc': 'youtube/description.txt',
+    'dl-srt': 'youtube/captions.srt',
+    'dl-script': 'script.json',
+  };
   for (const [id, file] of Object.entries(links)) {
     const a = $(id);
     a.classList.toggle('disabled', !hasVideo);
@@ -289,6 +297,35 @@ const render = () => {
   renderPreview();
   renderActions();
 };
+
+/* ---------- YouTube に貼る文言のコピー ---------- */
+
+/** 版の YouTube 用の文言。metadata.json がない古い版は、説明のファイルとタイトルだけ */
+const youtubeText = async (n) => {
+  const meta = await fetch(media(n, 'youtube/metadata.json')).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (meta) return { title: meta.titles?.[0] ?? '', description: meta.description ?? '', tags: meta.tags ?? '' };
+  const description = await fetch(media(n, 'youtube/description.txt')).then((r) => (r.ok ? r.text() : ''));
+  return { title: state.project?.title ?? '', description, tags: '' };
+};
+
+document.querySelector('.yt-copy').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-copy]');
+  if (!btn || !state.project) return;
+  const label = btn.dataset.label ?? btn.textContent;
+  btn.dataset.label = label;
+  const text = (await youtubeText(state.version))[btn.dataset.copy];
+  if (!text) {
+    btn.textContent = 'ありません';
+  } else {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = 'コピーしました';
+    btn.classList.add('done');
+  }
+  setTimeout(() => {
+    btn.textContent = label;
+    btn.classList.remove('done');
+  }, 1500);
+});
 
 /* ---------- 版の切り替え・場面の選択・修正 ---------- */
 
@@ -399,6 +436,10 @@ const showStatus = async () => {
   $('notice').textContent = notes.join('\n');
   $('voice-state').textContent = voice.alive ? '● VOICEVOX 接続中' : '● VOICEVOX 未起動（無音の仮音声で作ります）';
   $('voice-state').className = `voice-state ${voice.alive ? 'ok' : 'ng'}`;
+  const bgm = state.status.bgm ?? [];
+  $('bgm').innerHTML = ['<option value="">なし</option>', ...bgm.map((f) => `<option value="${escapeHtml(f)}">${escapeHtml(f.replace(/\.[^.]+$/, ''))}</option>`)].join('');
+  if (bgm.length > 0) $('bgm').value = bgm[0];
+  $('bgm-state').textContent = bgm.length > 0 ? '' : 'public/bgm/ に音楽を置くと選べます';
   renderImageState();
 };
 

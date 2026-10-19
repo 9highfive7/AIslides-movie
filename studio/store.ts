@@ -5,7 +5,7 @@
  *   studio-data/projects/<id>/v<n>/script.json  その版の台本
  *                                  timeline.json, audio/   音声とタイミング (修正時に引き継ぐ)
  *                                  video.mp4, thumbnail.png, scenes/<シーンID>.png
- *                                  youtube/description.txt, youtube/captions.srt
+ *                                  youtube/description.txt, captions.srt, tags.txt, upload.txt, metadata.json
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,6 +26,8 @@ export interface ProjectOptions {
   durationSec: number;
   /** VOICEVOX の話者ID */
   speaker: number;
+  /** BGM (public/bgm/ のファイル名)。なしなら省略 */
+  bgm?: string;
 }
 
 export interface VersionInfo {

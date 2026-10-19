@@ -17,6 +17,7 @@ import { Avatar, avatarRightInset } from './components/Avatar';
 import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
 import { FloatingToys } from './components/FloatingToys';
+import { FilmFinish } from './components/FilmFinish';
 import { SceneLayoutView } from './layouts';
 import { isObjectsScene3D, type Scene, type TimelineScene, type TransitionType } from './schemas';
 
@@ -86,7 +87,7 @@ const SceneView: React.FC<{
         </Camera>
         {editorial ? (
           <>
-            {!dark && !ownTitle && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} /> : null}
+            {!dark && !ownTitle && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} backdrop={scene.layout === 'layered'} /> : null}
             <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} />
             <SceneChrome badge={scene.badge} at={ctx.introAt} />
           </>
@@ -127,6 +128,8 @@ export const Slideshow: React.FC = () => {
             />
           );
         })}
+        {/* 仕上げ (粒子・周辺減光) はシーンの絵だけにかけ、字幕・登録ボタンにはかけない */}
+        <FilmFinish />
         <AudioLayer />
         <SubscribePopup />
         <Avatar />

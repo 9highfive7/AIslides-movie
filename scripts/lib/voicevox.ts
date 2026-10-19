@@ -75,3 +75,32 @@ export const synthesize = async (opts: {
   }
   return Buffer.from(await synthRes.arrayBuffer());
 };
+
+/** エンジンに聞けないときに使う、スタジオで選べる声の名前 (スタイル ID → キャラクター名) */
+const KNOWN_SPEAKERS: Record<number, string> = {
+  2: '四国めたん',
+  3: 'ずんだもん',
+  8: '春日部つむぎ',
+  11: '玄野武宏',
+  13: '青山龍星',
+  14: '冥鳴ひまり',
+};
+
+/**
+ * 概要欄に書くクレジット (例: "VOICEVOX:ずんだもん")。VOICEVOX の各キャラクターの利用規約で、
+ * 動画に「VOICEVOX:キャラクター名」と書くことが求められている。名前はエンジンの /speakers から引く
+ */
+export const voicevoxCredit = async (config: VoicevoxConfig): Promise<string> => {
+  try {
+    const res = await fetch(`${config.endpoint}/speakers`, { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const speakers = (await res.json()) as { name: string; styles: { id: number }[] }[];
+      const found = speakers.find((s) => s.styles.some((style) => style.id === config.speakerId));
+      if (found) return `VOICEVOX:${found.name}`;
+    }
+  } catch {
+    // エンジンが止まっていれば、知っている名前を使う
+  }
+  const known = KNOWN_SPEAKERS[config.speakerId];
+  return known ? `VOICEVOX:${known}` : 'VOICEVOX';
+};

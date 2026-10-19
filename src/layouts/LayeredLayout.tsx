@@ -94,6 +94,63 @@ const useAspects = (srcs: (string | null)[]): number[] | null => {
   return aspects;
 };
 
+/**
+ * 背景の絵の平均の色 (r, g, b)。物をこの色に少し寄せて、背景と同じ光の中にいるように見せる
+ * (画像生成 AI で別々に描いた物と背景は、明るさ・色味がそろわず「切り貼り」に見えやすい)。
+ * 読めない (別のサイトの画像など) ときは null で、寄せない
+ */
+const useBackgroundTone = (src: string | null): [number, number, number] | null => {
+  const [tone, setTone] = useState<[number, number, number] | null>(null);
+  const [handle] = useState(() => delayRender('layered: 背景の色を測っています'));
+  const released = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    const done = (value: [number, number, number] | null) => {
+      if (alive) setTone(value);
+      if (!released.current) {
+        released.current = true;
+        continueRender(handle);
+      }
+    };
+    if (!src) {
+      done(null);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 9;
+        const g = canvas.getContext('2d');
+        if (!g) return done(null);
+        g.drawImage(img, 0, 0, 16, 9);
+        const px = g.getImageData(0, 0, 16, 9).data;
+        const sum = [0, 0, 0];
+        for (let i = 0; i < px.length; i += 4) {
+          sum[0] += px[i];
+          sum[1] += px[i + 1];
+          sum[2] += px[i + 2];
+        }
+        const n = px.length / 4;
+        done([Math.round(sum[0] / n), Math.round(sum[1] / n), Math.round(sum[2] / n)]);
+      } catch {
+        done(null);
+      }
+    };
+    img.onerror = () => done(null);
+    img.src = src;
+    return () => {
+      alive = false;
+    };
+  }, [handle, src]);
+  return tone;
+};
+
+/** 物を背景の色へ寄せる強さ (soft-light で重ねる不透明度) */
+const TONE_MATCH = 0.55;
+
 /** 物の画面上の位置 (層の動きをかける前) */
 interface Rect {
   left: number;
@@ -242,7 +299,12 @@ const Steam: React.FC<{ rect: Rect; t: number; id: string }> = ({ rect, t, id })
 };
 
 /** 物1つ。出方・動き・効果・強調 (focus) */
-const ObjectView: React.FC<{ obj: LayeredObject; rect: Rect; order: number }> = ({ obj, rect, order }) => {
+const ObjectView: React.FC<{ obj: LayeredObject; rect: Rect; order: number; tone: [number, number, number] | null }> = ({
+  obj,
+  rect,
+  order,
+  tone,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ctx = useSceneContext();
@@ -319,10 +381,25 @@ const ObjectView: React.FC<{ obj: LayeredObject; rect: Rect; order: number }> = 
       >
         <Aura effect={obj.effect} rect={rect} t={t} />
         {obj.src ? (
-          <Img
-            src={resolveSrc(obj.src)}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', filter: filters.join(' ') || undefined }}
-          />
+          <div style={{ position: 'absolute', inset: 0, filter: filters.join(' ') || undefined, isolation: 'isolate' }}>
+            <Img src={resolveSrc(obj.src)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+            {tone ? (
+              // 物の形で切り抜いた背景の色を soft-light で重ね、背景と同じ光の色にそろえる
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: `rgb(${tone.join(', ')})`,
+                  mixBlendMode: 'soft-light',
+                  opacity: TONE_MATCH,
+                  WebkitMaskImage: `url("${resolveSrc(obj.src)}")`,
+                  WebkitMaskSize: '100% 100%',
+                  maskImage: `url("${resolveSrc(obj.src)}")`,
+                  maskSize: '100% 100%',
+                }}
+              />
+            ) : null}
+          </div>
         ) : (
           <PendingImage prompt={obj.prompt} label="物の絵（仮）" style={{ filter: filters.join(' ') || undefined }} />
         )}
@@ -363,6 +440,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
   const frame = useCurrentFrame();
   const ctx = useSceneContext();
   const aspects = useAspects(content.objects.map((obj) => (obj.src ? resolveSrc(obj.src) : null)));
+  const tone = useBackgroundTone(content.background.src ? resolveSrc(content.background.src) : null);
   const d = interpolate(frame, [ctx.ts.startFrame, ctx.ts.startFrame + ctx.ts.durationFrames], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -394,7 +472,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
       {rects ? (
         <AbsoluteFill style={{ transform: layerTransform(objMotion), transformOrigin: ZOOM_ORIGIN }}>
           {content.objects.map((obj, i) => (
-            <ObjectView key={obj.id} obj={obj} rect={rects[i]} order={i} />
+            <ObjectView key={obj.id} obj={obj} rect={rects[i]} order={i} tone={tone} />
           ))}
           {content.callouts.map((callout, i) => {
             const target = content.objects.findIndex((obj) => obj.id === callout.target);
