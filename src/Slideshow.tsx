@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { TRANSITION_HALF_FRAMES } from '../shared/timing';
 import { isDarkLayout, script, sceneOf, timeline, transitionOf } from './data';
-import { FONT_FAMILY, THEMES, ThemeContext } from './themes';
+import { FONT_FAMILY, ThemeContext, resolveTheme } from './themes';
 import { ensureFonts } from './fonts';
 import { buildSceneContext, SceneProvider } from './context/SceneContext';
 import { transitionIn, transitionOut } from './animation/transitions';
@@ -12,9 +12,10 @@ import { SceneBackground } from './components/SceneBackground';
 import { Camera } from './components/Camera';
 import { SubtitleLayer } from './components/SubtitleLayer';
 import { AudioLayer } from './components/AudioLayer';
-import { Avatar } from './components/Avatar';
+import { Avatar, avatarRightInset } from './components/Avatar';
 import { ProgressBar } from './components/ProgressBar';
 import { SubscribePopup } from './components/SubscribePopup';
+import { FloatingToys } from './components/FloatingToys';
 import { SceneLayoutView } from './layouts';
 import type { Scene, TimelineScene, TransitionType } from './schemas';
 
@@ -51,12 +52,28 @@ const SceneView: React.FC<{
 
   const dark = isDarkLayout(scene.layout);
   const { meta } = script;
+  const is3d = meta.style === '3d';
+  // scene3d は three.js の舞台とカメラを自前で持つ
+  const isStage = scene.layout === 'scene3d';
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
       <SceneProvider value={ctx}>
-        <SceneBackground variant={dark ? 'dark' : 'light'} animated={meta.animatedBackground} seed={index} />
-        <Camera enabled={meta.camera === 'subtle' && !dark} from={start} to={end}>
+        <SceneBackground
+          variant={dark ? 'dark' : 'light'}
+          animated={meta.animatedBackground}
+          seed={index}
+          mode={isStage ? 'stage' : is3d ? '3d' : 'flat'}
+          toys={is3d}
+        />
+        {is3d && (scene.layout === 'title' || scene.layout === 'section' || scene.layout === 'outro') ? (
+          <FloatingToys
+            kind={scene.layout}
+            shapes={scene.layout === 'outro' ? undefined : scene.content.objects}
+            at={ctx.introAt}
+          />
+        ) : null}
+        <Camera enabled={meta.camera === 'subtle' && !dark && !isStage} mode={is3d ? '3d' : 'flat'} from={start} to={end}>
           <SceneLayoutView scene={scene} />
         </Camera>
         {!dark && (scene.heading || scene.label) ? (
@@ -70,7 +87,7 @@ const SceneView: React.FC<{
 
 export const Slideshow: React.FC = () => {
   ensureFonts();
-  const theme = THEMES[script.meta.theme];
+  const theme = resolveTheme(script.meta);
   const avatar = script.meta.avatar;
 
   return (
@@ -96,7 +113,7 @@ export const Slideshow: React.FC = () => {
         <SubscribePopup />
         <Avatar />
         {/* 字幕はシーンのトランジションとは独立したレイヤー */}
-        <SubtitleLayer rightInset={avatar ? avatar.size * 0.85 + 40 : 0} />
+        <SubtitleLayer rightInset={avatarRightInset(avatar)} />
         <ProgressBar />
       </AbsoluteFill>
     </ThemeContext.Provider>

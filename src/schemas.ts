@@ -16,6 +16,11 @@ export const revealPresetSchema = z.enum([
   'zoom',
   'blur',
   'flip',
+  /** 以下は立体的な出現 (style: "3d" で auto を使うと自動でこちらになる) */
+  'rise3d',
+  'drop3d',
+  'swing3d',
+  'flip3d',
   'none',
 ]);
 
@@ -70,6 +75,27 @@ const ioBoxSchema = z.object({
   body: z.string().optional(),
 });
 
+/**
+ * 3D オブジェクト (src/three/catalog.ts の形キー)。未登録キーは「?」の箱になる。
+ * count で同じ物を並べて数を見せ、size で大きさの違いを見せる。
+ */
+const object3dSchema = z.object({
+  id: z.string(),
+  /** 形のキー (例: "apple" "sun" "cube")。一覧は src/three/catalog.ts */
+  shape: z.string(),
+  /** 物の下に出る名札 */
+  label: z.string().optional(),
+  /** 色名 ("red" "blue" など) または #RRGGBB。省略時は形ごとの既定色 */
+  color: z.string().optional(),
+  /** 同じ物をいくつ並べるか (数を見せる) */
+  count: z.number().int().min(1).max(12).default(1),
+  /** 大きさの倍率 (大小の比較に使う) */
+  size: z.number().min(0.3).max(2.5).default(1),
+});
+
+/** タイトル・章扉のまわりに浮かべる 3D オブジェクトの形キー (style: "3d" のとき) */
+const floatingObjectsSchema = z.array(z.string()).max(6).optional();
+
 const compareItemSchema = z.object({
   id: z.string(),
   icon: iconSchema.optional(),
@@ -86,6 +112,7 @@ const sceneSchema = z.discriminatedUnion('layout', [
       kicker: z.string().optional(),
       title: z.string(),
       subtitle: z.string().optional(),
+      objects: floatingObjectsSchema,
     }),
   }),
   z.object({
@@ -165,6 +192,7 @@ const sceneSchema = z.discriminatedUnion('layout', [
       number: z.string().optional(),
       title: z.string(),
       subtitle: z.string().optional(),
+      objects: floatingObjectsSchema,
     }),
   }),
   z.object({
@@ -283,6 +311,19 @@ const sceneSchema = z.discriminatedUnion('layout', [
   }),
   z.object({
     ...sceneBaseSchema,
+    layout: z.literal('scene3d'),
+    content: z.object({
+      /**
+       * 並べ方。row: 横に並べる / flow: 矢印でつなぐ (arrow-1, arrow-2, ...) /
+       * cycle: 輪にして矢印で一周させる (arrow-1 〜 arrow-N)
+       */
+      arrangement: z.enum(['row', 'flow', 'cycle']).default('row'),
+      objects: z.array(object3dSchema).min(1).max(6),
+      caption: z.string().optional(),
+    }),
+  }),
+  z.object({
+    ...sceneBaseSchema,
     layout: z.literal('outro'),
     content: z.object({
       title: z.string().default('ご視聴ありがとうございました'),
@@ -295,13 +336,21 @@ const sceneSchema = z.discriminatedUnion('layout', [
   }),
 ]);
 
-export const themeNameSchema = z.enum(['clean', 'pop', 'dark']);
+export const themeNameSchema = z.enum(['kids', 'clean', 'pop', 'dark']);
+
+/** 同梱のカワウソ画像 (578×720) で、顔を丸く切り出す位置 (画像の幅を 1 とした割合) */
+const OTTER_FACE = { x: 0.47, y: 0.29, size: 0.74 };
 
 export const metaSchema = z.object({
   /** 動画タイトル (サムネイル・概要欄の既定値に使う) */
   title: z.string().optional(),
   /** 配色テーマ */
-  theme: themeNameSchema.default('clean'),
+  theme: themeNameSchema.default('kids'),
+  /**
+   * 見た目の方式。3d: カードに厚み・立体的な出現・3D のカメラ・背景の床と浮かぶ図形・
+   * タイトルや章扉に 3D オブジェクト (scene3d レイアウトは常に 3D) / flat: 従来の平面デザイン
+   */
+  style: z.enum(['3d', 'flat']).default('3d'),
   /** 既定のシーントランジション */
   transition: transitionSchema.default('slide'),
   /** 既定の出現アニメーション */
@@ -338,8 +387,8 @@ export const metaSchema = z.object({
     })
     .optional(),
   /**
-   * 右下で喋るキャラクター。口の動きは音声の音量から自動生成。
-   * 省略時は同梱のカワウソ (public/avatar/) を表示する。false で非表示
+   * 右下で喋るキャラクター。動くのは口だけで、口の形は音声の音量から自動生成。
+   * 省略時は同梱のカワウソ (public/avatar/) の顔を丸い枠で表示する。false で非表示
    */
   avatar: z
     .union([
@@ -351,7 +400,21 @@ export const metaSchema = z.object({
         half: z.string().optional(),
         closed: z.string().default('avatar/closed.png'),
         name: z.string().optional(),
-        size: z.number().default(250),
+        /** 大きさ [px]。顔の丸い枠では直径 (既定 220)、全身・builtin では高さ (既定 250) */
+        size: z.number().optional(),
+        /** face: 顔だけを丸い枠で見せる / full: 画像の全体 (全身) を見せる */
+        framing: z.enum(['face', 'full']).default('face'),
+        /**
+         * framing: face のときに切り出す顔の位置。画像の幅を 1 とした割合で、丸の中心 (x, y) と直径 (size)。
+         * 既定は同梱のカワウソの顔。自前の画像では顔の位置に合わせて指定する
+         */
+        face: z
+          .object({
+            x: z.number(),
+            y: z.number(),
+            size: z.number().positive(),
+          })
+          .default(OTTER_FACE),
       }),
     ])
     .default({
@@ -359,7 +422,8 @@ export const metaSchema = z.object({
       open: 'avatar/open.png',
       half: 'avatar/half.png',
       closed: 'avatar/closed.png',
-      size: 250,
+      framing: 'face',
+      face: OTTER_FACE,
     }),
   /** チャンネル登録を促すポップアップを出すシーンID (シーン開始時に約4秒表示) */
   subscribePopup: z

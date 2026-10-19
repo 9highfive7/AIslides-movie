@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "title": "雨はどうしてふるの？ 水の大ぼうけんを3Dで見てみよう",
+    "theme": "kids",
+    "style": "3d",
+    "subscribePopup": { "sceneId": "sec2" },
+    "thumbnail": { "text": "雨は\n**どうして**ふるの？", "sub": "水の大ぼうけんを3Dで見てみよう", "badge": "3Dでわかる" }
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "layout": "title",
+      "content": {
+        "kicker": "ふしぎ はっけん",
+        "title": "雨は**どうして**\nふるの？",
+        "subtitle": "水の大ぼうけんを、3Dで見てみよう",
+        "objects": ["cloud", "drop", "sun", "star", "drop", "cloud"]
+      },
+      "lines": [
+        { "text": "みんな、雨の日ってすき？外であそべないと、ちょっとざんねんだよね。" },
+        { "text": "でも、雨っていったい**どこから**やってくるのかな？きょうは、いっしょにひみつをさぐってみよう！" }
+      ]
+    },
+    {
+      "id": "answer",
+      "layout": "statement",
+      "label": "ANSWER",
+      "heading": "さいしょに こたえ",
+      "content": {
+        "text": "雨のしょうたいは\n**海や川の水**",
+        "sub": "空からふってくる水は、もともと地面の上にあった水なんだ",
+        "icon": "droplet"
+      },
+      "lines": [
+        { "text": "さいしょに、こたえを言っちゃうね。雨のしょうたいは、**海や川の水**なんだ。", "reveal": ["text"] },
+        { "text": "え、海の水が空からふってくるの？って思うよね。じゅんばんに見ていこう。", "reveal": ["sub"] }
+      ]
+    },
+    {
+      "id": "sec1",
+      "layout": "section",
+      "content": {
+        "number": "01",
+        "title": "水の大ぼうけん",
+        "subtitle": "水はすがたをかえて、空へのぼる",
+        "objects": ["drop", "sun", "cloud", "arrow-up"]
+      },
+      "lines": [{ "text": "まずは、水が空へのぼっていくようすを見てみよう。" }]
+    },
+    {
+      "id": "up",
+      "layout": "scene3d",
+      "label": "STEP",
+      "heading": "水が空へのぼるまで",
+      "chapter": "01 水の大ぼうけん",
+      "content": {
+        "arrangement": "flow",
+        "objects": [
+          { "id": "sea", "shape": "drop", "label": "海の水" },
+          { "id": "sun", "shape": "sun", "label": "たいよう" },
+          { "id": "steam", "shape": "arrow-up", "label": "水じょうき", "color": "sky" },
+          { "id": "cloud", "shape": "cloud", "label": "くも" }
+        ]
+      },
+      "lines": [
+        { "text": "ここに、海の水があるよ。", "reveal": ["sea"], "focus": ["sea"] },
+        { "text": "たいようの光で、水が**ぽかぽか**あたためられると…", "reveal": ["arrow-1", "sun"], "focus": ["sun"] },
+        {
+          "text": "水は、目に見えない**水じょうき**になって、空へのぼっていくんだ。",
+          "speech": "水は、目に見えない、すいじょうきになって、空へのぼっていくんだ。",
+          "reveal": ["arrow-2", "steam"],
+          "focus": ["steam"]
+        },
+        {
+          "text": "空の上はとってもさむいから、水じょうきはひえて**くも**になるよ。",
+          "speech": "空の上はとってもさむいから、すいじょうきはひえてくもになるよ。",
+          "reveal": ["arrow-3", "cloud"],
+          "focus": ["cloud"]
+        }
+      ]
+    },
+    {
+      "id": "inside",
+      "layout": "scene3d",
+      "label": "LOOK",
+      "heading": "くもの中をのぞいてみよう",
+      "chapter": "01 水の大ぼうけん",
+      "content": {
+        "arrangement": "row",
+        "objects": [
+          { "id": "cloud", "shape": "cloud", "label": "くも", "size": 1.2 },
+          { "id": "tiny", "shape": "drop", "label": "小さな水のつぶ", "count": 8 }
+        ],
+        "caption": "くもの中には、数えきれないほどの つぶがあるよ"
+      },
+      "lines": [
+        { "text": "くもをぐーっと大きくして、中をのぞいてみよう。", "reveal": ["cloud"] },
+        { "text": "くもは、とっても小さな**水のつぶ**が、たくさんあつまってできているんだ。", "reveal": ["tiny"], "focus": ["tiny"] },
+        { "text": "その数は、数えきれないくらい。ふわふわういて見えるのは、つぶがとても小さくて軽いからなんだ。", "reveal": ["caption"] }
+      ]
+    },
+    {
+      "id": "fall",
+      "layout": "scene3d",
+      "label": "RAIN",
+      "heading": "つぶが大きくなると…",
+      "chapter": "01 水の大ぼうけん",
+      "content": {
+        "arrangement": "flow",
+        "objects": [
+          { "id": "small", "shape": "drop", "label": "小さなつぶ", "size": 0.5 },
+          { "id": "middle", "shape": "drop", "label": "くっつく", "size": 0.9 },
+          { "id": "big", "shape": "drop", "label": "大きな雨つぶ", "size": 1.5 }
+        ]
+      },
+      "lines": [
+        { "text": "くもの中で、小さなつぶどうしがぶつかって、くっつくと…", "reveal": ["small", "arrow-1", "middle"], "focus": ["middle"] },
+        { "text": "どんどん大きく、おもたくなっていくよ。", "reveal": ["arrow-2", "big"], "focus": ["big"] },
+        { "text": "おもたくなって、ういていられなくなったつぶが、**雨**になってふってくるんだ！", "focus": ["big"] }
+      ]
+    },
+    {
+      "id": "sec2",
+      "layout": "section",
+      "content": {
+        "number": "02",
+        "title": "ぐるぐるまわる水",
+        "subtitle": "水のたびは、おわらない",
+        "objects": ["drop", "cloud", "mountain", "fish"]
+      },
+      "lines": [{ "text": "では、ふった雨は、そのあとどうなるのかな？" }]
+    },
+    {
+      "id": "cycle",
+      "layout": "scene3d",
+      "label": "CYCLE",
+      "heading": "水は地球をぐるぐるまわる",
+      "chapter": "02 ぐるぐるまわる水",
+      "content": {
+        "arrangement": "cycle",
+        "objects": [
+          { "id": "sea", "shape": "drop", "label": "海" },
+          { "id": "steam", "shape": "arrow-up", "label": "水じょうき", "color": "sky" },
+          { "id": "cloud", "shape": "cloud", "label": "くも" },
+          { "id": "rain", "shape": "drop", "label": "雨", "color": "sky" },
+          { "id": "river", "shape": "mountain", "label": "山や川" }
+        ]
+      },
+      "lines": [
+        { "text": "これまでのおはなしを、ひとつの輪にしてみよう。" },
+        {
+          "text": "海の水が水じょうきになって、空でくもになる。",
+          "speech": "海の水がすいじょうきになって、空でくもになる。",
+          "reveal": ["arrow-1", "arrow-2"],
+          "focus": ["steam", "cloud"]
+        },
+        { "text": "くもから雨がふって、山や川にもどってくる。", "reveal": ["arrow-3", "arrow-4"], "focus": ["rain", "river"] },
+        {
+          "text": "川の水は海へながれて、また空へのぼる。水は、**ぐるぐるまわるたび**をしているんだね。",
+          "reveal": ["arrow-5"],
+          "focus": ["sea"]
+        }
+      ]
+    },
+    {
+      "id": "good",
+      "layout": "bullets",
+      "label": "GOOD",
+      "heading": "雨がふると、いいこと",
+      "chapter": "02 ぐるぐるまわる水",
+      "content": {
+        "items": [
+          { "id": "plant", "icon": "leaf", "title": "やさいや木がそだつ", "body": "雨の水をのんで、しょくぶつは大きくなる" },
+          { "id": "drink", "icon": "droplet", "title": "のみ水になる", "body": "ダムにたまった雨が、じゃぐちの水になる" },
+          { "id": "fish", "icon": "fish", "title": "いきものがくらせる", "body": "川や海の水がへらずに、さかなが元気でいられる" }
+        ]
+      },
+      "lines": [
+        { "text": "雨には、いいこともたくさんあるよ。まず、やさいや木が、雨の水をのんで**そだつ**んだ。", "reveal": ["plant"] },
+        { "text": "ダムにたまった雨は、わたしたちの**のみ水**にもなるよ。", "reveal": ["drink"] },
+        { "text": "それに、川や海の水がへらないから、さかなたちも元気にくらせるんだ。", "reveal": ["fish"] }
+      ]
+    },
+    {
+      "id": "review",
+      "layout": "checklist",
+      "label": "REVIEW",
+      "heading": "きょうのおさらい",
+      "content": {
+        "items": [
+          { "id": "c1", "text": "雨のしょうたいは、海や川の水" },
+          { "id": "c2", "text": "あたためられた水は、水じょうきになって空へのぼる" },
+          { "id": "c3", "text": "くもは、小さな水のつぶのあつまり" },
+          { "id": "c4", "text": "つぶが大きく、おもたくなると雨になる" }
+        ]
+      },
+      "lines": [
+        { "text": "さいごに、おさらいしよう。雨のしょうたいは海や川の水。あたためられると、水じょうきになって空へのぼる。", "speech": "さいごに、おさらいしよう。雨のしょうたいは海や川の水。あたためられると、すいじょうきになって空へのぼる。", "reveal": ["c1", "c2"] },
+        { "text": "くもは小さな水のつぶのあつまりで、つぶが大きくおもたくなると、**雨**になるんだったね。", "reveal": ["c3", "c4"] }
+      ]
+    },
+    {
+      "id": "outro",
+      "layout": "outro",
+      "content": { "title": "見てくれて ありがとう！", "message": "つぎは「かみなりのひみつ」をしらべるよ" },
+      "lines": [
+        { "text": "きょうは、雨のひみつをしらべたね。こんど雨がふったら、空を見あげてみてね。" },
+        { "text": "おもしろかったら、**グッドボタン**とチャンネルとうろくをしてね。またね！" }
+      ]
+    }
+  ]
+}

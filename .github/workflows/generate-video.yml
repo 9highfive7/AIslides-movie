@@ -5,6 +5,7 @@
 #
 # source_type を prompt / url にすると、LLM で台本を自動生成してから動画化する
 # (リポジトリの Settings → Secrets and variables → Actions に OPENAI_API_KEY を登録)。
+# 生成される台本は既定で子ども向け (audience: kids): やさしい言葉 + 3D オブジェクト中心の見せ方 + kids テーマ。
 # source_type = none の場合は、リポジトリにコミット済みの public/script.json を使う。
 # 成果物: 動画 (video.mp4)・サムネイル (thumbnail.png)・概要欄の目次と字幕 (youtube/)
 name: generate-video
@@ -24,12 +25,21 @@ on:
         description: プロンプトまたはURL (prompt / url 選択時のみ)
         required: false
         default: ''
-      theme:
-        description: 配色テーマ (keep = script.json の設定のまま。台本生成時のみ有効)
+      audience:
+        description: 台本の対象 (kids = 子ども向けのやさしい解説 + 3D オブジェクト中心 / general = 一般向け。台本生成時のみ有効)
         type: choice
-        default: keep
+        default: kids
         options:
+          - kids
+          - general
+      theme:
+        description: 配色テーマ (auto = kids なら kids テーマ・general なら script.json のまま / keep = script.json のまま。台本生成時のみ有効)
+        type: choice
+        default: auto
+        options:
+          - auto
           - keep
+          - kids
           - clean
           - pop
           - dark
@@ -47,7 +57,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 3D のシーン (three.js) はソフトウェア描画で1フレーム約0.2秒かかるため、長尺でも収まる余裕を持たせる
+    timeout-minutes: 120
     services:
       # VOICEVOX Engine を起動 (job 内から localhost:50021 で参照できる)
       voicevox:
@@ -92,10 +103,12 @@ jobs:
             echo "type=${{ github.event.client_payload.source_type }}" >> "$GITHUB_OUTPUT"
             echo "value=${{ github.event.client_payload.source }}" >> "$GITHUB_OUTPUT"
             echo "theme=${{ github.event.client_payload.theme }}" >> "$GITHUB_OUTPUT"
+            echo "audience=${{ github.event.client_payload.audience }}" >> "$GITHUB_OUTPUT"
           else
             echo "type=${{ inputs.source_type }}" >> "$GITHUB_OUTPUT"
             echo "value=${{ inputs.source }}" >> "$GITHUB_OUTPUT"
             echo "theme=${{ inputs.theme }}" >> "$GITHUB_OUTPUT"
+            echo "audience=${{ inputs.audience }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate script (prompt / url)
@@ -107,19 +120,24 @@ jobs:
           SRC_TYPE: ${{ steps.src.outputs.type }}
           SRC_VALUE: ${{ steps.src.outputs.value }}
           SRC_THEME: ${{ steps.src.outputs.theme }}
+          SRC_AUDIENCE: ${{ steps.src.outputs.audience }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
             echo "OPENAI_API_KEY が未設定です。リポジトリの Secrets に登録するか、source_type=none で既存の script.json を使ってください。"
             exit 1
           fi
-          THEME_ARGS=()
-          if [ -n "$SRC_THEME" ] && [ "$SRC_THEME" != "keep" ]; then
-            THEME_ARGS=(--theme "$SRC_THEME")
+          # 未指定 (repository_dispatch で省略) のときは、台本生成スクリプトの既定 (kids / auto) を使う
+          OPTS=()
+          if [ -n "$SRC_THEME" ]; then
+            OPTS+=(--theme "$SRC_THEME")
+          fi
+          if [ -n "$SRC_AUDIENCE" ]; then
+            OPTS+=(--audience "$SRC_AUDIENCE")
           fi
           if [ "$SRC_TYPE" = "url" ]; then
-            npm run script -- "${THEME_ARGS[@]}" --url "$SRC_VALUE"
+            npm run script -- "${OPTS[@]}" --url "$SRC_VALUE"
           else
-            npm run script -- "${THEME_ARGS[@]}" "$SRC_VALUE"
+            npm run script -- "${OPTS[@]}" "$SRC_VALUE"
           fi
 
       - name: Generate audio + timeline
