@@ -3,6 +3,7 @@ import { Composition, Still } from 'remotion';
 import { timeline } from './data';
 import { Slideshow } from './Slideshow';
 import { Thumbnail } from './Thumbnail';
+import { ShapeCatalog } from './ShapeCatalog';
 import { FPS } from '../shared/timing';
 
 export const RemotionRoot: React.FC = () => {
@@ -22,6 +23,8 @@ export const RemotionRoot: React.FC = () => {
       />
       {/* YouTube サムネイル (npm run thumbnail) */}
       <Still id="Thumbnail" component={Thumbnail} width={1280} height={720} />
+      {/* scene3d で使える 3D オブジェクトの一覧 (台本を書くときの見本) */}
+      <Still id="ShapeCatalog" component={ShapeCatalog} width={1920} height={1080} />
     </>
   );
 };

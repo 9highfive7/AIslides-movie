@@ -200,6 +200,7 @@ npm run youtube     # → out/youtube/description.txt (タイトル+目次) / ca
 | ひと | `person` `robot` |
 | もの | `house` `building` `car` `rocket` `book` `lightbulb` `coin` `gift` `apple` `cake` `battery` `phone` `computer` `chip` `server` `letter` `speech` `clock` `magnifier` `trophy` `lock` `magnet` |
 
+- 形の見た目は Remotion Studio（`npm run dev`）の左の一覧の `ShapeCatalog` で全48種を一覧できます（`npx remotion still ShapeCatalog out/shapes.png` で画像にも）
 - 目に見えないものも、たとえで形にすると伝わります（データ → `letter`、お金 → `coin`、時間 → `clock`、ふえる → `arrow-up`、AI → `robot`）
 - 形を足すときは `src/three/catalog.ts` の `SHAPES` にキーを追加し、`src/three/models.tsx` の `MODELS` に同じキーで形を定義します（床に置いて高さ約1.6・幅約1.8以内にそろえる）
 - 素材集: `templates/sample-kids-3d.json`（「雨はどうしてふるの？」約3分。`row` / `flow` / `cycle`・`count`・`size` をすべて使った子ども向けのデモ）

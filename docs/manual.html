@@ -207,6 +207,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   </tbody>
 </table>
 </div>
+<p>形の見た目は、Remotion Studio（<code>npm run dev</code>）の左の一覧の <code>ShapeCatalog</code> で一覧できます（<code>npx remotion still ShapeCatalog out/shapes.png</code> で画像にもできます）。</p>
 <p>タイトル（<code>title</code>）と章扉（<code>section</code>）の content に <code>"objects": ["cloud", "drop", "sun"]</code> のように形のキーを書くと、そのオブジェクトがまわりに浮かびます（省略時は星・ボールなどの既定の形）。見本は <code>templates/sample-kids-3d.json</code>（「雨はどうしてふるの？」約3分）です。</p>
 
 <div class="callout">
@@ -275,7 +276,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <li>
     <h3>プレビューで確認する</h3>
     <pre><code>npm run dev</code></pre>
-    <p>Remotion Studio（<a href="http://localhost:3000">http://localhost:3000</a>）が開きます。音声・字幕・演出を再生して確認します。左の一覧の <code>Thumbnail</code> でサムネイルも確認できます。</p>
+    <p>Remotion Studio（<a href="http://localhost:3000">http://localhost:3000</a>）が開きます。音声・字幕・演出を再生して確認します。左の一覧の <code>Thumbnail</code> でサムネイル、<code>ShapeCatalog</code> で <code>scene3d</code> に使える 3D オブジェクト全48種の一覧（形のキーと説明つき）も確認できます。</p>
   </li>
   <li>
     <h3>MP4に書き出す</h3>
