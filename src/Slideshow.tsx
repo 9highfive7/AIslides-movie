@@ -61,6 +61,8 @@ const SceneView: React.FC<{
   const isScene3d = scene.layout === 'scene3d';
   const ownCamera = isScene3d || scene.layout === 'layered';
   const isStage = isScene3d && isObjectsScene3D(scene.content);
+  // scene3d / layered は上部中央に自前の title を出すので、title があるときは見出しを重ねない
+  const ownTitle = ownCamera && 'title' in scene.content && Boolean(scene.content.title);
 
   return (
     <AbsoluteFill style={{ ...transitionStyle, overflow: 'hidden' }}>
@@ -84,7 +86,7 @@ const SceneView: React.FC<{
         </Camera>
         {editorial ? (
           <>
-            {!dark && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} /> : null}
+            {!dark && !ownTitle && scene.heading ? <EditorialHeading heading={scene.heading} at={ctx.introAt} /> : null}
             <RunningHead label={meta.header?.label} title={scene.chapter ?? meta.header?.title} />
             <SceneChrome badge={scene.badge} at={ctx.introAt} />
           </>

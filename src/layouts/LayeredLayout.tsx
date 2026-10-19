@@ -25,6 +25,15 @@ const ZOOM_ORIGIN = '50% 80%';
 /** focus で物を大きくする量 (割合と、背の高い物でも超えない上限 [px]) */
 const FOCUS_GROW = { ratio: 0.06, maxPx: 28 } as const;
 
+/**
+ * 背景の仮の枠の位置。下は字幕の領域なので上に置く。ふだんは右上、右上に数字 (stat) が出る場面では
+ * 左上 (どちらも見出しと柱の間の高さ)
+ */
+const BACKGROUND_PLACEHOLDER_PLACE = {
+  right: { inset: 'auto', top: 110, right: 60 },
+  left: { inset: 'auto', top: 110, left: 60 },
+} as const;
+
 /** 注釈の箱を置ける下限 (これより下は字幕の領域) */
 const CALLOUT_MAX_TOP = 760;
 
@@ -376,7 +385,7 @@ export const LayeredLayout: React.FC<{ content: LayeredContent }> = ({ content }
             <PendingImage
               prompt={content.background.prompt}
               label="背景の絵（仮）"
-              style={{ inset: 'auto 60px 40px auto', width: 520, height: 'auto', alignItems: 'flex-start', textAlign: 'left' }}
+              style={{ ...BACKGROUND_PLACEHOLDER_PLACE[content.stat ? 'left' : 'right'], width: 440, height: 'auto', alignItems: 'flex-start', textAlign: 'left' }}
             />
           </AbsoluteFill>
         )}
