@@ -87,9 +87,9 @@ npm run studio                        # → http://localhost:4300 をブラウ�
 
 | 項目 | 内容 |
 |---|---|
-| 台本を書く AI | `ANTHROPIC_API_KEY`（Claude。既定モデル `claude-opus-5-5`、`CLAUDE_MODEL` で変更可）。`ant auth login` 済みならキーなしでも動きます。OpenAI 互換 API を使うときは `OPENAI_API_KEY`（`SCRIPT_PROVIDER=openai` で明示も可） |
+| 台本を書く AI | `ANTHROPIC_API_KEY`（Claude。既定モデル `claude-opus-5-5`、`CLAUDE_MODEL` で変更可）。`ant auth login` 済みならキーなしでも動きます |
 | ナレーション | VOICEVOX Engine を起動しておく（下記）。起動していなければ無音の仮音声で作ります（画面に表示） |
-| 絵を描く AI（AIイラストのとき） | `GEMINI_API_KEY`（Gemini。既定モデル `gemini-3.1-flash-lite-image`）。OpenAI で描くときだけ `IMAGE_PROVIDER=openai` と `OPENAI_API_KEY`（既定モデル `gpt-image-1.5`）。台本用に `OPENAI_API_KEY` があっても、画像は勝手に OpenAI になりません。モデルは `IMAGE_MODEL` で変更可。キーがなければ絵の場所に仮の枠を出して作ります（画面に表示） |
+| 絵を描く AI（AIイラストのとき） | `GEMINI_API_KEY`（Gemini。既定モデル `gemini-3.1-flash-lite-image`）。モデルは `IMAGE_MODEL` で変更可。キーがなければ絵の場所に仮の枠を出して作ります（画面に表示） |
 | 3D の描画 | Linux ではソフトウェア描画（`STUDIO_GL=swangle`）が既定。Mac / Windows は GPU を使います |
 
 - ポートは `STUDIO_PORT`（既定 4300）。このPCからだけ開けます（127.0.0.1 で待ち受け）
@@ -332,7 +332,7 @@ Gemini や ChatGPT などの画像生成 AI で作った絵を、**背景・物�
 ```
 
 ```bash
-export GEMINI_API_KEY=...        # OpenAI で描くなら IMAGE_PROVIDER=openai と OPENAI_API_KEY=...
+export GEMINI_API_KEY=...
 npm run images                   # → public/generated/ に絵を作り、script.json の src を書き込む
 npm run audio && npm run render
 ```
@@ -395,12 +395,12 @@ npm run audio && npm run render
 
 ## 台本の自動生成（プロンプト / URL から）
 
-台本を手書きする代わりに、LLM で自動生成できます。OpenAI互換の Chat Completions API を使います。
+台本を手書きする代わりに、Claude で自動生成できます。
 
 **既定は子ども向け**（`--audience kids`）です。小学3年生がわかる言葉・話しかける口調（「〜だよ」「〜かな？」）・身近なたとえで書き、内容のシーンの半分以上を `scene3d`（3D オブジェクト）で見せ、「問いかけ → こたえ → りゆう → おさらい」の順に構成します。配色は kids テーマになります。
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."   # `ant auth login` 済みなら不要
 npm run script -- "雨はどうしてふるのかを解説して"                 # プロンプトから (子ども向け・3D)
 npm run script -- --url https://example.com/article              # 記事URLから (子ども向けにかみくだく)
 npm run script -- --audience general "Remotionの魅力を解説して"   # 大人向けの解説
@@ -415,9 +415,8 @@ npm run audio && npm run build:youtube                           # いつもの�
 
 | 環境変数 | 既定値 | 説明 |
 |---|---|---|
-| `OPENAI_API_KEY` | （必須） | APIキー |
-| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI互換エンドポイント（Ollama なら `http://localhost:11434/v1`） |
-| `SCRIPT_MODEL` | `gpt-4o-mini` | モデル名（JSON mode 対応のものを推奨） |
+| `ANTHROPIC_API_KEY` | — | Claude の APIキー（`ant auth login` 済みならなくても動きます） |
+| `CLAUDE_MODEL` | `claude-opus-5-5` | モデル名 |
 
 - 生成結果は `public/script.json` に**上書き**されます。ただし既存の `meta` の見た目の設定（BGM・アバター・`style` など）は引き継ぎ、タイトル・サムネイル文言・登録ポップアップの位置だけ LLM の提案で差し替えます（テーマは `--theme` の規則で決まる）
 - スキーマ検証・要素IDの整合性チェック（存在しない 3D の形キーも含む）を通らない場合は、エラー内容を渡して1回だけ自動リトライします
@@ -530,7 +529,7 @@ npm run audio && npm run build:youtube                           # いつもの�
 
 1. **手動**: GitHub の Actions タブ → `generate-video` → Run workflow → `source_type` を選んで実行
    - `none`: リポジトリの `public/script.json` をそのまま動画化
-   - `prompt` / `url`: LLM で台本を自動生成してから動画化（Secrets に `OPENAI_API_KEY` が必要。任意の Variables: `OPENAI_BASE_URL` / `SCRIPT_MODEL`）
+   - `prompt` / `url`: LLM で台本を自動生成してから動画化（Secrets に `ANTHROPIC_API_KEY` が必要。任意の Variables: `CLAUDE_MODEL`）
 2. **API から**: `repository_dispatch` で起動（Genspark などのエージェントから実行できる）
 
 ```bash

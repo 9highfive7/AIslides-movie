@@ -2,31 +2,31 @@
  * 台本 (script.json) を AI に書かせる・直させる共通処理。
  * CLI (npm run script) と動画生成アプリ (npm run studio) の両方から使う。
  *
- * AI の選び方 (SCRIPT_PROVIDER で明示も可: claude / openai):
- *   ANTHROPIC_API_KEY (または ANTHROPIC_AUTH_TOKEN) があれば Claude (既定 claude-opus-5-5)
- *   なければ OPENAI_API_KEY があれば OpenAI 互換 API
- *   どちらもなければ Claude (`ant auth login` のプロファイルで認証できればそれを使う)
+ * 台本を書く AI は Claude (既定 claude-opus-5-5、CLAUDE_MODEL で変更可)。
+ *   ANTHROPIC_API_KEY (または ANTHROPIC_AUTH_TOKEN) があればそれを使い、
+ *   なければ `ant auth login` のプロファイルで認証する
  */
 import { scriptSchema, type ScriptConfig } from '../../src/schemas';
 import { lintScript } from '../../src/elements';
 import { ICON_NAMES } from '../../src/components/IconBox';
 import { BUILD_BASIC_SHAPES, BUILD_COLORS, BUILD_PROPS, COLOR_NAMES, SHAPES, SHAPE_NAMES } from '../../src/three/catalog';
-import { chatJson, extractJson, resolveLlmConfig } from './llm';
-import { CLAUDE_MODEL, claudeText, hasClaudeEnvCredentials } from './claude';
+import { CLAUDE_MODEL, claudeText } from './claude';
 import { SHORTS_MAX_SEC } from './youtube';
 
-export const scriptProvider = (): { provider: 'claude' | 'openai'; model: string } => {
-  const forced = process.env.SCRIPT_PROVIDER;
-  const useOpenAi = forced === 'openai' || (forced !== 'claude' && !hasClaudeEnvCredentials() && Boolean(process.env.OPENAI_API_KEY));
-  return useOpenAi
-    ? { provider: 'openai', model: process.env.SCRIPT_MODEL ?? 'gpt-4o-mini' }
-    : { provider: 'claude', model: CLAUDE_MODEL };
+export const scriptProvider = (): { provider: 'claude'; model: string } => ({ provider: 'claude', model: CLAUDE_MODEL });
+
+/** 応答からJSON部分を取り出す (コードフェンスや前後の説明文が付いていても許容) */
+const extractJson = (raw: string): unknown => {
+  const trimmed = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  return JSON.parse(start >= 0 && end > start ? trimmed.slice(start, end + 1) : trimmed) as unknown;
 };
 
-const askJson = async (system: string, user: string): Promise<unknown> => {
-  const raw = scriptProvider().provider === 'openai' ? await chatJson(resolveLlmConfig(), system, user) : await claudeText(system, user);
-  return extractJson(raw);
-};
+const askJson = async (system: string, user: string): Promise<unknown> => extractJson(await claudeText(system, user));
 
 /** 台本の対象。kids: 小学生にもわかる解説 + 3D オブジェクト中心 / general: 大人向けの解説 */
 export type Audience = 'kids' | 'general';

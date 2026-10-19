@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { scriptProvider } from '../scripts/lib/script-writer';
+import { hasClaudeEnvCredentials } from '../scripts/lib/claude';
 import { resolveImageProvider } from '../scripts/lib/image-gen';
 import { busy, enqueue, jobOf, listBgm, sceneLabel, voiceStatus } from './pipeline';
 import { listProjects, loadProject, newProjectId, safeProjectFile, saveProject, versionDir, type Look, type Project, type VideoFormat } from './store';
@@ -128,10 +129,7 @@ const handle = async (req: http.IncomingMessage, res: http.ServerResponse): Prom
       sendJson(res, 200, {
         llm: {
           ...llm,
-          ready:
-            llm.provider === 'openai'
-              ? Boolean(process.env.OPENAI_API_KEY)
-              : Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
+          ready: hasClaudeEnvCredentials(),
         },
         voice: await voiceStatus(),
         bgm: listBgm(),

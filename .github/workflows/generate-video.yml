@@ -4,7 +4,7 @@
 #   2. repository_dispatch (API / gh CLI / Genspark など外部から起動)
 #
 # source_type を prompt / url にすると、LLM で台本を自動生成してから動画化する
-# (リポジトリの Settings → Secrets and variables → Actions に OPENAI_API_KEY を登録)。
+# (リポジトリの Settings → Secrets and variables → Actions に ANTHROPIC_API_KEY を登録)。
 # 生成される台本は既定で子ども向け (audience: kids): やさしい言葉 + 3D オブジェクト中心の見せ方 + kids テーマ。
 # source_type = none の場合は、リポジトリにコミット済みの public/script.json を使う。
 # 成果物: 動画 (video.mp4)・サムネイル (thumbnail.png)・概要欄の目次と字幕 (youtube/)
@@ -115,16 +115,15 @@ jobs:
       - name: Generate script (prompt / url)
         if: ${{ steps.src.outputs.type != 'none' && steps.src.outputs.type != '' }}
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          SCRIPT_MODEL: ${{ vars.SCRIPT_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
           SRC_TYPE: ${{ steps.src.outputs.type }}
           SRC_VALUE: ${{ steps.src.outputs.value }}
           SRC_THEME: ${{ steps.src.outputs.theme }}
           SRC_AUDIENCE: ${{ steps.src.outputs.audience }}
         run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "OPENAI_API_KEY が未設定です。リポジトリの Secrets に登録するか、source_type=none で既存の script.json を使ってください。"
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY が未設定です。リポジトリの Secrets に登録するか、source_type=none で既存の script.json を使ってください。"
             exit 1
           fi
           # 未指定 (repository_dispatch で省略) のときは、台本生成スクリプトの既定 (kids / auto) を使う

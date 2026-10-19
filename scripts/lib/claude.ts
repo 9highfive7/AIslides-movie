@@ -6,7 +6,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 
-export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-opus-5-5';
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5';
 
 /** 環境変数で Claude の認証情報が渡されているか (プロファイル認証は実際に呼ぶまで分からない) */
 export const hasClaudeEnvCredentials = (): boolean =>

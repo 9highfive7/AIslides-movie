@@ -140,7 +140,7 @@ footer { max-width: 960px; margin: 0 auto; padding: var(--sp-3) var(--sp-2); col
   <thead><tr><th>方法</th><th>向いている人</th><th>必要なもの</th></tr></thead>
   <tbody>
     <tr><td><a href="#local">ローカルで作る</a></td><td>台本を手元で編集・プレビューしたい</td><td>Node.js 18以上、VOICEVOX Engine</td></tr>
-    <tr><td><a href="#auto">LLMで台本も作る</a></td><td>題材やURLから下書きを作りたい</td><td>上記 + <code>OPENAI_API_KEY</code></td></tr>
+    <tr><td><a href="#auto">LLMで台本も作る</a></td><td>題材やURLから下書きを作りたい</td><td>上記 + <code>ANTHROPIC_API_KEY</code></td></tr>
     <tr><td><a href="#actions">GitHub Actionsで作る</a></td><td>手元に環境を作りたくない</td><td>GitHubリポジトリのみ</td></tr>
   </tbody>
 </table>
@@ -477,9 +477,9 @@ npm run youtube     # → out/youtube/description.txt, captions.srt, metadata.js
 </div>
 
 <h2 id="auto">台本を自動生成する</h2>
-<p>OpenAI互換のChat Completions APIで、プロンプトまたは記事URLから台本を作れます。YouTube 向けの構成（タイトル → 章立て → キメの画面やランキングで山場 → エンディング）になるよう指示してあり、強調（<code>**語句**</code>）や <code>focus</code>、動画タイトル・サムネイルの文言も提案させます。</p>
+<p>Claude で、プロンプトまたは記事URLから台本を作れます。YouTube 向けの構成（タイトル → 章立て → キメの画面やランキングで山場 → エンディング）になるよう指示してあり、強調（<code>**語句**</code>）や <code>focus</code>、動画タイトル・サムネイルの文言も提案させます。</p>
 <p><strong>既定は子ども向け</strong>（<code>--audience kids</code>）です。小学3年生がわかる言葉・話しかける口調（「〜だよ」「〜かな？」）・身近なたとえで書き、内容のシーンの半分以上を <code>scene3d</code>（3D オブジェクト）で見せ、「問いかけ → こたえ → りゆう → おさらい」の順にします。配色は <code>kids</code> テーマになります。むずかしい記事のURLを渡すと、子ども向けにかみくだいた台本になります。</p>
-<pre><code>export OPENAI_API_KEY="sk-..."
+<pre><code>export ANTHROPIC_API_KEY="sk-ant-..."   # ant auth login 済みなら不要
 
 # プロンプトから（子ども向け・3D）
 npm run script -- "雨はどうしてふるのかを解説して"
@@ -500,9 +500,8 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
 <table>
   <thead><tr><th>環境変数</th><th>既定値</th><th>説明</th></tr></thead>
   <tbody>
-    <tr><td><code>OPENAI_API_KEY</code></td><td>（必須）</td><td>APIキー</td></tr>
-    <tr><td><code>OPENAI_BASE_URL</code></td><td><code>https://api.openai.com/v1</code></td><td>互換エンドポイント（Ollamaなら <code>http://localhost:11434/v1</code>）</td></tr>
-    <tr><td><code>SCRIPT_MODEL</code></td><td><code>gpt-4o-mini</code></td><td>モデル名（JSON mode対応を推奨）</td></tr>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>—</td><td>Claude の APIキー（<code>ant auth login</code> 済みならなくても動きます）</td></tr>
+    <tr><td><code>CLAUDE_MODEL</code></td><td><code>claude-opus-5-5</code></td><td>モデル名</td></tr>
   </tbody>
 </table>
 </div>
@@ -532,7 +531,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     </table>
     </div>
     <p>台本を生成するときは <code>audience</code>（<code>kids</code>：子ども向け・3D 中心〈既定〉/ <code>general</code>：一般向け）と <code>theme</code>（<code>auto</code>〈既定〉/ <code>keep</code> / <code>kids</code> / <code>clean</code> / <code>pop</code> / <code>dark</code>）も選べます。<code>auto</code> は子ども向けなら <code>kids</code> テーマ、一般向けなら今の台本の設定のまま、<code>keep</code> は常に今の台本の設定のままです。</p>
-    <p><code>prompt</code> / <code>url</code> を使うには、リポジトリの Settings → Secrets and variables → Actions に <code>OPENAI_API_KEY</code> を登録します。任意で Variables に <code>OPENAI_BASE_URL</code> / <code>SCRIPT_MODEL</code> も設定できます。</p>
+    <p><code>prompt</code> / <code>url</code> を使うには、リポジトリの Settings → Secrets and variables → Actions に <code>ANTHROPIC_API_KEY</code> を登録します。任意で Variables に <code>CLAUDE_MODEL</code> も設定できます。</p>
   </li>
   <li>
     <h3>APIから実行する</h3>
@@ -618,7 +617,7 @@ npm run audio &amp;&amp; npm run build:youtube</code></pre>
     <tr><td>3D の形が「はてな」になる</td><td><code>shape</code> のキーの綴りの間違いです。<code>npm run audio</code> の警告と <a href="#kids3d">形のキーの表</a> を確認してください。</td></tr>
     <tr><td>チャプターが YouTube で認識されない</td><td>章が3つ未満か、10秒未満の章があります。<code>section</code> シーンを増やしてください（<code>npm run youtube</code> が警告を出します）。</td></tr>
     <tr><td>レンダリングが遅い・落ちる</td><td><code>npm run render -- --concurrency=4</code> のように同時実行数を下げます。</td></tr>
-    <tr><td>Actionsで「OPENAI_API_KEY が未設定」</td><td>Secretsに登録するか、<code>source_type=none</code> で既存の台本を使います。</td></tr>
+    <tr><td>Actionsで「ANTHROPIC_API_KEY が未設定」</td><td>Secretsに登録するか、<code>source_type=none</code> で既存の台本を使います。</td></tr>
   </tbody>
 </table>
 </div>

@@ -65,7 +65,7 @@ const renderImageState = () => {
   $('image-row').hidden = chosen('look') !== 'illust' || !images;
   if (!images) return;
   $('image-state').textContent = images.ready
-    ? `● 画像生成 ${images.provider === 'gemini' ? 'Gemini' : 'OpenAI'}（${images.model}）`
+    ? `● 画像生成 Gemini（${images.model}）`
     : '● 画像生成 AI 未設定（仮の枠の絵で作ります。GEMINI_API_KEY を設定）';
   $('image-state').className = `voice-state ${images.ready ? 'ok' : 'ng'}`;
 };
@@ -460,9 +460,7 @@ const showStatus = async () => {
   const notes = [];
   if (!llm.ready) {
     notes.push(
-      llm.provider === 'claude'
-        ? '台本を書く AI (Claude) の APIキーが見つかりません。ANTHROPIC_API_KEY を設定してから `npm run studio` を起動し直してください（`ant auth login` 済みならそのまま動くこともあります）。\n台本（JSON）を読み込んで作ることはできます。'
-        : '台本を書く AI の APIキーが見つかりません。OPENAI_API_KEY を設定してください。',
+      '台本を書く AI (Claude) の APIキーが見つかりません。ANTHROPIC_API_KEY を設定してから `npm run studio` を起動し直してください（`ant auth login` 済みならそのまま動くこともあります）。\n台本（JSON）を読み込んで作ることはできます。',
     );
   }
   $('notice').hidden = notes.length === 0;

@@ -1,11 +1,8 @@
 /**
- * 画像生成 AI (layered の素材) を呼び出す。Gemini と OpenAI (gpt-image) に対応。
+ * 画像生成 AI (layered の素材) を呼び出す。Gemini を使う。
  *
- * どれを使うか:
- *   ふだんは Gemini (GEMINI_API_KEY または GOOGLE_API_KEY。既定 gemini-3.1-flash-lite-image)。
- *   キーがなければ使えない (layered の絵は仮の枠になる)。OPENAI_API_KEY があっても OpenAI には切り替えない
- *   (OPENAI_API_KEY は台本を書く AI にも使うので、画像まで勝手に OpenAI にならないように)
- *   IMAGE_PROVIDER=openai のときだけ OpenAI (OPENAI_API_KEY。既定 gpt-image-1.5)
+ * キーは GEMINI_API_KEY または GOOGLE_API_KEY (既定 gemini-3.1-flash-lite-image)。
+ * キーがなければ使えない (layered の絵は仮の枠になる)。
  * モデルは IMAGE_MODEL で変えられる (新しいモデルが出たらここで切り替える)。
  *
  * 物の絵は背景を透明にしたいが、透明な背景を出せるかはモデルや時期によって違う。
@@ -16,17 +13,13 @@ import sharp from 'sharp';
 export type ImageKind = 'background' | 'foreground' | 'object';
 
 export interface ImageProvider {
-  provider: 'gemini' | 'openai';
+  provider: 'gemini';
   model: string;
   apiKey: string;
 }
 
 /** 使える画像生成 AI。キーがなければ null */
 export const resolveImageProvider = (): ImageProvider | null => {
-  if (process.env.IMAGE_PROVIDER === 'openai') {
-    const openaiKey = process.env.OPENAI_API_KEY ?? '';
-    return openaiKey ? { provider: 'openai', model: process.env.IMAGE_MODEL ?? 'gpt-image-1.5', apiKey: openaiKey } : null;
-  }
   const geminiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? '';
   return geminiKey ? { provider: 'gemini', model: process.env.IMAGE_MODEL ?? 'gemini-3.1-flash-lite-image', apiKey: geminiKey } : null;
 };
@@ -103,37 +96,6 @@ const callGemini = async (p: ImageProvider, kind: ImageKind, prompt: string, ver
     throw fail(p, '画像なし', reason || text);
   }
   return Buffer.from(b64, 'base64');
-};
-
-/** OpenAI: Images API (gpt-image) */
-const callOpenAi = async (p: ImageProvider, kind: ImageKind, prompt: string, vertical: boolean): Promise<Buffer> => {
-  const base = (process.env.OPENAI_IMAGE_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const res = await fetch(`${base}/images/generations`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${p.apiKey}` },
-    body: JSON.stringify({
-      model: p.model,
-      prompt,
-      size: { '1:1': '1024x1024', '16:9': '1536x1024', '9:16': '1024x1536' }[aspectOf(kind, vertical)],
-      quality: process.env.IMAGE_QUALITY ?? 'medium',
-      n: 1,
-    }),
-    signal: AbortSignal.timeout(300000),
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    throw fail(p, `HTTP ${res.status}`, text);
-  }
-  const data = JSON.parse(text) as { data?: { b64_json?: string; url?: string }[] };
-  const first = data.data?.[0];
-  if (first?.b64_json) {
-    return Buffer.from(first.b64_json, 'base64');
-  }
-  if (first?.url) {
-    const img = await fetch(first.url, { signal: AbortSignal.timeout(120000) });
-    return Buffer.from(await img.arrayBuffer());
-  }
-  throw fail(p, '画像なし', text);
 };
 
 /** 2つの色の差 (RGB の距離) */
@@ -303,8 +265,7 @@ export const generateImage = async (
   prompt: string,
   vertical = false,
 ): Promise<{ data: Buffer; ext: 'jpg' | 'png' }> => {
-  const raw =
-    provider.provider === 'gemini' ? await callGemini(provider, kind, prompt, vertical) : await callOpenAi(provider, kind, prompt, vertical);
+  const raw = await callGemini(provider, kind, prompt, vertical);
   const [w, h] = vertical ? [1080, 1920] : [1920, 1080];
   if (kind === 'background') {
     return { data: await sharp(raw).resize(w, h, { fit: 'cover' }).jpeg({ quality: 88 }).toBuffer(), ext: 'jpg' };

@@ -7,7 +7,6 @@
  *
  * 環境変数:
  *   GEMINI_API_KEY (または GOOGLE_API_KEY)  Gemini の画像生成 (既定 gemini-3.1-flash-lite-image)
- *   IMAGE_PROVIDER=openai と OPENAI_API_KEY  OpenAI で描くときだけ (既定 gpt-image-1.5)
  *   IMAGE_MODEL でモデルを変更できる
  */
 import fs from 'node:fs';
@@ -37,7 +36,7 @@ async function main(): Promise<void> {
       (report.provider ? ` — ${report.provider.provider} / ${report.provider.model}` : ''),
   );
   if (!report.provider && report.missing > 0) {
-    console.log('画像生成 AI のキーがないため、絵のない画像は仮の枠で表示されます (GEMINI_API_KEY を設定してください。OpenAI で描くなら IMAGE_PROVIDER=openai と OPENAI_API_KEY)。');
+    console.log('画像生成 AI のキーがないため、絵のない画像は仮の枠で表示されます (GEMINI_API_KEY を設定してください)。');
   }
   for (const error of report.errors) console.error(`  × ${error}`);
   console.log(`→ ${path.relative(ROOT, file)} の src を更新しました。続けて npm run audio → npm run render`);

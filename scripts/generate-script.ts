@@ -1,6 +1,6 @@
 /**
  * プロンプトまたはURLから台本 (public/script.json) を自動生成する。
- * OpenAI互換のChat Completions APIを利用する。
+ * 台本は Claude に書かせる。
  *
  * 使い方:
  *   npm run script -- "Remotionの魅力を解説する台本を作って"
@@ -12,9 +12,9 @@
  * 見せる台本を作り、配色は kids テーマにする。
  * 既存の public/script.json の meta (BGM・アバターなどの見た目の設定) は引き継ぐ。
  *
- * 環境変数 (どちらか):
- *   ANTHROPIC_API_KEY  Claude を使う (モデルは CLAUDE_MODEL、既定 claude-opus-5-5)
- *   OPENAI_API_KEY     OpenAI 互換 API を使う (OPENAI_BASE_URL・SCRIPT_MODEL も指定可)
+ * 環境変数:
+ *   ANTHROPIC_API_KEY  Claude の APIキー (モデルは CLAUDE_MODEL、既定 claude-opus-5-5)。
+ *                      `ant auth login` 済みならなくても動く
  */
 import fs from 'node:fs';
 import path from 'node:path';
